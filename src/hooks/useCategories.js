@@ -1,0 +1,39 @@
+import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
+
+export function useCategories() {
+    const { user } = useAuth()
+    const [categories, setCategories] = useState([])
+    const [loading, setLoading] = useState(true)
+
+    const charger = useCallback(async () => {
+        setLoading(true)
+        const { data, error } = await supabase
+            .from('categories')
+            .select('*')
+            .order('nom', { ascending: true })
+        if (!error) setCategories(data)
+        setLoading(false)
+    }, [])
+
+    useEffect(() => {
+        if (user) charger()
+    }, [user, charger])
+
+    const ajouterCategorie = async (categorie) => {
+        const { error } = await supabase
+            .from('categories')
+            .insert({ ...categorie, user_id: user.id })
+        if (!error) await charger()
+        return { error }
+    }
+
+    const supprimerCategorie = async (id) => {
+        const { error } = await supabase.from('categories').delete().eq('id', id)
+        if (!error) await charger()
+        return { error }
+    }
+
+    return { categories, loading, ajouterCategorie, supprimerCategorie, charger }
+}

@@ -1,0 +1,17 @@
+export const CRYPTOS_COURANTES = [
+    { coinId: 'bitcoin', symbole: 'BTC', nom: 'Bitcoin' },
+    { coinId: 'ethereum', symbole: 'ETH', nom: 'Ethereum' },
+    { coinId: 'tether', symbole: 'USDT', nom: 'Tether' },
+    { coinId: 'binancecoin', symbole: 'BNB', nom: 'BNB' },
+    { coinId: 'solana', symbole: 'SOL', nom: 'Solana' },
+    { coinId: 'ripple', symbole: 'XRP', nom: 'XRP' },
+    { coinId: 'usd-coin', symbole: 'USDC', nom: 'USD Coin' },
+    { coinId: 'cardano', symbole: 'ADA', nom: 'Cardano' },
+    { coinId: 'dogecoin', symbole: 'DOGE', nom: 'Dogecoin' },
+    { coinId: 'chainlink', symbole: 'LINK', nom: 'Chainlink' },
+    { coinId: 'polkadot', symbole: 'DOT', nom: 'Polkadot' },
+    { coinId: 'tron', symbole: 'TRX', nom: 'TRON' },
+    { coinId: 'avalanche-2', symbole: 'AVAX', nom: 'Avalanche' },
+    { coinId: 'matic-network', symbole: 'MATIC', nom: 'Polygon' },
+    { coinId: 'litecoin', symbole: 'LTC', nom: 'Litecoin' },
+]
