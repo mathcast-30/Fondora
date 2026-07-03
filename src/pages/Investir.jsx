@@ -24,7 +24,8 @@ import { useTopCrypto } from '../hooks/useTopCrypto'
 import { useBiensImmobiliers } from '../hooks/useBiensImmobiliers'
 import { useAuth } from '../context/AuthContext'
 import { calculerRentabilite } from '../lib/calculImmo'
-import { calculateDiversificationScore, calculateXIRR, calculateCryptoRealizedPL, calculatePRU } from '../lib/financialCalculations'
+import { calculateXIRR, calculateCryptoRealizedPL, calculatePRU } from '../lib/financialCalculations'
+import { calculateDiversificationScore } from '../lib/diversificationScore'
 import { Plus, Trash2, TrendingUp, TrendingDown, Calculator, BarChart3, History, PlusCircle, MinusCircle } from 'lucide-react'
 
 function Investir() {
