@@ -12,6 +12,8 @@ export function usePositionsCrypto() {
     const [timeFilter, setTimeFilter] = useState('7j') // '7j', '30j', '1an', 'tout'
 
     const charger = useCallback(async () => {
+        if (!user) return
+        
         setLoading(true)
         
         try {
@@ -19,18 +21,21 @@ export function usePositionsCrypto() {
             const { data: positionsData, error: positionsError } = await supabase
                 .from('positions_crypto')
                 .select('*')
+                .eq('user_id', user.id)
                 .order('created_at', { ascending: true })
             
             // Load crypto transactions
             const { data: transactionsData, error: transactionsError } = await supabase
                 .from('transactions_crypto')
                 .select('*')
+                .eq('user_id', user.id)
                 .order('date', { ascending: true })
             
             // Load historical portfolio values
             const { data: historicalData, error: historicalError } = await supabase
                 .from('historique_valeur_crypto')
                 .select('*')
+                .eq('user_id', user.id)
                 .order('date', { ascending: true })
             
             if (!positionsError) setPositions(positionsData || [])
@@ -41,13 +46,15 @@ export function usePositionsCrypto() {
         }
         
         setLoading(false)
-    }, [])
+    }, [user])
 
     useEffect(() => {
         if (user) charger()
     }, [user, charger])
 
     const ajouterPosition = async (position) => {
+        if (!user) return { error: new Error('User not authenticated') }
+        
         const { error } = await supabase
             .from('positions_crypto')
             .insert({ ...position, user_id: user.id })
@@ -56,7 +63,13 @@ export function usePositionsCrypto() {
     }
 
     const supprimerPosition = async (id) => {
-        const { error } = await supabase.from('positions_crypto').delete().eq('id', id)
+        if (!user) return { error: new Error('User not authenticated') }
+        
+        const { error } = await supabase
+            .from('positions_crypto')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id)
         if (!error) await charger()
         return { error }
     }
@@ -67,13 +80,34 @@ export function usePositionsCrypto() {
      * @returns {Promise<Object>} Result with error if any
      */
     const ajouterTransaction = async (transaction) => {
+        if (!user) return { error: new Error('User not authenticated') }
+        
         const { error } = await supabase
             .from('transactions_crypto')
             .insert({ 
                 ...transaction, 
                 user_id: user.id,
-                date: transaction.date || new Date().toISOString()
+                coin_id: transaction.coin_id,
+                symbole: transaction.symbole,
+                nom: transaction.nom
             })
+        if (!error) await charger()
+        return { error }
+    }
+
+    /**
+     * Delete a crypto transaction
+     * @param {string} id - Transaction ID
+     * @returns {Promise<Object>} Result with error if any
+     */
+    const supprimerTransaction = async (id) => {
+        if (!user) return { error: new Error('User not authenticated') }
+        
+        const { error } = await supabase
+            .from('transactions_crypto')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id)
         if (!error) await charger()
         return { error }
     }
@@ -83,7 +117,7 @@ export function usePositionsCrypto() {
      * @returns {Object} P&L calculation results
      */
     const calculerPnLRealise = useCallback(() => {
-        return calculateCryptoRealizedPL(transactions);
+        return calculateCryptoRealizedPL(transactions)
     }, [transactions])
 
     /**
@@ -91,7 +125,7 @@ export function usePositionsCrypto() {
      * @returns {number} Current PRU value
      */
     const calculerPRUActuel = useCallback(() => {
-        return calculatePRU(positions);
+        return calculatePRU(positions)
     }, [positions])
 
     /**
@@ -99,23 +133,23 @@ export function usePositionsCrypto() {
      * @returns {Array} Filtered historical data
      */
     const getHistoricalDataFiltered = useCallback(() => {
-        const now = new Date();
+        const now = new Date()
         
         return historicalData.filter(h => {
-            const date = new Date(h.date);
+            const date = new Date(h.date)
             
             switch (timeFilter) {
                 case '7j':
-                    return date >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    return date >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
                 case '30j':
-                    return date >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    return date >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
                 case '1an':
-                    return date >= new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+                    return date >= new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
                 case 'tout':
                 default:
-                    return true;
+                    return true
             }
-        });
+        })
     }, [historicalData, timeFilter])
 
     /**
@@ -123,7 +157,7 @@ export function usePositionsCrypto() {
      * @param {string} filter - Time filter ('7j', '30j', '1an', 'tout')
      */
     const setPeriode = useCallback((filter) => {
-        setTimeFilter(filter);
+        setTimeFilter(filter)
     }, [])
 
     /**
@@ -131,7 +165,7 @@ export function usePositionsCrypto() {
      * @param {number} value - Current portfolio value
      */
     const sauvegarderValeurHistorique = async (value) => {
-        if (!user) return;
+        if (!user) return { error: new Error('User not authenticated') }
         
         const { error } = await supabase
             .from('historique_valeur_crypto')
@@ -141,8 +175,8 @@ export function usePositionsCrypto() {
                 date: new Date().toISOString()
             })
         
-        if (!error) await charger();
-        return { error };
+        if (!error) await charger()
+        return { error }
     }
 
     return {
@@ -154,6 +188,7 @@ export function usePositionsCrypto() {
         ajouterPosition,
         supprimerPosition,
         ajouterTransaction,
+        supprimerTransaction,
         calculerPnLRealise,
         calculerPRUActuel,
         getHistoricalDataFiltered,

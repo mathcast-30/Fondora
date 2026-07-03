@@ -11,6 +11,8 @@ export function usePositions() {
     const [displayMode, setDisplayMode] = useState('euro') // 'euro' or 'percentage'
 
     const charger = useCallback(async () => {
+        if (!user) return
+        
         setLoading(true)
         
         try {
@@ -18,12 +20,14 @@ export function usePositions() {
             const { data: positionsData, error: positionsError } = await supabase
                 .from('positions_financieres')
                 .select('*')
+                .eq('user_id', user.id)
                 .order('created_at', { ascending: true })
             
             // Load investment transactions
             const { data: transactionsData, error: transactionsError } = await supabase
                 .from('transactions_investissement')
                 .select('*')
+                .eq('user_id', user.id)
                 .order('date', { ascending: true })
             
             if (!positionsError) setPositions(positionsData || [])
@@ -33,13 +37,15 @@ export function usePositions() {
         }
         
         setLoading(false)
-    }, [])
+    }, [user])
 
     useEffect(() => {
         if (user) charger()
     }, [user, charger])
 
     const ajouterPosition = async (position) => {
+        if (!user) return { error: new Error('User not authenticated') }
+        
         const { error } = await supabase
             .from('positions_financieres')
             .insert({ ...position, user_id: user.id })
@@ -48,7 +54,13 @@ export function usePositions() {
     }
 
     const supprimerPosition = async (id) => {
-        const { error } = await supabase.from('positions_financieres').delete().eq('id', id)
+        if (!user) return { error: new Error('User not authenticated') }
+        
+        const { error } = await supabase
+            .from('positions_financieres')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id)
         if (!error) await charger()
         return { error }
     }
@@ -59,13 +71,32 @@ export function usePositions() {
      * @returns {Promise<Object>} Result with error if any
      */
     const ajouterTransaction = async (transaction) => {
+        if (!user) return { error: new Error('User not authenticated') }
+        
         const { error } = await supabase
             .from('transactions_investissement')
             .insert({ 
                 ...transaction, 
                 user_id: user.id,
-                date: transaction.date || new Date().toISOString()
+                symbole: transaction.symbole?.toUpperCase()
             })
+        if (!error) await charger()
+        return { error }
+    }
+
+    /**
+     * Delete a transaction
+     * @param {string} id - Transaction ID
+     * @returns {Promise<Object>} Result with error if any
+     */
+    const supprimerTransaction = async (id) => {
+        if (!user) return { error: new Error('User not authenticated') }
+        
+        const { error } = await supabase
+            .from('transactions_investissement')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id)
         if (!error) await charger()
         return { error }
     }
@@ -75,7 +106,7 @@ export function usePositions() {
      * @returns {Object} P&L calculation results
      */
     const calculerPnLRealise = useCallback(() => {
-        return calculateFIFOPnL(transactions);
+        return calculateFIFOPnL(transactions)
     }, [transactions])
 
     /**
@@ -84,15 +115,15 @@ export function usePositions() {
      * @returns {number|null} XIRR value or null
      */
     const calculerXIRR = useCallback((symbole) => {
-        const symbolTransactions = transactions.filter(t => t.symbole === symbole);
-        if (symbolTransactions.length < 2) return null;
+        const symbolTransactions = transactions.filter(t => t.symbole?.toUpperCase() === symbole?.toUpperCase())
+        if (symbolTransactions.length < 2) return null
         
         const cashFlows = symbolTransactions.map(t => ({
             date: t.date,
             amount: t.type === 'buy' ? -t.quantity * t.price : t.quantity * t.price
-        }));
+        }))
         
-        return calculateXIRR(cashFlows);
+        return calculateXIRR(cashFlows)
     }, [transactions])
 
     /**
@@ -102,9 +133,9 @@ export function usePositions() {
      * @returns {number} CAGR value
      */
     const calculerCAGR = useCallback((position, years) => {
-        const initialValue = position.prix_achat_moyen * position.quantite;
-        const currentValue = position.valeur_actuelle || (position.prix_achat_moyen * position.quantite);
-        return calculateCAGR(initialValue, currentValue, years);
+        const initialValue = position.prix_achat_moyen * position.quantite
+        const currentValue = position.valeur_actuelle || (position.prix_achat_moyen * position.quantite)
+        return calculateCAGR(initialValue, currentValue, years)
     }, [])
 
     /**
@@ -121,6 +152,7 @@ export function usePositions() {
         ajouterPosition,
         supprimerPosition,
         ajouterTransaction,
+        supprimerTransaction,
         calculerPnLRealise,
         calculerXIRR,
         calculerCAGR,
