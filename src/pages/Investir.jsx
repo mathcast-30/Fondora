@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import EvolutionPatrimoineChart from '../components/EvolutionPatrimoineChart'
@@ -9,6 +9,9 @@ import SimulateurAchatCrypto from '../components/SimulateurAchatCrypto'
 import TopCryptoTable from '../components/TopCryptoTable'
 import BienImmobilierCard from '../components/BienImmobilierCard'
 import FormBienImmobilier from '../components/FormBienImmobilier'
+import CryptoPortfolioChart from '../components/CryptoPortfolioChart'
+import DiversificationScore from '../components/DiversificationScore'
+import { PnLLatentDisplay } from '../components/PnLLatentToggle'
 import { usePositions } from '../hooks/usePositions'
 import { useCoursBourse } from '../hooks/useCoursBourse'
 import { useHistoriquePatrimoine } from '../hooks/useHistoriquePatrimoine'
@@ -18,13 +21,24 @@ import { useCoursCrypto } from '../hooks/useCoursCrypto'
 import { useTopCrypto } from '../hooks/useTopCrypto'
 import { useBiensImmobiliers } from '../hooks/useBiensImmobiliers'
 import { calculerRentabilite } from '../lib/calculImmo'
-import { Plus, Trash2, TrendingUp, TrendingDown } from 'lucide-react'
+import { calculateDiversificationScore, calculateXIRR } from '../lib/financialCalculations'
+import { Plus, Trash2, TrendingUp, TrendingDown, Calculator, BarChart3 } from 'lucide-react'
 
 function Investir() {
     const [ongletActif, setOngletActif] = useState('actions')
 
     // --- Actions / ETF ---
-    const { positions, loading, ajouterPosition, supprimerPosition } = usePositions()
+    const { 
+        positions, 
+        transactions, 
+        loading, 
+        ajouterPosition, 
+        supprimerPosition,
+        displayMode,
+        toggleDisplayMode,
+        calculerPnLRealise
+    } = usePositions()
+    
     const symboles = positions.map((p) => p.symbole)
     const { cours, loading: loadingCours } = useCoursBourse(symboles)
     const [modalOuvert, setModalOuvert] = useState(false)
@@ -49,6 +63,7 @@ function Investir() {
         }
     }
 
+    // Calculate portfolio metrics
     const valorisationTotale = positions.reduce((acc, p) => {
         const coursActuel = cours[p.symbole]?.coursActuel || p.prix_achat_moyen
         return acc + coursActuel * p.quantite
@@ -56,21 +71,63 @@ function Investir() {
     const investissementTotal = positions.reduce((acc, p) => acc + p.prix_achat_moyen * p.quantite, 0)
     const plusMoinsValueTotale = valorisationTotale - investissementTotal
 
-    const { historique, periode, setPeriode } = useHistoriquePatrimoine(valorisationTotale)
-    const { dividendes, totalDouzeMois, ajouterDividende, supprimerDividende } = useDividendes()
+    // Calculate XIRR/TRI for the entire portfolio
+    const pnlRealise = calculerPnLRealise()
+    
+    // Prepare cash flows for XIRR calculation
+    const cashFlows = useMemo(() => {
+        return transactions.map(t => ({
+            date: t.date,
+            amount: t.type === 'buy' ? -t.quantity * t.price : t.quantity * t.price
+        }))
+    }, [transactions])
+    
+    const xirrPortfolio = useMemo(() => {
+        return calculateXIRR(cashFlows)
+    }, [cashFlows])
+
+    // Calculate diversification score
     const dataAllocation = positions.map((p) => ({
         nom: cours[p.symbole]?.nom || p.symbole,
         montant: (cours[p.symbole]?.coursActuel || p.prix_achat_moyen) * p.quantite,
+        secteur: cours[p.symbole]?.secteur || 'inconnu',
+        type: p.type_compte
     }))
 
+    const diversificationScore = useMemo(() => {
+        return calculateDiversificationScore(dataAllocation, valorisationTotale)
+    }, [dataAllocation, valorisationTotale])
+
+    const { historique, periode, setPeriode } = useHistoriquePatrimoine(valorisationTotale)
+    const { dividendes, totalDouzeMois, ajouterDividende, supprimerDividende } = useDividendes()
+
     // --- Crypto ---
-    const { positions: positionsCrypto, loading: loadingCrypto, ajouterPosition: ajouterCrypto, supprimerPosition: supprimerCrypto } = usePositionsCrypto()
+    const { 
+        positions: positionsCrypto, 
+        loading: loadingCrypto, 
+        ajouterPosition: ajouterCrypto, 
+        supprimerPosition: supprimerCrypto,
+        historicalData: historiqueCrypto,
+        timeFilter: periodeCrypto,
+        setPeriode: setPeriodeCrypto,
+        sauvegarderValeurHistorique
+    } = usePositionsCrypto()
+    
     const coinIds = positionsCrypto.map((p) => p.coin_id)
     const { cours: coursCrypto, loading: loadingCoursCrypto } = useCoursCrypto(coinIds)
     const { topCrypto, loading: loadingTopCrypto } = useTopCrypto(10)
-    const valorisationCrypto = positionsCrypto.reduce((acc, p) => acc + (coursCrypto[p.coin_id]?.eur || p.prix_achat_moyen) * p.quantite, 0)
+    
+    const valorisationCrypto = positionsCrypto.reduce((acc, p) => 
+        acc + (coursCrypto[p.coin_id]?.eur || p.prix_achat_moyen) * p.quantite, 0)
     const investiCrypto = positionsCrypto.reduce((acc, p) => acc + p.prix_achat_moyen * p.quantite, 0)
     const plusMoinsValueCrypto = valorisationCrypto - investiCrypto
+
+    // Save crypto portfolio value to history
+    useEffect(() => {
+        if (valorisationCrypto > 0) {
+            sauvegarderValeurHistorique(valorisationCrypto)
+        }
+    }, [valorisationCrypto, sauvegarderValeurHistorique])
 
     // --- Immobilier ---
     const { biens, loading: loadingImmo, ajouterBien, supprimerBien, valeurTotaleImmo } = useBiensImmobiliers()
@@ -124,7 +181,8 @@ function Investir() {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-3 gap-4 mb-6">
+                    {/* Portfolio Metrics */}
+                    <div className="grid grid-cols-4 gap-4 mb-6">
                         <div className="bg-white rounded-xl p-5 shadow-sm">
                             <p className="text-gray-400 text-sm mb-1">Valorisation totale</p>
                             <p className="text-navy text-2xl font-bold">{formatMontant(valorisationTotale)}</p>
@@ -134,13 +192,58 @@ function Investir() {
                             <p className="text-navy text-2xl font-bold">{formatMontant(investissementTotal)}</p>
                         </div>
                         <div className="bg-white rounded-xl p-5 shadow-sm">
-                            <p className="text-gray-400 text-sm mb-1">Plus/moins-value</p>
-                            <p className={`text-2xl font-bold flex items-center gap-1 ${plusMoinsValueTotale >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                                {plusMoinsValueTotale >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
-                                {formatMontant(Math.abs(plusMoinsValueTotale))}
+                            <p className="text-gray-400 text-sm mb-1">Plus/moins-value latent</p>
+                            <PnLLatentDisplay
+                                euroValue={plusMoinsValueTotale}
+                                percentageValue={investissementTotal > 0 ? (plusMoinsValueTotale / investissementTotal) * 100 : 0}
+                                mode={displayMode}
+                                onToggle={toggleDisplayMode}
+                            />
+                        </div>
+                        <div className="bg-white rounded-xl p-5 shadow-sm">
+                            <p className="text-gray-400 text-sm mb-1 flex items-center gap-1">
+                                <Calculator size={14} /> TRI (XIRR)
+                            </p>
+                            <p className="text-navy text-2xl font-bold">
+                                {xirrPortfolio !== null ? (xirrPortfolio * 100).toFixed(2) + '%' : 'N/A'}
                             </p>
                         </div>
                     </div>
+
+                    {/* Realized P&L Section */}
+                    {pnlRealise && pnlRealise.realizedPL !== 0 && (
+                        <div className="mb-6">
+                            <div className="bg-white rounded-xl p-5 shadow-sm">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <TrendingUp size={18} className="text-emerald" />
+                                    <h3 className="text-navy font-semibold">P&L Réalisé (FIFO/PEPS)</h3>
+                                </div>
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div>
+                                        <p className="text-gray-400 text-sm mb-1">Plus-value réalisée</p>
+                                        <p className={`text-xl font-bold ${pnlRealise.realizedPL >= 0 ? 'text-emerald' : 'text-red-500'}`}>
+                                            {formatMontant(pnlRealise.realizedPL)}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-400 text-sm mb-1">Coût total</p>
+                                        <p className="text-navy text-xl font-bold">{formatMontant(pnlRealise.totalCost)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-400 text-sm mb-1">Produit des ventes</p>
+                                        <p className="text-navy text-xl font-bold">{formatMontant(pnlRealise.totalProceeds)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Diversification Score */}
+                    {positions.length > 0 && (
+                        <div className="mb-6">
+                            <DiversificationScore positions={dataAllocation} total={valorisationTotale} />
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-5 gap-6">
                         <div className="col-span-2 space-y-6">
@@ -181,6 +284,15 @@ function Investir() {
                                         const valeurInvestie = p.prix_achat_moyen * p.quantite
                                         const plusMoinsValue = valeurActuelle - valeurInvestie
                                         const pourcentage = valeurInvestie > 0 ? (plusMoinsValue / valeurInvestie) * 100 : 0
+                                        
+                                        // Calculate XIRR for this position
+                                        const positionTransactions = transactions.filter(t => t.symbole === p.symbole)
+                                        const positionCashFlows = positionTransactions.map(t => ({
+                                            date: t.date,
+                                            amount: t.type === 'buy' ? -t.quantity * t.price : t.quantity * t.price
+                                        }))
+                                        const xirr = calculateXIRR(positionCashFlows)
+                                        
                                         return (
                                             <div key={p.id} className="flex items-center justify-between px-5 py-4">
                                                 <div className="flex items-center gap-3">
@@ -205,9 +317,15 @@ function Investir() {
                                                         <p className="text-xs text-gray-400">Valeur</p>
                                                         <p className="font-semibold text-navy text-sm">{formatMontant(valeurActuelle, p.devise)}</p>
                                                     </div>
-                                                    <div className="text-right w-20">
+                                                    <div className="text-right">
+                                                        <p className="text-xs text-gray-400">TRI (XIRR)</p>
+                                                        <p className="text-xs font-medium text-navy">
+                                                            {xirr !== null ? (xirr * 100).toFixed(1) + '%' : 'N/A'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-right w-16">
                                                         <p className={`font-semibold text-sm ${plusMoinsValue >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                                                            {plusMoinsValue >= 0 ? '+' : ''}{pourcentage.toFixed(1)}%
+                                                            {plusMoinsValue >= 0 ? '+' : ''}{displayMode === 'euro' ? formatMontant(plusMoinsValue) : pourcentage.toFixed(1) + '%'}
                                                         </p>
                                                     </div>
                                                     <button onClick={() => supprimerPosition(p.id)} className="text-gray-300 hover:text-red-500 transition">
@@ -231,6 +349,13 @@ function Investir() {
                         <SimulateurAchatCrypto onAjouter={ajouterCrypto} />
                     </div>
                     <div className="col-span-3 space-y-6">
+                        {/* Crypto Portfolio Chart */}
+                        <CryptoPortfolioChart 
+                            data={historiqueCrypto} 
+                            periode={periodeCrypto} 
+                            setPeriode={setPeriodeCrypto} 
+                        />
+
                         <div className="grid grid-cols-3 gap-4">
                             <div className="bg-white rounded-xl p-4 shadow-sm">
                                 <p className="text-gray-400 text-xs mb-1">Valorisation</p>
@@ -376,8 +501,8 @@ function Investir() {
                         <div className="flex-1">
                             <label className="text-sm text-gray-600 mb-1 block">Type de compte</label>
                             <select value={form.type_compte} onChange={(e) => setForm({ ...form, type_compte: e.target.value })} className="w-full border rounded-lg px-3 py-2">
-                                <option value="PEA">PEA</option>
-                                <option value="CTO">CTO</option>
+                                <option value="PEA">PEA</noption>
+                                <option value="CTO">CTO</noption>
                             </select>
                         </div>
                     </div>
