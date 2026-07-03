@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { Analytics } from '@vercel/analytics/react'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Synthese from './pages/Synthese'
@@ -24,6 +25,7 @@ function App() {
         <Route path="/analyse" element={<ProtectedRoute><Analyse /></ProtectedRoute>} />
         <Route path="/parametres" element={<ProtectedRoute><Parametres /></ProtectedRoute>} />
       </Routes>
+      <Analytics />
     </BrowserRouter>
   )
 }
