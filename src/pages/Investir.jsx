@@ -14,6 +14,9 @@ import DiversificationScore from '../components/DiversificationScore'
 import TransactionForm from '../components/TransactionForm'
 import CryptoTransactionForm from '../components/CryptoTransactionForm'
 import { PnLLatentDisplay } from '../components/PnLLatentToggle'
+import FormulaireAchatVente from '../components/bourse/FormulaireAchatVente'
+import GraphiqueActif from '../components/bourse/GraphiqueActif'
+import { useComptes } from '../hooks/useComptes'
 import { usePositions } from '../hooks/usePositions'
 import { useCoursBourse } from '../hooks/useCoursBourse'
 import { useHistoriquePatrimoine } from '../hooks/useHistoriquePatrimoine'
@@ -26,27 +29,29 @@ import { useAuth } from '../context/AuthContext'
 import { calculerRentabilite } from '../lib/calculImmo'
 import { calculateXIRR, calculateCryptoRealizedPL, calculatePRU } from '../lib/financialCalculations'
 import { calculateDiversificationScore } from '../lib/diversificationScore'
-import { Plus, Trash2, TrendingUp, TrendingDown, Calculator, BarChart3, History, PlusCircle, MinusCircle } from 'lucide-react'
+import { Plus, Trash2, TrendingUp, Calculator, History, PlusCircle, MinusCircle } from 'lucide-react'
 
 function Investir() {
     const [ongletActif, setOngletActif] = useState('actions')
     const { user } = useAuth()
+    const { comptes } = useComptes()
+    const [selectedActifId, setSelectedActifId] = useState(null)
 
     // ============================================
     // ACTIONS & ETF STATE
     // ============================================
-    const { 
-        positions, 
-        transactions, 
+    const {
+        positions,
+        transactions,
         loading: loadingPositions,
-        ajouterPosition, 
+        ajouterPosition,
         supprimerPosition,
         ajouterTransaction,
         displayMode,
         toggleDisplayMode,
         calculerPnLRealise
     } = usePositions()
-    
+
     const symboles = positions.map((p) => p.symbole)
     const { cours, loading: loadingCours } = useCoursBourse(symboles)
     const [modalOuvert, setModalOuvert] = useState(false)
@@ -62,7 +67,7 @@ function Investir() {
     const handleSubmitPosition = async (e) => {
         e.preventDefault()
         if (!form.symbole || !form.quantite || !form.prix_achat_moyen) return
-        
+
         const { error } = await ajouterPosition({
             ...form,
             symbole: form.symbole.toUpperCase(),
@@ -77,7 +82,7 @@ function Investir() {
 
     const handleSubmitTransaction = async (transactionData) => {
         if (!transactionData.symbole || !transactionData.quantite || !transactionData.prix) return
-        
+
         const { error } = await ajouterTransaction(transactionData)
         if (!error) {
             setModalTransactionOuvert(false)
@@ -119,10 +124,10 @@ function Investir() {
     // ============================================
     // CRYPTO STATE
     // ============================================
-    const { 
-        positions: positionsCrypto, 
-        loading: loadingCrypto, 
-        ajouterPosition: ajouterCrypto, 
+    const {
+        positions: positionsCrypto,
+        loading: loadingCrypto,
+        ajouterPosition: ajouterCrypto,
         supprimerPosition: supprimerCrypto,
         ajouterTransaction: ajouterTransactionCrypto,
         supprimerTransaction: supprimerTransactionCrypto,
@@ -131,12 +136,12 @@ function Investir() {
         setPeriode: setPeriodeCrypto,
         sauvegarderValeurHistorique
     } = usePositionsCrypto()
-    
+
     const coinIds = positionsCrypto.map((p) => p.coin_id)
     const { cours: coursCrypto, loading: loadingCoursCrypto } = useCoursCrypto(coinIds)
     const { topCrypto, loading: loadingTopCrypto } = useTopCrypto(10)
-    
-    const valorisationCrypto = positionsCrypto.reduce((acc, p) => 
+
+    const valorisationCrypto = positionsCrypto.reduce((acc, p) =>
         acc + (coursCrypto[p.coin_id]?.eur || p.prix_achat_moyen) * p.quantite, 0)
     const investiCrypto = positionsCrypto.reduce((acc, p) => acc + p.prix_achat_moyen * p.quantite, 0)
     const plusMoinsValueCrypto = valorisationCrypto - investiCrypto
@@ -181,7 +186,7 @@ function Investir() {
 
     const handleSubmitCryptoTransaction = async (transactionData) => {
         if (!transactionData.coin_id || !transactionData.quantite || !transactionData.prix) return
-        
+
         const { error } = await ajouterTransactionCrypto(transactionData)
         if (!error) {
             setModalCryptoTransactionOuvert(false)
@@ -201,28 +206,28 @@ function Investir() {
                 <div className="flex gap-2">
                     {ongletActif === 'actions' && (
                         <>
-                            <button 
-                                onClick={() => setModalOuvert(true)} 
+                            <button
+                                onClick={() => setModalOuvert(true)}
                                 className="bg-emerald hover:bg-emerald-light text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition"
                             >
                                 <Plus size={18} /> Position
                             </button>
                             {positions.length > 0 && (
                                 <>
-                                    <button 
+                                    <button
                                         onClick={() => {
                                             setTransactionType('buy')
                                             setModalTransactionOuvert(true)
-                                        }} 
+                                        }}
                                         className="bg-navy hover:bg-navy-light text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition"
                                     >
                                         <PlusCircle size={18} /> Achat
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => {
                                             setTransactionType('sell')
                                             setModalTransactionOuvert(true)
-                                        }} 
+                                        }}
                                         className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition"
                                     >
                                         <MinusCircle size={18} /> Vente
@@ -233,21 +238,21 @@ function Investir() {
                     )}
                     {ongletActif === 'crypto' && (
                         <>
-                            <button 
+                            <button
                                 onClick={() => {
                                     setCryptoTransactionType('buy')
                                     setModalCryptoTransactionOuvert(true)
-                                }} 
+                                }}
                                 className="bg-navy hover:bg-navy-light text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition"
                             >
                                 <PlusCircle size={18} /> Achat Crypto
                             </button>
                             {positionsCrypto.length > 0 && (
-                                <button 
+                                <button
                                     onClick={() => {
                                         setCryptoTransactionType('sell')
                                         setModalCryptoTransactionOuvert(true)
-                                    }} 
+                                    }}
                                     className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition"
                                 >
                                     <MinusCircle size={18} /> Vente Crypto
@@ -278,6 +283,22 @@ function Investir() {
                  ============================================ */}
             {ongletActif === 'actions' && (
                 <div className="space-y-6">
+                    {/* Nouveau Module Bourse (Style Finary) */}
+                    <div className="bg-[#0f172a] rounded-3xl p-6 shadow-sm mb-6 border border-slate-800">
+                        <div className="flex items-center gap-2 mb-6">
+                            <TrendingUp size={24} className="text-indigo-500" />
+                            <h2 className="text-white text-2xl font-bold">Trading & Analyse</h2>
+                        </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <FormulaireAchatVente 
+                                compteId={comptes.find(c => c.type === 'PEA' || c.type === 'CTO')?.id} 
+                                onSelectActif={setSelectedActifId}
+                                onTransactionSuccess={() => alert('Ordre enregistré avec succès !')} 
+                            />
+                            <GraphiqueActif actifId={selectedActifId} />
+                        </div>
+                    </div>
+
                     {/* Portfolio Evolution Chart */}
                     {!loadingPositions && !loadingCours && positions.length > 0 && (
                         <EvolutionPatrimoineChart historique={historique} periode={periode} setPeriode={setPeriode} />
@@ -408,7 +429,7 @@ function Investir() {
                                     />
                                 )}
                             </div>
-                            
+
                             <div className="col-span-3">
                                 <div className="bg-white rounded-xl shadow-sm divide-y">
                                     {positions.map((p) => {
@@ -418,7 +439,7 @@ function Investir() {
                                         const valeurInvestie = p.prix_achat_moyen * p.quantite
                                         const plusMoinsValue = valeurActuelle - valeurInvestie
                                         const pourcentage = valeurInvestie > 0 ? (plusMoinsValue / valeurInvestie) * 100 : 0
-                                        
+
                                         // Calculate XIRR for this position
                                         const positionTransactions = transactions.filter(t => t.symbole?.toUpperCase() === p.symbole?.toUpperCase())
                                         const positionCashFlows = positionTransactions.map(t => ({
@@ -426,7 +447,7 @@ function Investir() {
                                             amount: t.type === 'buy' ? -t.quantity * t.price : t.quantity * t.price
                                         }))
                                         const xirr = calculateXIRR(positionCashFlows)
-                                        
+
                                         return (
                                             <div key={p.id} className="flex items-center justify-between px-5 py-4">
                                                 <div className="flex items-center gap-3">
@@ -482,10 +503,10 @@ function Investir() {
             {ongletActif === 'crypto' && (
                 <div className="space-y-6">
                     {/* Crypto Portfolio Chart - PLACED AT THE TOP */}
-                    <CryptoPortfolioChart 
-                        data={historiqueCrypto} 
-                        periode={periodeCrypto} 
-                        setPeriode={setPeriodeCrypto} 
+                    <CryptoPortfolioChart
+                        data={historiqueCrypto}
+                        periode={periodeCrypto}
+                        setPeriode={setPeriodeCrypto}
                     />
 
                     {/* Crypto Metrics */}
@@ -693,9 +714,9 @@ function Investir() {
             </Modal>
 
             {/* Modal ajout transaction actions */}
-            <Modal 
-                isOpen={modalTransactionOuvert} 
-                onClose={() => setModalTransactionOuvert(false)} 
+            <Modal
+                isOpen={modalTransactionOuvert}
+                onClose={() => setModalTransactionOuvert(false)}
                 title={`${transactionType === 'buy' ? 'Achat' : 'Vente'} d'actions/ETF`}
             >
                 <TransactionForm
@@ -707,9 +728,9 @@ function Investir() {
             </Modal>
 
             {/* Modal ajout transaction crypto */}
-            <Modal 
-                isOpen={modalCryptoTransactionOuvert} 
-                onClose={() => setModalCryptoTransactionOuvert(false)} 
+            <Modal
+                isOpen={modalCryptoTransactionOuvert}
+                onClose={() => setModalCryptoTransactionOuvert(false)}
                 title={`${cryptoTransactionType === 'buy' ? 'Achat' : 'Vente'} de crypto`}
             >
                 <CryptoTransactionForm
