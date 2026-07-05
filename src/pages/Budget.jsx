@@ -9,6 +9,11 @@ import { useCategories } from '../hooks/useCategories'
 import { useComptes } from '../hooks/useComptes'
 import { useBudgets } from '../hooks/useBudgets'
 import { Plus, Trash2, ChevronLeft, ChevronRight, Settings2 } from 'lucide-react'
+import BudgetGraphiqueSelector from '../components/budget/BudgetGraphiqueSelector'
+import BudgetVsReelChart from '../components/budget/BudgetVsReelChart'
+import EvolutionTempsChart from '../components/budget/EvolutionTempsChart'
+import JaugeEpargneChart from '../components/budget/JaugeEpargneChart'
+import Top5DepensesChart from '../components/budget/Top5DepensesChart'
 
 const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
@@ -30,6 +35,18 @@ function Budget() {
         recurrente: false, jour_recurrence: 1,
     })
     const [budgetForm, setBudgetForm] = useState({})
+    
+    const [graphiquesVisibles, setGraphiquesVisibles] = useState(() => {
+        const saved = localStorage.getItem('fondora_budget_graphiques');
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                return ['budget_vs_reel', 'evolution_temps', 'objectif_epargne', 'top5_depenses'];
+            }
+        }
+        return ['budget_vs_reel', 'evolution_temps', 'objectif_epargne', 'top5_depenses'];
+    });
 
     const changerMois = (delta) => {
         let m = mois + delta, a = annee
@@ -119,6 +136,27 @@ function Budget() {
                     <p className={`font-bold text-xl ${solde >= 0 ? 'text-navy' : 'text-red-500'}`}>{formatMontant(solde)}</p>
                 </div>
             </div>
+
+            {/* Analyses visuelles */}
+            <section className="mb-6">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-bold text-slate-900">Analyses visuelles</h2>
+                    <BudgetGraphiqueSelector graphiquesVisibles={graphiquesVisibles} setGraphiquesVisibles={setGraphiquesVisibles} />
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {graphiquesVisibles.includes('budget_vs_reel') && <BudgetVsReelChart transactions={transactions} budgets={budgets} categories={categories} />}
+                    {graphiquesVisibles.includes('evolution_temps') && <EvolutionTempsChart transactions={transactions} />}
+                    {graphiquesVisibles.includes('objectif_epargne') && <JaugeEpargneChart epargneRealisee={solde} />}
+                    {graphiquesVisibles.includes('top5_depenses') && <Top5DepensesChart transactions={transactions} categories={categories} />}
+                </div>
+                
+                {graphiquesVisibles.length === 0 && (
+                    <div className="text-center py-12 text-slate-400 bg-white rounded-xl shadow-sm border border-gray-100 mt-4">
+                        Aucun graphique affiché. Cliquez sur ⚙️ pour en ajouter.
+                    </div>
+                )}
+            </section>
 
             {/* Graphiques */}
             <div className="grid grid-cols-2 gap-4 mb-6">

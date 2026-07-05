@@ -1,0 +1,83 @@
+import { useState } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+export default function EvolutionTempsChart({ transactions = [] }) {
+    const [periode, setPeriode] = useState('6M');
+
+    const hasData = transactions && transactions.length > 0;
+
+    let data = [];
+    if (hasData) {
+        const moisMap = {};
+        transactions.forEach(t => {
+            const date = new Date(t.date);
+            const mois = date.toLocaleString('fr-FR', { month: 'short' });
+            if (!moisMap[mois]) moisMap[mois] = { name: mois, depenses: 0, revenus: 0, sortDate: date };
+            if (t.type === 'depense') moisMap[mois].depenses += Number(t.montant);
+            else if (t.type === 'revenu') moisMap[mois].revenus += Number(t.montant);
+        });
+        data = Object.values(moisMap).sort((a, b) => a.sortDate - b.sortDate);
+    }
+    
+    if (data.length === 0) {
+        data = [
+            { name: 'Fév', depenses: 2100, revenus: 3000 },
+            { name: 'Mar', depenses: 2300, revenus: 3000 },
+            { name: 'Avr', depenses: 1950, revenus: 3100 },
+            { name: 'Mai', depenses: 2500, revenus: 3100 },
+            { name: 'Juin', depenses: 2200, revenus: 3200 },
+            { name: 'Juil', depenses: 1585, revenus: 3200 },
+        ];
+    }
+
+    const formatMontant = (m) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(m);
+
+    const CustomTooltip = ({ active, payload, label }) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="bg-white p-3 border border-gray-100 shadow-lg rounded-xl">
+                    <p className="font-semibold text-navy mb-2">{label}</p>
+                    {payload.map((entry, index) => (
+                        <p key={`item-${index}`} className="text-sm font-medium" style={{ color: entry.color }}>
+                            {entry.name} : {formatMontant(entry.value)}
+                        </p>
+                    ))}
+                </div>
+            );
+        }
+        return null;
+    };
+
+    return (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="text-navy font-semibold">Évolution dans le temps</h3>
+                <div className="flex gap-2">
+                    {['3M', '6M', '1Y'].map(p => (
+                        <button 
+                            key={p}
+                            onClick={() => setPeriode(p)}
+                            className={`text-xs px-3 py-1 rounded-full font-medium transition ${periode === p ? 'bg-navy text-white' : 'bg-gray-100 text-slate-600 hover:bg-gray-200'}`}
+                        >
+                            {p}
+                        </button>
+                    ))}
+                </div>
+            </div>
+            
+            <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(val) => `€${val}`} />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                        <Line type="monotone" dataKey="revenus" name="Revenus" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} fillOpacity={0.1} />
+                        <Line type="monotone" dataKey="depenses" name="Dépenses" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} fillOpacity={0.1} />
+                    </LineChart>
+                </ResponsiveContainer>
+            </div>
+        </div>
+    );
+}
