@@ -53,6 +53,18 @@ export function usePositions() {
         return { error }
     }
 
+    const modifierPosition = async (id, updates) => {
+        if (!user) return { error: new Error('User not authenticated') }
+        
+        const { error } = await supabase
+            .from('positions_financieres')
+            .update(updates)
+            .eq('id', id)
+            .eq('user_id', user.id)
+        if (!error) await charger()
+        return { error }
+    }
+
     const supprimerPosition = async (id) => {
         if (!user) return { error: new Error('User not authenticated') }
         
@@ -150,6 +162,7 @@ export function usePositions() {
         transactions,
         loading,
         ajouterPosition,
+        modifierPosition,
         supprimerPosition,
         ajouterTransaction,
         supprimerTransaction,

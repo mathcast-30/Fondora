@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Wallet, PieChart, TrendingUp, BarChart3, Settings, LogOut } from 'lucide-react'
+import { LayoutDashboard, Wallet, PieChart, TrendingUp, BarChart3, ShieldAlert, Settings, LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 const navItems = [
@@ -8,6 +8,7 @@ const navItems = [
     { to: '/patrimoine', label: 'Patrimoine', icon: PieChart },
     { to: '/investir', label: 'Investir', icon: TrendingUp },
     { to: '/analyse', label: 'Analyse', icon: BarChart3 },
+    { to: '/analyse-frais', label: 'Analyse Frais', icon: ShieldAlert },
 ]
 
 function Sidebar() {

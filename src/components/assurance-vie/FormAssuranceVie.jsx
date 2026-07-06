@@ -361,6 +361,9 @@ export default function FormAssuranceVie({
                                         setFormContrat({ ...formContrat, frais_gestion_enveloppe: e.target.value })
                                     }
                                 />
+                                {parseFloat(formContrat.frais_gestion_enveloppe) > 1.00 && (
+                                    <p className="text-red-500 text-xs mt-1 font-semibold">⚠️ Attention, ce contrat présente des frais d'enveloppe très élevés.</p>
+                                )}
                             </div>
                             <button style={s.btnPrimary} type="submit" disabled={submitting}>
                                 {submitting ? 'Création…' : 'Créer le contrat'}

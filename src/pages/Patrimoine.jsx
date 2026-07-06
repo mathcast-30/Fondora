@@ -17,7 +17,15 @@ const COULEURS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec489
 function Patrimoine() {
     const { comptes, loading, ajouterCompte, supprimerCompte } = useComptes()
     const [modalOuvert, setModalOuvert] = useState(false)
-    const [form, setForm] = useState({ nom: '', type: 'Compte courant', solde: '', devise: 'EUR', couleur: COULEURS[0] })
+    const [form, setForm] = useState({ 
+        nom: '', 
+        type: 'Compte courant', 
+        solde: '', 
+        devise: 'EUR', 
+        couleur: COULEURS[0],
+        frais_gestion_enveloppe: 0.60,
+        frais_courtage_pourcentage: 0.20
+    })
 
     // Valorisation investissements
     const { positions } = usePositions()
@@ -36,9 +44,14 @@ function Patrimoine() {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        const { error } = await ajouterCompte({ ...form, solde: parseFloat(form.solde) || 0 })
+        const { error } = await ajouterCompte({ 
+            ...form, 
+            solde: parseFloat(form.solde) || 0,
+            frais_gestion_enveloppe: parseFloat(form.frais_gestion_enveloppe) || 0,
+            frais_courtage_pourcentage: parseFloat(form.frais_courtage_pourcentage) || 0
+        })
         if (!error) {
-            setForm({ nom: '', type: 'Compte courant', solde: '', devise: 'EUR', couleur: COULEURS[0] })
+            setForm({ nom: '', type: 'Compte courant', solde: '', devise: 'EUR', couleur: COULEURS[0], frais_gestion_enveloppe: 0.60, frais_courtage_pourcentage: 0.20 })
             setModalOuvert(false)
         }
     }
