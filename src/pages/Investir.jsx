@@ -658,6 +658,7 @@ function Investir() {
             {/* Modal FormulaireAchatVente */}
             <Modal isOpen={modalAchatVenteOuvert} onClose={() => setModalAchatVenteOuvert(false)} title="Passer un ordre">
                 <FormulaireAchatVente
+                    key={modalAchatVenteOuvert ? `open-${typeOrdre}` : 'closed'}
                     typeInitial={typeOrdre}
                     positionsExistantes={positions}
                     compteId={comptes.find(c => c.type === 'PEA' || c.type === 'CTO')?.id}

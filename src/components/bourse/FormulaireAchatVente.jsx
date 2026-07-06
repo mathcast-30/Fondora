@@ -8,6 +8,7 @@ export default function FormulaireAchatVente({ compteId, onTransactionSuccess, o
   const [type, setType] = useState(typeInitial);
   const [quantite, setQuantite] = useState('');
   const [prix, setPrix] = useState('');
+  const [dateTransaction, setDateTransaction] = useState(new Date().toISOString().split('T')[0]);
   const [loadingEnrich, setLoadingEnrich] = useState(false);
   const [loadingPrix, setLoadingPrix] = useState(false);
 
@@ -18,43 +19,80 @@ export default function FormulaireAchatVente({ compteId, onTransactionSuccess, o
     setRecherche('');
     setQuantite('');
     setPrix('');
+    setDateTransaction(new Date().toISOString().split('T')[0]);
   }, [typeInitial]);
 
-  // Recherche par nom ET ticker
+  // Recherche par nom ET ticker (uniquement pour ACHAT)
   useEffect(() => {
-    if (recherche.length < 2) { setResultats([]); return; }
+    if (type === 'VENTE') {
+        setResultats([]);
+        return;
+    }
+    
+    if (recherche.length < 2) { 
+        setResultats([]); 
+        return; 
+    }
 
     const chercherLocalement = async () => {
-      if (type === 'VENTE') {
-        // En mode vente : chercher uniquement dans les positions existantes
-        const filtered = positionsExistantes.filter(p =>
-          p.symbole.toLowerCase().includes(recherche.toLowerCase()) ||
-          (p.nom && p.nom.toLowerCase().includes(recherche.toLowerCase()))
-        );
-        setResultats(filtered.map(p => ({
-          id: p.id,
-          ticker: p.symbole,
-          nom: p.nom || p.symbole,
-          devise: p.devise || 'EUR',
-          logo_url: p.logo_url || null,
-          quantite_disponible: p.quantite,
-          prix_achat_moyen: p.prix_achat_moyen
-        })));
-      } else {
-        // En mode achat : chercher dans le catalogue global
-        const { data } = await supabase
-          .from('catalogue_actifs')
-          .select('*')
-          .or(`nom.ilike.%${recherche}%,ticker.ilike.%${recherche}%`)
-          .limit(8);
-        setResultats(data || []);
-      }
+      const { data } = await supabase
+        .from('catalogue_actifs')
+        .select('*')
+        .or(`nom.ilike.%${recherche}%,ticker.ilike.%${recherche}%`)
+        .limit(8);
+      setResultats(data || []);
     };
     chercherLocalement();
-  }, [recherche, type, positionsExistantes]);
+  }, [recherche, type]);
 
-  // Sélectionner un actif et récupérer son prix actuel
-  const handleSelectActif = async (actif) => {
+  // Fetch price when asset or date changes
+  useEffect(() => {
+    if (!actifSelectionne) return;
+
+    const fetchPrix = async () => {
+      setLoadingPrix(true);
+      
+      try {
+        const { data: histData } = await supabase
+          .from('historique_prix_actifs')
+          .select('prix_cloture')
+          .eq('actif_id', actifSelectionne.id)
+          .eq('date', dateTransaction)
+          .single();
+          
+        if (histData?.prix_cloture) {
+          setPrix(histData.prix_cloture.toString());
+        } else {
+          const today = new Date().toISOString().split('T')[0];
+          if (dateTransaction === today) {
+            const { data: cacheData } = await supabase
+              .from('cache_des_prix_des_actifs')
+              .select('prix')
+              .eq('ticker', actifSelectionne.ticker)
+              .single();
+              
+            if (cacheData?.prix) {
+              setPrix(cacheData.prix.toString());
+            } else if (type === 'VENTE' && actifSelectionne.prix_achat_moyen) {
+              setPrix(actifSelectionne.prix_achat_moyen.toString());
+            } else {
+              setPrix('');
+            }
+          } else {
+            setPrix('');
+          }
+        }
+      } catch (e) {
+        setPrix('');
+      }
+      setLoadingPrix(false);
+    };
+
+    fetchPrix();
+  }, [actifSelectionne, dateTransaction, type]);
+
+  // Sélectionner un actif
+  const handleSelectActif = (actif) => {
     setActifSelectionne(actif);
     setResultats([]);
     if (onSelectActif) onSelectActif(actif.id);
@@ -63,26 +101,6 @@ export default function FormulaireAchatVente({ compteId, onTransactionSuccess, o
     if (type === 'VENTE' && actif.quantite_disponible) {
       setQuantite(actif.quantite_disponible.toString());
     }
-
-    // Récupérer le prix actuel depuis le cache
-    setLoadingPrix(true);
-    try {
-      const { data } = await supabase
-        .from('cache_des_prix_des_actifs')
-        .select('prix')
-        .eq('ticker', actif.ticker)
-        .single();
-
-      if (data?.prix) {
-        setPrix(data.prix.toString());
-      } else if (type === 'VENTE' && actif.prix_achat_moyen) {
-        // Fallback sur le PRU si pas de prix en cache
-        setPrix(actif.prix_achat_moyen.toString());
-      }
-    } catch (e) {
-      // Pas de prix en cache, l'utilisateur saisit manuellement
-    }
-    setLoadingPrix(false);
   };
 
   const ajouterNouveauTickerExotique = async () => {
@@ -94,8 +112,7 @@ export default function FormulaireAchatVente({ compteId, onTransactionSuccess, o
     });
 
     if (res.data?.success) {
-      await handleSelectActif(res.data.asset);
-      setResultats([]);
+      handleSelectActif(res.data.asset);
     } else {
       alert("Impossible de trouver ce symbole sur les marchés mondiaux.");
     }
@@ -120,6 +137,7 @@ export default function FormulaireAchatVente({ compteId, onTransactionSuccess, o
       type_transaction: type,
       quantite: parseFloat(quantite),
       prix_unitaire: parseFloat(prix),
+      date: dateTransaction,
       user_id: userData.user.id
     });
 
@@ -158,61 +176,99 @@ export default function FormulaireAchatVente({ compteId, onTransactionSuccess, o
 
       {!actifSelectionne ? (
         <div>
-          <label className="text-sm text-slate-400">
-            {type === 'VENTE' ? 'Chercher dans tes positions' : 'Rechercher une Action ou un ETF'}
-          </label>
-          <input
-            type="text"
-            className="w-full bg-[#161b2c] p-3 rounded-xl mt-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            placeholder={type === 'VENTE' ? 'Ex: AAPL, Apple...' : 'Ex: Apple, LVMH, Amundi...'}
-            value={recherche}
-            onChange={(e) => setRecherche(e.target.value)}
-          />
+          {type === 'VENTE' ? (
+            <div className="mt-2 space-y-2">
+              <label className="text-sm text-slate-400">Sélectionne une position à vendre</label>
+              {positionsExistantes.length === 0 ? (
+                <p className="text-xs text-slate-500 text-center mt-2">
+                  Tu ne possèdes aucune position à vendre.
+                </p>
+              ) : (
+                positionsExistantes.map(p => {
+                  const actifVente = {
+                    id: p.id,
+                    ticker: p.symbole,
+                    nom: p.nom || p.symbole,
+                    devise: p.devise || 'EUR',
+                    logo_url: p.logo_url || null,
+                    quantite_disponible: p.quantite,
+                    prix_achat_moyen: p.prix_achat_moyen
+                  };
+                  return (
+                    <button
+                      type="button"
+                      key={p.id}
+                      onClick={(e) => { e.preventDefault(); handleSelectActif(actifVente); }}
+                      className="w-full text-left bg-[#1c233a] p-3 rounded-xl flex items-center justify-between hover:bg-[#252e4c] transition"
+                    >
+                      <div className="flex items-center gap-3">
+                        {actifVente.logo_url ? (
+                          <img src={actifVente.logo_url} className="w-7 h-7 rounded-full bg-white object-contain" alt="logo" />
+                        ) : (
+                          <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold">
+                            {actifVente.ticker?.slice(0, 2)}
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-semibold">{actifVente.nom}</p>
+                          <p className="text-xs text-slate-400">{actifVente.ticker}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-emerald-400">{actifVente.quantite_disponible} dispo.</p>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          ) : (
+            <>
+              <label className="text-sm text-slate-400">Rechercher une Action ou un ETF</label>
+              <input
+                type="text"
+                className="w-full bg-[#161b2c] p-3 rounded-xl mt-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                placeholder="Ex: Apple, LVMH, Amundi..."
+                value={recherche}
+                onChange={(e) => setRecherche(e.target.value)}
+              />
 
-          <div className="mt-2 space-y-1">
-            {resultats.map(a => (
-              <button
-                type="button"
-                key={a.id}
-                onClick={() => handleSelectActif(a)}
-                className="w-full text-left bg-[#1c233a] p-3 rounded-xl flex items-center gap-3 hover:bg-[#252e4c] transition"
-              >
-                {a.logo_url ? (
-                  <img src={a.logo_url} className="w-7 h-7 rounded-full bg-white object-contain" alt="logo" />
-                ) : (
-                  <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold">
-                    {a.ticker?.slice(0, 2)}
-                  </div>
-                )}
-                <div className="flex-1">
-                  <p className="font-semibold">{a.nom}</p>
-                  <p className="text-xs text-slate-400">
-                    {a.ticker} • {a.devise}
-                    {type === 'VENTE' && a.quantite_disponible && (
-                      <span className="ml-2 text-emerald-400">{a.quantite_disponible} parts disponibles</span>
+              <div className="mt-2 space-y-1">
+                {resultats.map(a => (
+                  <button
+                    type="button"
+                    key={a.id}
+                    onClick={(e) => { e.preventDefault(); handleSelectActif(a); }}
+                    className="w-full text-left bg-[#1c233a] p-3 rounded-xl flex items-center gap-3 hover:bg-[#252e4c] transition"
+                  >
+                    {a.logo_url ? (
+                      <img src={a.logo_url} className="w-7 h-7 rounded-full bg-white object-contain" alt="logo" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold">
+                        {a.ticker?.slice(0, 2)}
+                      </div>
                     )}
-                  </p>
-                </div>
-              </button>
-            ))}
+                    <div className="flex-1">
+                      <p className="font-semibold">{a.nom}</p>
+                      <p className="text-xs text-slate-400">
+                        {a.ticker} • {a.devise}
+                      </p>
+                    </div>
+                  </button>
+                ))}
 
-            {/* Bouton enrichissement uniquement en mode achat */}
-            {type === 'ACHAT' && recherche.length >= 2 && resultats.length === 0 && (
-              <button
-                type="button"
-                onClick={ajouterNouveauTickerExotique}
-                className="w-full text-center text-xs text-emerald-400 p-2 border border-dashed border-emerald-500/30 rounded-xl mt-2 hover:bg-emerald-500/10 transition"
-              >
-                {loadingEnrich ? "Recherche mondiale..." : `Ajouter le ticker "${recherche.toUpperCase()}" via Finnhub`}
-              </button>
-            )}
-
-            {type === 'VENTE' && recherche.length >= 2 && resultats.length === 0 && (
-              <p className="text-xs text-slate-500 text-center mt-2">
-                Aucune position trouvée. Tu ne peux vendre que ce que tu possèdes.
-              </p>
-            )}
-          </div>
+                {recherche.length >= 2 && resultats.length === 0 && (
+                  <button
+                    type="button"
+                    onClick={ajouterNouveauTickerExotique}
+                    className="w-full text-center text-xs text-emerald-400 p-2 border border-dashed border-emerald-500/30 rounded-xl mt-2 hover:bg-emerald-500/10 transition"
+                  >
+                    {loadingEnrich ? "Recherche mondiale..." : `Ajouter le ticker "${recherche.toUpperCase()}" via Finnhub`}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <form onSubmit={soumettreTransaction} className="space-y-4">
@@ -236,6 +292,18 @@ export default function FormulaireAchatVente({ compteId, onTransactionSuccess, o
             >
               Changer
             </button>
+          </div>
+
+          {/* Date de transaction */}
+          <div>
+            <label className="text-xs text-slate-400">Date de transaction</label>
+            <input
+              type="date"
+              required
+              className="w-full bg-[#161b2c] p-3 rounded-xl mt-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              value={dateTransaction}
+              onChange={e => setDateTransaction(e.target.value)}
+            />
           </div>
 
           {/* Quantité */}
