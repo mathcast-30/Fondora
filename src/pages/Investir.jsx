@@ -16,6 +16,8 @@ import CryptoTransactionForm from '../components/CryptoTransactionForm'
 import { PnLLatentDisplay } from '../components/PnLLatentToggle'
 import FormulaireAchatVente from '../components/bourse/FormulaireAchatVente'
 import GraphiqueActif from '../components/bourse/GraphiqueActif'
+import AssuranceVieCard from '../components/assurance-vie/AssuranceVieCard'
+import FormAssuranceVie from '../components/assurance-vie/FormAssuranceVie'
 import { useComptes } from '../hooks/useComptes'
 import { usePositions } from '../hooks/usePositions'
 import { useCoursBourse } from '../hooks/useCoursBourse'
@@ -25,15 +27,16 @@ import { usePositionsCrypto } from '../hooks/usePositionsCrypto'
 import { useCoursCrypto } from '../hooks/useCoursCrypto'
 import { useTopCrypto } from '../hooks/useTopCrypto'
 import { useBiensImmobiliers } from '../hooks/useBiensImmobiliers'
+import { useAssurancesVie } from '../hooks/useAssurancesVie'
 import { useAuth } from '../context/AuthContext'
 import { calculerRentabilite } from '../lib/calculImmo'
 import { calculateXIRR, calculateCryptoRealizedPL, calculatePRU } from '../lib/financialCalculations'
 import { calculateDiversificationScore } from '../lib/diversificationScore'
-import { Plus, Trash2, TrendingUp, Calculator, History, PlusCircle, MinusCircle } from 'lucide-react'
+import { Plus, Trash2, TrendingUp, Calculator, History, PlusCircle, MinusCircle, ShieldCheck } from 'lucide-react'
 
 function Investir() {
     const [ongletActif, setOngletActif] = useState('actions')
-    const { user } = useAuth()
+    const { user, isIncognito, profile } = useAuth()
     const { comptes } = useComptes()
     const [selectedActifId, setSelectedActifId] = useState(null)
     const [typeOrdre, setTypeOrdre] = useState('ACHAT')
@@ -175,6 +178,30 @@ function Investir() {
     const [modalCryptoTransactionOuvert, setModalCryptoTransactionOuvert] = useState(false)
     const [cryptoTransactionType, setCryptoTransactionType] = useState('buy')
 
+    // ============================================
+    // ASSURANCE VIE STATE
+    // ============================================
+    const {
+        contrats: contratsAV,
+        loading: loadingAV,
+        metriquesContrat,
+        valeurTotaleAV,
+        ajouterContrat: ajouterContratAV,
+        supprimerContrat: supprimerContratAV,
+        ajouterVersement: ajouterVersementAV,
+        upsertValorisation: upsertValorisationAV,
+        upsertPositionUC: upsertPositionUCAV,
+    } = useAssurancesVie()
+
+    // Contrat sélectionné pour le formulaire (null = création)
+    const [contratAVSelectionne, setContratAVSelectionne] = useState(null)
+    const [modalAVOuvert, setModalAVOuvert] = useState(false)
+
+    const ouvrirFormAV = (contrat = null) => {
+        setContratAVSelectionne(contrat)
+        setModalAVOuvert(true)
+    }
+
     const cashFlowTotal = biens.reduce((acc, b) => {
         const { cashFlowMensuel } = calculerRentabilite(b)
         return acc + cashFlowMensuel
@@ -239,12 +266,20 @@ function Investir() {
                             <Plus size={18} /> Ajouter un bien
                         </button>
                     )}
+                    {ongletActif === 'assurance-vie' && (
+                        <button
+                            onClick={() => ouvrirFormAV(null)}
+                            className="bg-emerald hover:bg-emerald-light text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition"
+                        >
+                            <Plus size={18} /> Nouveau contrat AV
+                        </button>
+                    )}
                 </div>
             </div>
 
             {/* Onglets */}
             <div className="flex gap-2 mb-6 bg-white p-1 rounded-lg shadow-sm w-fit">
-                {[['actions', 'Actions & ETF'], ['crypto', 'Crypto'], ['immobilier', 'Immobilier']].map(([val, label]) => (
+                {[['actions', 'Actions & ETF'], ['crypto', 'Crypto'], ['immobilier', 'Immobilier'], ['assurance-vie', 'Assurance Vie']].map(([val, label]) => (
                     <button key={val} onClick={() => setOngletActif(val)}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition ${ongletActif === val ? 'bg-navy text-white' : 'text-gray-500'}`}>
                         {label}
@@ -687,6 +722,97 @@ function Investir() {
             <Modal isOpen={modalImmoOuvert} onClose={() => setModalImmoOuvert(false)} title="Ajouter un bien immobilier">
                 <FormBienImmobilier onSubmit={handleAjouterBien} onAnnuler={() => setModalImmoOuvert(false)} />
             </Modal>
+
+            {/* ============================================ */}
+            {/* ONGLET : ASSURANCE VIE                      */}
+            {/* ============================================ */}
+            {ongletActif === 'assurance-vie' && (
+                <div>
+                    {/* KPI global */}
+                    <div
+                        style={{
+                            background: 'linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(139,92,246,0.08) 100%)',
+                            border: '1px solid rgba(99,102,241,0.2)',
+                            borderRadius: '16px',
+                            padding: '20px 24px',
+                            marginBottom: '24px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '16px',
+                        }}
+                    >
+                        <ShieldCheck size={32} color="#6366f1" />
+                        <div>
+                            <p style={{ color: '#64748b', fontSize: '13px', margin: 0 }}>Patrimoine Assurance Vie</p>
+                            <p style={{ color: '#f1f5f9', fontSize: '28px', fontWeight: 800, margin: '4px 0 0', letterSpacing: '-0.5px' }}>
+                                {isIncognito ? '••••••' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(valeurTotaleAV)}
+                            </p>
+                            <p style={{ color: '#64748b', fontSize: '12px', margin: '2px 0 0' }}>
+                                {contratsAV.length} contrat{contratsAV.length !== 1 ? 's' : ''}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Liste des contrats */}
+                    {loadingAV ? (
+                        <p style={{ color: '#64748b', textAlign: 'center', padding: '40px' }}>Chargement…</p>
+                    ) : contratsAV.length === 0 ? (
+                        <div
+                            style={{
+                                textAlign: 'center',
+                                padding: '60px 20px',
+                                color: '#475569',
+                                border: '2px dashed rgba(255,255,255,0.08)',
+                                borderRadius: '16px',
+                            }}
+                        >
+                            <ShieldCheck size={48} color="#334155" style={{ marginBottom: '16px' }} />
+                            <p style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>Aucun contrat AV</p>
+                            <p style={{ fontSize: '13px', marginBottom: '20px' }}>
+                                Ajoutez votre premier contrat d'assurance vie pour commencer le suivi.
+                            </p>
+                            <button
+                                onClick={() => ouvrirFormAV(null)}
+                                style={{
+                                    padding: '10px 24px',
+                                    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                                    border: 'none', borderRadius: '10px',
+                                    color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer',
+                                }}
+                            >
+                                + Ajouter un contrat
+                            </button>
+                        </div>
+                    ) : (
+                        contratsAV.map((contrat) => {
+                            const metriques = metriquesContrat(contrat.id)
+                            if (!metriques) return null
+                            return (
+                                <AssuranceVieCard
+                                    key={contrat.id}
+                                    metriques={metriques}
+                                    isIncognito={isIncognito}
+                                    situationFamiliale={profile?.situation_familiale || 'celibataire'}
+                                    onOuvrirForm={ouvrirFormAV}
+                                    onSupprimer={supprimerContratAV}
+                                />
+                            )
+                        })
+                    )}
+                </div>
+            )}
+
+            {/* Modal Assurance Vie (création + gestion) */}
+            {modalAVOuvert && (
+                <FormAssuranceVie
+                    contrat={contratAVSelectionne}
+                    onAjouterContrat={ajouterContratAV}
+                    onAjouterVersement={ajouterVersementAV}
+                    onUpsertValorisation={upsertValorisationAV}
+                    onUpsertPositionUC={upsertPositionUCAV}
+                    onClose={() => setModalAVOuvert(false)}
+                />
+            )}
         </Layout>
     )
 }
