@@ -1,18 +1,16 @@
 import React from 'react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
 import { ShieldAlert, AlertTriangle, TrendingDown } from 'lucide-react'
-import Layout from '../components/Layout'
-import { useAnalyseFrais } from '../hooks/useAnalyseFrais'
+import { useAnalyseFrais } from '../../hooks/useAnalyseFrais'
 
-export default function AnalyseFrais() {
+export default function AnalyseFraisTab() {
     const { kpis, simulateur, loading, donnees } = useAnalyseFrais()
 
     const formatMontant = (m) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(m)
     const formatPourcent = (p) => new Intl.NumberFormat('fr-FR', { style: 'percent', minimumFractionDigits: 2 }).format(p)
 
-    // Extraction des points clés à 10, 20 et 30 ans
+    // Extraction des points clés à 20 et 30 ans
     const getPoint = (annee) => simulateur.find(s => s.annee === annee) || { manqueAGagner: 0 }
-    const manque10Ans = getPoint(10).manqueAGagner
     const manque20Ans = getPoint(20).manqueAGagner
     const manque30Ans = getPoint(30).manqueAGagner
 
@@ -20,16 +18,16 @@ export default function AnalyseFrais() {
     const fondsToxiques = donnees.positions.filter(p => (p.frais_ter_produit || 0) + (p.comptes?.frais_gestion_enveloppe || 0) > 1.5)
 
     return (
-        <Layout>
-            <div className="mb-6">
-                <h1 className="text-navy text-3xl font-bold mb-1">Analyseur de Frais & Manque à Gagner</h1>
-                <p className="text-gray-500">Expose l'impact destructeur de tes frais sur le long terme.</p>
+        <div className="space-y-6">
+            <div className="mb-4">
+                <h2 className="text-2xl font-bold text-navy">Analyseur de Frais & Simulateur</h2>
+                <p className="text-gray-500 text-sm mt-1">Expose l'impact de tes frais d'enveloppe et de produit sur le long terme.</p>
             </div>
 
             {loading ? (
                 <div className="flex justify-center items-center h-64 text-gray-500">Calcul en cours...</div>
             ) : (
-                <div className="space-y-6">
+                <>
                     {/* KPI Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
@@ -139,8 +137,8 @@ export default function AnalyseFrais() {
                             </div>
                         </div>
                     )}
-                </div>
+                </>
             )}
-        </Layout>
+        </div>
     )
 }

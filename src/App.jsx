@@ -7,7 +7,6 @@ import Budget from './pages/Budget'
 import Patrimoine from './pages/Patrimoine'
 import Investir from './pages/Investir'
 import Analyse from './pages/Analyse'
-import AnalyseFrais from './pages/AnalyseFrais'
 import Parametres from './pages/Parametres'
 import Onboarding from './pages/Onboarding'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -24,7 +23,6 @@ function App() {
         <Route path="/patrimoine" element={<ProtectedRoute><Patrimoine /></ProtectedRoute>} />
         <Route path="/investir" element={<ProtectedRoute><Investir /></ProtectedRoute>} />
         <Route path="/analyse" element={<ProtectedRoute><Analyse /></ProtectedRoute>} />
-        <Route path="/analyse-frais" element={<ProtectedRoute><AnalyseFrais /></ProtectedRoute>} />
         <Route path="/parametres" element={<ProtectedRoute><Parametres /></ProtectedRoute>} />
       </Routes>
       <Analytics />
