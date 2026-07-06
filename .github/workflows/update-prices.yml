@@ -1,0 +1,17 @@
+name: Update Prices
+
+on:
+  schedule:
+    # Tous les jours à minuit UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Permet de lancer le script manuellement depuis l'interface GitHub
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Appeler la fonction Supabase update-prices
+        run: |
+          curl -i --location --request POST "https://${{ secrets.SUPABASE_PROJECT_REF }}.supabase.co/functions/v1/update-prices" \
+            --header "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            --header "Content-Type: application/json"
