@@ -36,7 +36,7 @@ function Investir() {
     const { user } = useAuth()
     const { comptes } = useComptes()
     const [selectedActifId, setSelectedActifId] = useState(null)
-
+    const [typeOrdre, setTypeOrdre] = useState('ACHAT')
     // ============================================
     // ACTIONS & ETF STATE
     // ============================================
@@ -268,13 +268,13 @@ function Investir() {
                         </div>
                         <div className="flex gap-2">
                             <button
-                                onClick={() => setModalAchatVenteOuvert(true)}
+                                onClick={() => { setTypeOrdre('ACHAT'); setModalAchatVenteOuvert(true); }}
                                 className="bg-emerald hover:bg-emerald-light text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition"
                             >
                                 <Plus size={18} /> Achat
                             </button>
                             <button
-                                onClick={() => setModalAchatVenteOuvert(true)}
+                                onClick={() => { setTypeOrdre('VENTE'); setModalAchatVenteOuvert(true); }}
                                 className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition"
                             >
                                 <MinusCircle size={18} /> Vente
@@ -657,13 +657,14 @@ function Investir() {
 
             {/* Modal FormulaireAchatVente */}
             <Modal isOpen={modalAchatVenteOuvert} onClose={() => setModalAchatVenteOuvert(false)} title="Passer un ordre">
-                <FormulaireAchatVente 
-                    compteId={comptes.find(c => c.type === 'PEA' || c.type === 'CTO')?.id} 
+                <FormulaireAchatVente
+                    typeInitial={typeOrdre}
+                    positionsExistantes={positions}
+                    compteId={comptes.find(c => c.type === 'PEA' || c.type === 'CTO')?.id}
                     onSelectActif={setSelectedActifId}
                     onTransactionSuccess={() => {
-                        alert('Ordre enregistré avec succès !')
                         setModalAchatVenteOuvert(false)
-                    }} 
+                    }}
                 />
             </Modal>
 
