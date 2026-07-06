@@ -14,7 +14,6 @@ import DiversificationScore from '../components/DiversificationScore'
 import TransactionForm from '../components/TransactionForm'
 import CryptoTransactionForm from '../components/CryptoTransactionForm'
 import { PnLLatentDisplay } from '../components/PnLLatentToggle'
-import AnalyseFraisTab from '../components/investir/AnalyseFraisTab'
 import FormulaireAchatVente from '../components/bourse/FormulaireAchatVente'
 import GraphiqueActif from '../components/bourse/GraphiqueActif'
 import AssuranceVieCard from '../components/assurance-vie/AssuranceVieCard'
@@ -280,7 +279,7 @@ function Investir() {
 
             {/* Onglets */}
             <div className="flex gap-2 mb-6 bg-white p-1 rounded-lg shadow-sm w-fit">
-                {[['actions', 'Actions & ETF'], ['crypto', 'Crypto'], ['immobilier', 'Immobilier'], ['assurance-vie', 'Assurance Vie'], ['analyse', 'Analyse Frais']].map(([val, label]) => (
+                {[['actions', 'Actions & ETF'], ['crypto', 'Crypto'], ['immobilier', 'Immobilier'], ['assurance-vie', 'Assurance Vie']].map(([val, label]) => (
                     <button key={val} onClick={() => setOngletActif(val)}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition ${ongletActif === val ? 'bg-navy text-white' : 'text-gray-500'}`}>
                         {label}
@@ -801,13 +800,6 @@ function Investir() {
                         })
                     )}
                 </div>
-            )}
-
-            {/* ============================================ */}
-            {/* ONGLET : ANALYSE FRAIS                       */}
-            {/* ============================================ */}
-            {ongletActif === 'analyse' && (
-                <AnalyseFraisTab />
             )}
 
             {/* Modal Assurance Vie (création + gestion) */}

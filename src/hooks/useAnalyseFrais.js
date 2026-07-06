@@ -80,17 +80,17 @@ export function useAnalyseFrais() {
         let capitalBrut = capitalInitial || 10000 // default if no capital
         let capitalNet = capitalInitial || 10000
 
-        for (let annee = 0; annee <= horizon; annee++) {
-            trajectoire.push({
-                annee,
-                capitalSansFrais: Math.round(capitalBrut),
-                capitalAvecFrais: Math.round(capitalNet),
-                manqueAGagner: Math.round(capitalBrut - capitalNet)
-            })
-
+        for (let annee = 1; annee <= horizon; annee++) {
             // Intérêts composés année par année
             capitalBrut = capitalBrut * (1 + rendementBrut)
             capitalNet = capitalNet * (1 + rendementNet)
+
+            trajectoire.push({
+                annee,
+                capitalBrut: Math.round(capitalBrut),
+                capitalNet: Math.round(capitalNet),
+                siphonne: Math.round(capitalBrut - capitalNet)
+            })
         }
 
         return trajectoire
