@@ -1,0 +1,52 @@
+.decomposition-wrapper {
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--code-bg);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-family: var(--sans);
+}
+
+.decomposition-titre {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-h);
+    margin: 0;
+}
+
+.decomposition-ligne {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    color: var(--text);
+}
+
+.decomposition-ligne.total {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-h);
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    margin-top: 2px;
+}
+
+.positif {
+    color: #22c55e;
+    font-weight: 500;
+}
+
+.negatif {
+    color: #ef4444;
+    font-weight: 500;
+}
+
+.decomposition-note {
+    font-size: 11px;
+    color: var(--text);
+    opacity: 0.7;
+    font-style: italic;
+    margin: 0;
+}

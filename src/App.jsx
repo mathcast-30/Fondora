@@ -11,22 +11,26 @@ import Parametres from './pages/Parametres'
 import Onboarding from './pages/Onboarding'
 import ProtectedRoute from './components/ProtectedRoute'
 
+import { CurrencyProvider } from './context/CurrencyContext'
+
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-        <Route path="/" element={<ProtectedRoute><Synthese /></ProtectedRoute>} />
-        <Route path="/budget" element={<ProtectedRoute><Budget /></ProtectedRoute>} />
-        <Route path="/patrimoine" element={<ProtectedRoute><Patrimoine /></ProtectedRoute>} />
-        <Route path="/investir" element={<ProtectedRoute><Investir /></ProtectedRoute>} />
-        <Route path="/analyse" element={<ProtectedRoute><Analyse /></ProtectedRoute>} />
-        <Route path="/parametres" element={<ProtectedRoute><Parametres /></ProtectedRoute>} />
-      </Routes>
-      <Analytics />
-    </BrowserRouter>
+    <CurrencyProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+          <Route path="/" element={<ProtectedRoute><Synthese /></ProtectedRoute>} />
+          <Route path="/budget" element={<ProtectedRoute><Budget /></ProtectedRoute>} />
+          <Route path="/patrimoine" element={<ProtectedRoute><Patrimoine /></ProtectedRoute>} />
+          <Route path="/investir" element={<ProtectedRoute><Investir /></ProtectedRoute>} />
+          <Route path="/analyse" element={<ProtectedRoute><Analyse /></ProtectedRoute>} />
+          <Route path="/parametres" element={<ProtectedRoute><Parametres /></ProtectedRoute>} />
+        </Routes>
+        <Analytics />
+      </BrowserRouter>
+    </CurrencyProvider>
   )
 }
 
