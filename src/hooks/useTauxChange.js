@@ -24,15 +24,26 @@ export function useTauxChange() {
         setError(null);
 
         try {
-            const res = await fetch('https://api.frankfurter.app/latest?from=EUR');
+            const res = await fetch(
+                'https://ptcdwzozambankspjwes.supabase.co/functions/v1/taux-change',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                    },
+                    body: JSON.stringify({}),
+                }
+            );
             if (!res.ok) throw new Error('Erreur récupération taux (Frankfurter)');
             const data = await res.json();
-            
-            const nouveauxTaux = { ...data.rates, EUR: 1 };
-            
+
+            const nouveauxTaux = { ...data, EUR: 1 };
+
             cacheTaux = nouveauxTaux;
             cacheTimestamp = now;
-            
+
             setTaux(nouveauxTaux);
             setDerniereMaj(now);
         } catch (err) {
@@ -55,7 +66,7 @@ export function useTauxChange() {
             const coinId = devise.toLowerCase();
             const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=eur`);
             const data = await res.json();
-            
+
             if (data[coinId]?.eur) {
                 const rateFromEur = 1 / data[coinId].eur;
                 const newTaux = { ...cacheTaux, [devise]: rateFromEur };
@@ -90,12 +101,12 @@ export function useTauxChange() {
         chargerTaux();
     }, [chargerTaux]);
 
-    return { 
-        taux, 
-        loading, 
-        error, 
-        rafraichir: chargerTaux, 
-        derniereMaj, 
-        convertir 
+    return {
+        taux,
+        loading,
+        error,
+        rafraichir: chargerTaux,
+        derniereMaj,
+        convertir
     };
 }
