@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { calculerMensualiteCredit } from '../lib/calculImmo'
-import { supabase } from '../lib/supabaseClient'
+import { supabase } from '../lib/supabase'
 
 const TYPES_BIENS = ['Appartement', 'Maison', 'Studio', 'Immeuble', 'Local commercial', 'Terrain', 'Autre']
 const STATUTS = ['Résidence principale', 'Résidence secondaire', 'Investissement locatif', 'SCPI', 'Autre']

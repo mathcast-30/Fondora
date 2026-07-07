@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import * as XLSX from 'xlsx';
 import { Download } from 'lucide-react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabase';
 import { useDettes } from '../hooks/useDettes';
 import { KPIEndettement } from '../components/passifs/KPIEndettement';
 import { DetteCard } from '../components/passifs/DetteCard';
