@@ -204,9 +204,12 @@ function Budget() {
                                 <div className="w-2.5 h-10 rounded-full" style={{ backgroundColor: t.categories?.couleur || '#ccc' }} />
                                 <div>
                                     <p className="font-medium text-navy">{t.description || t.categories?.nom || 'Sans description'}</p>
-                                    <p className="text-xs text-gray-400">
-                                        {t.categories?.nom} • {new Date(t.date).toLocaleDateString('fr-FR')}
-                                        {t.recurrente && ' • 🔁 Récurrente'}
+                                    <p className="text-xs text-gray-400 mt-1 flex items-center flex-wrap gap-2">
+                                        <span>{t.categories?.nom}</span>
+                                        <span>•</span>
+                                        <span>{new Date(t.date).toLocaleDateString('fr-FR')}</span>
+                                        {t.recurrente && <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">🔁 Récurrente</span>}
+                                        {t.source === 'auto_dette' && <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">🤖 Auto (Dette)</span>}
                                     </p>
                                 </div>
                             </div>

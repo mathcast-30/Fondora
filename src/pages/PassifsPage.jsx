@@ -1,6 +1,8 @@
 // src/pages/PassifsPage.jsx
 import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
+import * as XLSX from 'xlsx';
+import { Download } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useDettes } from '../hooks/useDettes';
 import { KPIEndettement } from '../components/passifs/KPIEndettement';
@@ -43,6 +45,7 @@ function PassifsPage() {
     const [detteSelectionnee, setDetteSelectionnee] = useState(null);
     const [detteAmortissement, setDetteAmortissement] = useState(null);
     const [filtreActif, setFiltreActif] = useState('Tous');
+    const [triActif, setTriActif] = useState('crd_desc');
     const [revenusRecurrents, setRevenusRecurrents] = useState(0);
     const [biensImmobiliers, setBiensImmobiliers] = useState([]);
 
@@ -106,10 +109,35 @@ function PassifsPage() {
         await supprimerDette(id);
     };
 
-    // Filtrage local
-    const dettesFiltrees = filtreActif === 'Tous'
-        ? dettes
+    // Filtrage et Tri local
+    let dettesFiltrees = filtreActif === 'Tous'
+        ? [...dettes]
         : dettes.filter((d) => d.type === filtreActif);
+
+    dettesFiltrees.sort((a, b) => {
+        if (triActif === 'crd_desc') return (b.crdActuel || 0) - (a.crdActuel || 0);
+        if (triActif === 'crd_asc') return (a.crdActuel || 0) - (b.crdActuel || 0);
+        if (triActif === 'date_fin') return new Date(a.dateFin || '2100-01-01') - new Date(b.dateFin || '2100-01-01');
+        if (triActif === 'type') return a.type.localeCompare(b.type);
+        return 0;
+    });
+
+    const exporterCSV = () => {
+        const data = dettes.map(d => ({
+            Nom: d.nom,
+            Type: d.type,
+            "Capital Emprunté": d.capital_emprunte,
+            "CRD Actuel": Math.round((d.crdActuel || 0) * 100) / 100,
+            "Taux (%)": d.taux_interet,
+            "Mensualité": d.mensualite,
+            "Date de début": d.date_debut,
+            "Date de fin estimée": d.dateFin
+        }));
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Dettes");
+        XLSX.writeFile(workbook, "Fondora_Dettes.csv");
+    };
 
     const pillStyle = (actif) => ({
         padding: '6px 16px',
@@ -135,45 +163,92 @@ function PassifsPage() {
                         Suivi de vos crédits, emprunts et obligations financières.
                     </p>
                 </div>
-                <button
-                    onClick={() => ouvrirModal()}
-                    style={{
-                        background: '#111827',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: 10,
-                        padding: '10px 20px',
-                        fontWeight: 600,
-                        fontSize: 14,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                    }}
-                >
-                    ➕ Ajouter un crédit
-                </button>
+                <div style={{ display: 'flex', gap: 12 }}>
+                    <button
+                        onClick={exporterCSV}
+                        style={{
+                            background: 'white',
+                            color: '#111827',
+                            border: '1px solid #D1D5DB',
+                            borderRadius: 10,
+                            padding: '10px 16px',
+                            fontWeight: 600,
+                            fontSize: 14,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            transition: 'all 0.15s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#F9FAFB'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                    >
+                        <Download size={18} /> CSV
+                    </button>
+                    <button
+                        onClick={() => ouvrirModal()}
+                        style={{
+                            background: '#111827',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 10,
+                            padding: '10px 20px',
+                            fontWeight: 600,
+                            fontSize: 14,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                        }}
+                    >
+                        ➕ Ajouter un crédit
+                    </button>
+                </div>
             </div>
 
             {/* KPIs */}
             <KPIEndettement kpis={kpis} revenusRecurrents={revenusRecurrents} />
 
-            {/* Filtres par type */}
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
-                {FILTRES.map((filtre) => (
-                    <button
-                        key={filtre}
-                        onClick={() => setFiltreActif(filtre)}
-                        style={pillStyle(filtreActif === filtre)}
+            {/* Filtres par type et Tri */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', marginBottom: 24, gap: 16 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {FILTRES.map((filtre) => (
+                        <button
+                            key={filtre}
+                            onClick={() => setFiltreActif(filtre)}
+                            style={pillStyle(filtreActif === filtre)}
+                        >
+                            {filtre}
+                            {filtre !== 'Tous' && (
+                                <span style={{ marginLeft: 4, opacity: 0.7 }}>
+                                    ({dettes.filter((d) => d.type === filtre).length})
+                                </span>
+                            )}
+                        </button>
+                    ))}
+                </div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 13, color: '#6B7280', fontWeight: 500 }}>Trier par :</span>
+                    <select 
+                        value={triActif}
+                        onChange={(e) => setTriActif(e.target.value)}
+                        style={{
+                            padding: '6px 12px',
+                            borderRadius: 8,
+                            border: '1px solid #D1D5DB',
+                            fontSize: 13,
+                            color: '#374151',
+                            background: 'white',
+                            cursor: 'pointer'
+                        }}
                     >
-                        {filtre}
-                        {filtre !== 'Tous' && (
-                            <span style={{ marginLeft: 4, opacity: 0.7 }}>
-                                ({dettes.filter((d) => d.type === filtre).length})
-                            </span>
-                        )}
-                    </button>
-                ))}
+                        <option value="crd_desc">Montant CRD (Décroissant)</option>
+                        <option value="crd_asc">Montant CRD (Croissant)</option>
+                        <option value="date_fin">Date de fin</option>
+                        <option value="type">Type de dette</option>
+                    </select>
+                </div>
             </div>
 
             {/* Contenu principal */}

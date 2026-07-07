@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Trash2, ChevronDown, ChevronUp, Home, TrendingUp, TrendingDown, SlidersHorizontal } from 'lucide-react'
 import { calculerRentabilite } from '../lib/calculImmo'
+import { useDettes } from '../hooks/useDettes'
 
 function BienImmobilierCard({ bien, onSupprimer }) {
     const [deplié, setDeplié] = useState(false)
@@ -13,6 +14,9 @@ function BienImmobilierCard({ bien, onSupprimer }) {
     const fmt = (m) =>
         new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(m)
     const fmtPct = (p) => `${p.toFixed(2)} %`
+
+    const { dettes } = useDettes()
+    const detteLiee = dettes.find(d => d.bien_immobilier_id === bien.id)
 
     // Calcul avec les valeurs simulées
     const bienSim = simulateur
@@ -166,34 +170,35 @@ function BienImmobilierCard({ bien, onSupprimer }) {
                             </span>
                         </div>
 
-                        {bien.montant_credit > 0 && (
+                        {/* On utilise les données de la dette si elle existe, sinon les données legacy du bien */}
+                        {(detteLiee || bien.montant_credit > 0) && (
                             <>
-                                <h4 className="text-sm font-semibold text-navy mt-3 mb-2">Crédit</h4>
+                                <h4 className="text-sm font-semibold text-navy mt-3 mb-2">Crédit {detteLiee ? '(Lié)' : '(Legacy)'}</h4>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Montant emprunté</span>
-                                    <span className="font-medium text-navy">{fmt(bien.montant_credit)}</span>
+                                    <span className="font-medium text-navy">{fmt(detteLiee ? detteLiee.capital_emprunte : bien.montant_credit)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Taux</span>
-                                    <span className="font-medium text-navy">{bien.taux_credit}%</span>
+                                    <span className="font-medium text-navy">{detteLiee ? detteLiee.taux_interet : bien.taux_credit}%</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Mensualité</span>
-                                    <span className="font-medium text-navy">{fmt(mensualiteCredit)}/mois</span>
+                                    <span className="font-medium text-navy">{fmt(detteLiee ? detteLiee.mensualite : mensualiteCredit)}/mois</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Capital restant dû</span>
-                                    <span className="font-semibold text-red-500">−{fmt(capitalRestantDu)}</span>
+                                    <span className="font-semibold text-red-500">−{fmt(detteLiee ? detteLiee.crdActuel : capitalRestantDu)}</span>
                                 </div>
-                                {moisEcoules > 0 && (
+                                {(detteLiee ? (detteLiee.progression > 0) : (moisEcoules > 0)) && (
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Mois remboursés</span>
-                                        <span className="font-medium text-navy">{moisEcoules} mois</span>
+                                        <span className="text-gray-500">{detteLiee ? 'Progression' : 'Mois remboursés'}</span>
+                                        <span className="font-medium text-navy">{detteLiee ? fmtPct(detteLiee.progression) : `${moisEcoules} mois`}</span>
                                     </div>
                                 )}
                                 <div className="flex justify-between text-sm border-t pt-2">
                                     <span className="text-gray-600 font-medium">Valeur nette</span>
-                                    <span className="font-bold text-navy">{fmt(valeurNette)}</span>
+                                    <span className="font-bold text-navy">{fmt(bienSim.valeur_actuelle - (detteLiee ? detteLiee.crdActuel : capitalRestantDu))}</span>
                                 </div>
                             </>
                         )}
