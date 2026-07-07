@@ -7,3 +7,98 @@
     --color-emerald-light: #34d399;
     --color-graylight: #f1f5f9;
 }
+
+.analyseur-fiscal {
+  padding: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.bandeau-recap {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kpi {
+  background: var(--color-graylight);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kpi span { font-size: 14px; color: gray; }
+.kpi strong { font-size: 20px; color: var(--color-navy); }
+
+.profil-fiscal-note {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f0fdfa;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 24px;
+  border: 1px solid #ccfbf1;
+}
+
+.grille-deux-colonnes {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.score-card {
+  background: var(--color-graylight);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.carte-enveloppe {
+  background: var(--color-graylight);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.carte-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.carte-lignes { display: flex; flex-direction: column; gap: 6px; }
+
+.ligne {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.recommandations-liste { display: flex; flex-direction: column; gap: 12px; }
+
+.recommandation {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.recommandation.warning { background: rgba(245, 158, 11, 0.1); border-left: 3px solid #f59e0b; }
+.recommandation.info { background: rgba(99, 102, 241, 0.1); border-left: 3px solid #6366f1; }
+.recommandation.success { background: rgba(16, 185, 129, 0.1); border-left: 3px solid #10b981; }
+.recommandation p { margin: 4px 0 0; color: gray; }
+
+@media (max-width: 1024px) {
+  .bandeau-recap { grid-template-columns: repeat(2, 1fr); }
+  .grille-deux-colonnes { grid-template-columns: 1fr; }
+}

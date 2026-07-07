@@ -4,6 +4,7 @@ import BarChartComparatif from '../components/BarChartComparatif'
 import LineChartSolde from '../components/LineChartSolde'
 import StatCard from '../components/StatCard'
 import AnalyseFraisTab from '../components/investir/AnalyseFraisTab'
+import { AnalyseurFiscal } from '../components/analyse/AnalyseurFiscal'
 import { useTransactionsPeriode } from '../hooks/useTransactionsPeriode'
 import { regrouperParMois } from '../lib/dateUtils'
 import { PiggyBank, TrendingDown } from 'lucide-react'
@@ -41,18 +42,24 @@ function Analyse() {
             </div>
 
             {/* Barre de navigation secondaire */}
-            <div className="flex gap-2 mb-6 bg-white p-1 rounded-lg shadow-sm w-fit">
+            <div className="flex gap-2 mb-6 bg-white p-1 rounded-lg shadow-sm w-fit overflow-x-auto max-w-full">
                 <button
                     onClick={() => setOngletActif('epargne')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition flex items-center gap-2 ${ongletActif === 'epargne' ? 'bg-navy text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+                    className={`px-4 py-2 whitespace-nowrap rounded-md text-sm font-medium transition flex items-center gap-2 ${ongletActif === 'epargne' ? 'bg-navy text-white' : 'text-gray-500 hover:bg-gray-50'}`}
                 >
                     <PiggyBank size={18} /> Analyse de l'Épargne
                 </button>
                 <button
                     onClick={() => setOngletActif('frais')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition flex items-center gap-2 ${ongletActif === 'frais' ? 'bg-navy text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+                    className={`px-4 py-2 whitespace-nowrap rounded-md text-sm font-medium transition flex items-center gap-2 ${ongletActif === 'frais' ? 'bg-navy text-white' : 'text-gray-500 hover:bg-gray-50'}`}
                 >
                     <TrendingDown size={18} /> Optimisation des Frais
+                </button>
+                <button
+                    onClick={() => setOngletActif('fiscal')}
+                    className={`px-4 py-2 whitespace-nowrap rounded-md text-sm font-medium transition flex items-center gap-2 ${ongletActif === 'fiscal' ? 'bg-navy text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+                >
+                    🧾 Analyse Fiscale
                 </button>
             </div>
 
@@ -133,6 +140,12 @@ function Analyse() {
 
             {ongletActif === 'frais' && (
                 <AnalyseFraisTab />
+            )}
+
+            {ongletActif === 'fiscal' && (
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden pb-4">
+                    <AnalyseurFiscal />
+                </div>
             )}
         </Layout>
     )
