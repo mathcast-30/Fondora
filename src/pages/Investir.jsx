@@ -168,7 +168,8 @@ function Investir() {
         if (valorisationCrypto > 0 && user) {
             sauvegarderValeurHistorique(valorisationCrypto)
         }
-    }, [valorisationCrypto, sauvegarderValeurHistorique, user])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [valorisationCrypto])
 
     // ============================================
     // IMMOBILIER STATE
