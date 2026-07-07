@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { calculerMensualiteCredit } from '../lib/calculImmo'
+import { supabase } from '../lib/supabaseClient'
 
 const TYPES_BIENS = ['Appartement', 'Maison', 'Studio', 'Immeuble', 'Local commercial', 'Terrain', 'Autre']
 const STATUTS = ['Résidence principale', 'Résidence secondaire', 'Investissement locatif', 'SCPI', 'Autre']
@@ -14,9 +15,18 @@ const FORM_INITIAL = {
     loyer_mensuel: '', taux_vacance: '0',
 }
 
+const CREDIT_INITIAL = {
+    active: false,
+    capital_emprunte: '',
+    taux_interet: '',
+    duree_mois: '',
+    date_debut: new Date().toISOString().split('T')[0],
+}
+
 function FormBienImmobilier({ onSubmit, onAnnuler }) {
     const [form, setForm] = useState(FORM_INITIAL)
     const [etape, setEtape] = useState(1)
+    const [credit, setCredit] = useState(CREDIT_INITIAL)
 
     const mensualiteCalculee = form.montant_credit && form.taux_credit && form.duree_credit_mois
         ? calculerMensualiteCredit(
@@ -24,6 +34,18 @@ function FormBienImmobilier({ onSubmit, onAnnuler }) {
             parseFloat(form.taux_credit),
             parseInt(form.duree_credit_mois)
         )
+        : 0
+
+    // Mensualité calculée pour la section crédit associé
+    const mensualiteCreditAssocie = credit.active && credit.capital_emprunte && credit.taux_interet && credit.duree_mois
+        ? (() => {
+            const c = parseFloat(credit.capital_emprunte)
+            const t = parseFloat(credit.taux_interet) / 100 / 12
+            const n = parseInt(credit.duree_mois)
+            if (c <= 0 || n <= 0) return 0
+            if (t === 0) return c / n
+            return (c * t * Math.pow(1 + t, n)) / (Math.pow(1 + t, n) - 1)
+        })()
         : 0
 
     const handleSubmit = async (e) => {
@@ -40,7 +62,30 @@ function FormBienImmobilier({ onSubmit, onAnnuler }) {
             }
         })
         donnees.mensualite_credit = mensualiteCalculee
-        await onSubmit(donnees)
+        const bienCree = await onSubmit(donnees)
+
+        // Insert crédit associé si activé et champs remplis
+        if (
+            credit.active &&
+            credit.capital_emprunte && credit.taux_interet &&
+            credit.duree_mois && credit.date_debut &&
+            mensualiteCreditAssocie > 0 &&
+            bienCree?.id
+        ) {
+            const { data: { user } } = await supabase.auth.getUser()
+            await supabase.from('dettes').insert([{
+                user_id: user.id,
+                nom: 'Crédit — ' + donnees.nom,
+                type: 'Immobilier',
+                bien_immobilier_id: bienCree.id,
+                capital_emprunte: parseFloat(credit.capital_emprunte),
+                taux_interet: parseFloat(credit.taux_interet),
+                duree_mois: parseInt(credit.duree_mois),
+                mensualite: Math.round(mensualiteCreditAssocie * 100) / 100,
+                date_debut: credit.date_debut,
+                rembourse_automatiquement: true,
+            }])
+        }
     }
 
     const set = (key, val) => setForm((f) => ({ ...f, [key]: val }))
@@ -193,10 +238,78 @@ function FormBienImmobilier({ onSubmit, onAnnuler }) {
                         Suivant
                     </button>
                 ) : (
-                    <button type="submit"
-                        className="flex-1 bg-emerald hover:bg-emerald-light text-white py-2 rounded-lg text-sm font-semibold">
-                        Ajouter le bien
-                    </button>
+                    <>
+                        {/* Section crédit immobilier associé */}
+                        <div style={{ width: '100%', marginBottom: 12 }}>
+                            <div style={{
+                                background: '#F0FDF4', border: '1px solid #D1FAE5',
+                                borderRadius: 10, padding: '12px 14px', marginBottom: 12,
+                                display: 'flex', gap: 10, alignItems: 'flex-start',
+                            }}>
+                                <input
+                                    type="checkbox"
+                                    id="credit_immo_active"
+                                    checked={credit.active}
+                                    onChange={(e) => setCredit((c) => ({ ...c, active: e.target.checked }))}
+                                    style={{ marginTop: 2, width: 16, height: 16, flexShrink: 0 }}
+                                />
+                                <label htmlFor="credit_immo_active" style={{ fontSize: 13, cursor: 'pointer' }}>
+                                    <strong style={{ color: '#065F46' }}>Ce bien est financé par un crédit immobilier</strong><br />
+                                    <span style={{ color: '#6B7280', fontWeight: 400 }}>Créer automatiquement un crédit dans Passifs & Dettes</span>
+                                </label>
+                            </div>
+
+                            {credit.active && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className={labelClass}>Capital emprunté (€) *</label>
+                                            <input type="number" step="1" placeholder="200000"
+                                                value={credit.capital_emprunte}
+                                                onChange={(e) => setCredit((c) => ({ ...c, capital_emprunte: e.target.value }))}
+                                                className={inputClass} />
+                                        </div>
+                                        <div>
+                                            <label className={labelClass}>Taux d'intérêt (%) *</label>
+                                            <input type="number" step="0.001" placeholder="3.5"
+                                                value={credit.taux_interet}
+                                                onChange={(e) => setCredit((c) => ({ ...c, taux_interet: e.target.value }))}
+                                                className={inputClass} />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className={labelClass}>Durée (mois) *</label>
+                                            <input type="number" step="1" placeholder="240"
+                                                value={credit.duree_mois}
+                                                onChange={(e) => setCredit((c) => ({ ...c, duree_mois: e.target.value }))}
+                                                className={inputClass} />
+                                        </div>
+                                        <div>
+                                            <label className={labelClass}>Date de 1ère échéance *</label>
+                                            <input type="date"
+                                                value={credit.date_debut}
+                                                onChange={(e) => setCredit((c) => ({ ...c, date_debut: e.target.value }))}
+                                                className={inputClass} />
+                                        </div>
+                                    </div>
+                                    {mensualiteCreditAssocie > 0 && (
+                                        <div style={{
+                                            background: '#F0FDF4', borderRadius: 8,
+                                            padding: '8px 12px', fontSize: 13, color: '#065F46',
+                                        }}>
+                                            Mensualité calculée :{' '}
+                                            <strong>{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(mensualiteCreditAssocie)}/mois</strong>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        <button type="submit"
+                            className="w-full bg-emerald hover:bg-emerald-light text-white py-2 rounded-lg text-sm font-semibold">
+                            Ajouter le bien
+                        </button>
+                    </>
                 )}
             </div>
         </form>

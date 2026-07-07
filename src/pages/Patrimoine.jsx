@@ -9,6 +9,7 @@ import { useCoursBourse } from '../hooks/useCoursBourse'
 import { usePositionsCrypto } from '../hooks/usePositionsCrypto'
 import { useCoursCrypto } from '../hooks/useCoursCrypto'
 import { useBiensImmobiliers } from '../hooks/useBiensImmobiliers'
+import { useDettes } from '../hooks/useDettes'
 import { Plus } from 'lucide-react'
 
 const TYPES_COMPTES = ['Compte courant', 'Épargne', 'Crédit', 'PEA', 'Assurance vie', 'Crypto', 'Immobilier', 'Autre']
@@ -33,11 +34,14 @@ function Patrimoine() {
     const { positions: positionsCrypto } = usePositionsCrypto()
     const { cours: coursCrypto } = useCoursCrypto(positionsCrypto.map((p) => p.coin_id))
     const { valeurTotaleImmo } = useBiensImmobiliers()
+    const { kpis: kpisDettes } = useDettes()
+    const totalDettes = kpisDettes.totalDettes || 0
 
     const totalComptes = comptes.reduce((acc, c) => acc + Number(c.solde), 0)
     const totalActions = positions.reduce((acc, p) => acc + (cours[p.symbole]?.coursActuel || p.prix_achat_moyen) * p.quantite, 0)
     const totalCrypto = positionsCrypto.reduce((acc, p) => acc + (coursCrypto[p.coin_id]?.eur || p.prix_achat_moyen) * p.quantite, 0)
     const patrimoineTotal = totalComptes + totalActions + totalCrypto + valeurTotaleImmo
+    const patrimoineNet = patrimoineTotal - totalDettes
 
     const formatMontant = (m, devise = 'EUR') =>
         new Intl.NumberFormat('fr-FR', { style: 'currency', currency: devise }).format(m)
@@ -74,8 +78,12 @@ function Patrimoine() {
 
             {/* Patrimoine total consolidé */}
             <div className="bg-navy rounded-2xl p-6 mb-6">
-                <p className="text-gray-300 text-sm mb-1">Patrimoine total consolidé</p>
-                <p className="text-white text-3xl font-bold mb-4">{formatMontant(patrimoineTotal)}</p>
+                <p className="text-gray-300 text-sm mb-1">Patrimoine brut total consolidé</p>
+                <p className="text-white text-3xl font-bold mb-1">{formatMontant(patrimoineTotal)}</p>
+                <p className="text-sm mb-4" style={{ color: totalDettes > 0 ? '#FCA5A5' : '#6EE7B7' }}>
+                    Patrimoine net : <strong>{formatMontant(patrimoineNet)}</strong>
+                    {totalDettes > 0 && <span className="ml-2 text-xs opacity-75">(dettes : -{formatMontant(totalDettes)})</span>}
+                </p>
                 <div className="grid grid-cols-4 gap-4">
                     <div>
                         <p className="text-gray-400 text-xs mb-1">Comptes bancaires</p>
@@ -92,6 +100,10 @@ function Patrimoine() {
                     <div>
                         <p className="text-gray-400 text-xs mb-1">Immobilier</p>
                         <p className="text-emerald font-semibold">{formatMontant(valeurTotaleImmo)}</p>
+                    </div>
+                    <div>
+                        <p className="text-gray-400 text-xs mb-1">Dettes (CRD)</p>
+                        <p className="font-semibold" style={{ color: '#FCA5A5' }}>-{formatMontant(totalDettes)}</p>
                     </div>
                 </div>
             </div>

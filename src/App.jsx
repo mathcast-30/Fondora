@@ -8,6 +8,7 @@ import Patrimoine from './pages/Patrimoine'
 import Investir from './pages/Investir'
 import Analyse from './pages/Analyse'
 import Parametres from './pages/Parametres'
+import PassifsPage from './pages/PassifsPage'
 import Onboarding from './pages/Onboarding'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -27,6 +28,7 @@ function App() {
           <Route path="/investir" element={<ProtectedRoute><Investir /></ProtectedRoute>} />
           <Route path="/analyse" element={<ProtectedRoute><Analyse /></ProtectedRoute>} />
           <Route path="/parametres" element={<ProtectedRoute><Parametres /></ProtectedRoute>} />
+          <Route path="/passifs" element={<ProtectedRoute><PassifsPage /></ProtectedRoute>} />
         </Routes>
         <Analytics />
       </BrowserRouter>
