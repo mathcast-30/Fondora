@@ -97,6 +97,12 @@ function Budget() {
 
     const formatMontant = (m) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(m)
 
+    const variationsComptes = comptes.map(c => {
+        const txCompte = transactions.filter(t => t.compte_id === c.id)
+        const diff = txCompte.reduce((s, t) => s + (t.type === 'revenu' ? Number(t.montant) : -Number(t.montant)), 0)
+        return { nom: c.nom, diff }
+    }).filter(c => c.diff !== 0)
+
     return (
         <Layout>
             <div className="flex items-center justify-between mb-6">
@@ -136,6 +142,20 @@ function Budget() {
                     <p className={`font-bold text-xl ${solde >= 0 ? 'text-navy' : 'text-red-500'}`}>{formatMontant(solde)}</p>
                 </div>
             </div>
+
+            {variationsComptes.length > 0 && (
+                <div className="bg-blue-50 text-blue-800 p-4 rounded-xl mb-6 text-sm border border-blue-100">
+                    <strong>Impact sur vos comptes ce mois-ci :</strong>
+                    <ul className="mt-2 space-y-1">
+                        {variationsComptes.map((c, idx) => (
+                            <li key={idx} className="flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                                {c.nom} : <span className={c.diff >= 0 ? 'text-emerald font-semibold' : 'text-red-500 font-semibold'}>{c.diff >= 0 ? '+' : ''}{formatMontant(c.diff)}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
 
             {/* Analyses visuelles */}
             <section className="mb-6">
@@ -256,13 +276,17 @@ function Budget() {
                         ))}
                     </select>
 
-                    <select value={form.compte_id} onChange={(e) => setForm({ ...form, compte_id: e.target.value })}
-                        className="w-full border rounded-lg px-3 py-2">
-                        <option value="">Choisir un compte (optionnel)</option>
-                        {comptes.map((c) => (
-                            <option key={c.id} value={c.id}>{c.nom}</option>
-                        ))}
-                    </select>
+                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        <label className="text-sm font-semibold text-gray-700 block mb-1">Associer à un compte</label>
+                        <p className="text-xs text-gray-500 mb-2">Permet de mettre à jour automatiquement le solde du compte dans Patrimoine.</p>
+                        <select value={form.compte_id} onChange={(e) => setForm({ ...form, compte_id: e.target.value })}
+                            className="w-full border rounded-lg px-3 py-2 bg-white">
+                            <option value="">Aucun compte (solde non impacté)</option>
+                            {comptes.map((c) => (
+                                <option key={c.id} value={c.id}>{c.nom}</option>
+                            ))}
+                        </select>
+                    </div>
 
                     <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })}
                         className="w-full border rounded-lg px-3 py-2" />

@@ -37,7 +37,7 @@ function Patrimoine() {
     const { kpis: kpisDettes } = useDettes()
     const totalDettes = kpisDettes.totalDettes || 0
 
-    const totalComptes = comptes.reduce((acc, c) => acc + Number(c.solde), 0)
+    const totalComptes = comptes.reduce((acc, c) => acc + Number(c.soldeReel ?? c.solde), 0)
     const totalActions = positions.reduce((acc, p) => acc + (cours[p.symbole]?.coursActuel || p.prix_achat_moyen) * p.quantite, 0)
     const totalCrypto = positionsCrypto.reduce((acc, p) => acc + (coursCrypto[p.coin_id]?.eur || p.prix_achat_moyen) * p.quantite, 0)
     const patrimoineTotal = totalComptes + totalActions + totalCrypto + valeurTotaleImmo

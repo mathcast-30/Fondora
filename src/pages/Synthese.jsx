@@ -17,7 +17,7 @@ function Synthese() {
     const { objectif, definirObjectif } = useObjectifEpargne(mois, annee)
 
     const projection = calculerProjection(transactions, mois, annee)
-    const patrimoineTotal = comptes.reduce((s, c) => s + Number(c.solde), 0)
+    const patrimoineTotal = comptes.reduce((s, c) => s + Number(c.soldeReel ?? c.solde), 0)
 
     const formatMontant = (m) =>
         new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(m)
@@ -74,7 +74,7 @@ function Synthese() {
                                             <span className="text-sm text-navy">{c.nom}</span>
                                         </div>
                                         <span className="text-sm font-semibold text-navy">
-                                            {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: c.devise }).format(c.solde)}
+                                            {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: c.devise }).format(c.soldeReel ?? c.solde)}
                                         </span>
                                     </div>
                                 ))}

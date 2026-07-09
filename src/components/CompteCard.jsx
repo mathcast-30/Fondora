@@ -21,16 +21,25 @@ function CompteCard({ compte, onSupprimer }) {
                 </div>
             </div>
 
-            <div className="flex items-center gap-4">
-                <p className="font-bold text-navy">
-                    {formatMontant(compte.solde, compte.devise)}
-                </p>
-                <button
-                    onClick={() => onSupprimer(compte.id)}
-                    className="text-gray-300 hover:text-red-500 transition"
-                >
-                    <Trash2 size={18} />
-                </button>
+            <div className="flex flex-col items-end gap-1">
+                <div className="flex items-center gap-4">
+                    <p className="font-bold text-navy">
+                        {formatMontant(compte.soldeReel ?? compte.solde, compte.devise)}
+                    </p>
+                    <button
+                        onClick={() => onSupprimer(compte.id)}
+                        className="text-gray-300 hover:text-red-500 transition"
+                    >
+                        <Trash2 size={18} />
+                    </button>
+                </div>
+                {compte.soldeReel !== undefined && Number(compte.soldeReel) !== Number(compte.solde) && (
+                    <p className="text-xs text-gray-400">
+                        Initial : {formatMontant(compte.solde, compte.devise)} | 
+                        +{formatMontant(compte.totalRevenus, compte.devise)} / 
+                        -{formatMontant(compte.totalDepenses, compte.devise)}
+                    </p>
+                )}
             </div>
         </div>
     )
