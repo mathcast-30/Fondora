@@ -13,7 +13,7 @@ export function useCategories() {
             .from('categories')
             .select('*')
             .order('nom', { ascending: true })
-        if (!error) setCategories(data)
+        if (!error && data) setCategories(data)
         setLoading(false)
     }, [])
 
