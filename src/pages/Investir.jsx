@@ -209,8 +209,11 @@ function Investir() {
     }, 0)
 
     const handleAjouterBien = async (donnees) => {
-        const { error } = await ajouterBien(donnees)
-        if (!error) setModalImmoOuvert(false)
+        const { data, error } = await ajouterBien(donnees)
+        if (!error) {
+            setModalImmoOuvert(false)
+            return data
+        }
     }
 
     const handleSubmitCryptoTransaction = async (transactionData) => {
