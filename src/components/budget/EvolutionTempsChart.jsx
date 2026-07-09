@@ -1,8 +1,18 @@
 import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useTransactionsPeriode } from '../../hooks/useTransactionsPeriode';
 
-export default function EvolutionTempsChart({ transactions = [] }) {
+export default function EvolutionTempsChart() {
     const [periode, setPeriode] = useState('6M');
+
+    const getNombreMois = (p) => {
+        if (p === '3M') return 3;
+        if (p === '6M') return 6;
+        if (p === '1Y') return 12;
+        return 6;
+    };
+
+    const { transactions } = useTransactionsPeriode(getNombreMois(periode));
 
     const hasData = transactions && transactions.length > 0;
 

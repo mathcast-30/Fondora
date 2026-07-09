@@ -146,7 +146,7 @@ function Budget() {
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {graphiquesVisibles.includes('budget_vs_reel') && <BudgetVsReelChart transactions={transactions} budgets={budgets} categories={categories} />}
-                    {graphiquesVisibles.includes('evolution_temps') && <EvolutionTempsChart transactions={transactions} />}
+                    {graphiquesVisibles.includes('evolution_temps') && <EvolutionTempsChart />}
                     {graphiquesVisibles.includes('objectif_epargne') && <JaugeEpargneChart epargneRealisee={solde} />}
                     {graphiquesVisibles.includes('top5_depenses') && <Top5DepensesChart transactions={transactions} categories={categories} />}
                 </div>
