@@ -703,8 +703,10 @@ function Investir() {
                     comptes={comptes}
                     compteId={comptes.find(c => c.type === 'PEA' || c.type === 'CTO')?.id}
                     onSelectActif={setSelectedActifId}
+                    onSubmitTransaction={ajouterTransaction}
                     onTransactionSuccess={() => {
                         setModalAchatVenteOuvert(false)
+                        charger()
                     }}
                 />
             </Modal>

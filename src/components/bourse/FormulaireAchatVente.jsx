@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 
-export default function FormulaireAchatVente({ compteId, comptes = [], onTransactionSuccess, onSelectActif, typeInitial = 'ACHAT', positionsExistantes = [] }) {
+export default function FormulaireAchatVente({ compteId, comptes = [], onTransactionSuccess, onSubmitTransaction, onSelectActif, typeInitial = 'ACHAT', positionsExistantes = [] }) {
   // Comptes investissement filtrés (PEA, CTO)
   const comptesInvest = comptes.filter(c => c.type === 'PEA' || c.type === 'CTO');
 
@@ -14,6 +14,7 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
   const [dateTransaction, setDateTransaction] = useState(new Date().toISOString().split('T')[0]);
   const [loadingEnrich, setLoadingEnrich] = useState(false);
   const [loadingPrix, setLoadingPrix] = useState(false);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
   // Compte sélectionné : priorité au prop compteId, sinon 1er compte invest
   const [compteIdSelectionne, setCompteIdSelectionne] = useState(
     () => compteId || comptesInvest[0]?.id || ''
@@ -135,31 +136,67 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
       alert("Veuillez sélectionner un compte (PEA ou CTO) avant de valider.");
       return;
     }
+    if (!quantite || !prix) {
+      alert("Veuillez renseigner la quantité et le prix.");
+      return;
+    }
 
-    const { data: userData } = await supabase.auth.getUser();
+    setLoadingSubmit(true);
+
+    // Construit le payload compatible avec transactions_investissement
+    const transactionPayload = {
+      symbole: actifSelectionne.ticker,
+      type: type === 'ACHAT' ? 'buy' : 'sell',
+      quantity: parseFloat(quantite),
+      price: parseFloat(prix),
+      date: dateTransaction,
+      // Champs supplémentaires pour enrichissement
+      actif_id: actifSelectionne.id,
+      compte_id: compteIdSelectionne,
+    };
 
     // Validation vente : quantité ne peut pas dépasser ce qu'on possède
     if (type === 'VENTE' && actifSelectionne.quantite_disponible) {
       if (parseFloat(quantite) > actifSelectionne.quantite_disponible) {
         alert(`Tu ne peux pas vendre plus que ${actifSelectionne.quantite_disponible} parts.`);
+        setLoadingSubmit(false);
         return;
       }
     }
 
-    const { error } = await supabase.from('transactions_bourse').insert({
-      compte_id: compteIdSelectionne,
-      actif_id: actifSelectionne.id,
-      type_transaction: type,
-      quantite: parseFloat(quantite),
-      prix_unitaire: parseFloat(prix),
-      date: dateTransaction,
-      user_id: userData.user.id
-    });
+    let error = null;
+    if (onSubmitTransaction) {
+      // Délègue l'insertion au parent (usePositions.ajouterTransaction)
+      const result = await onSubmitTransaction(transactionPayload);
+      error = result?.error;
+    } else {
+      // Fallback : insert direct dans transactions_bourse (legacy)
+      const { data: userData } = await supabase.auth.getUser();
+      const result = await supabase.from('transactions_bourse').insert({
+        compte_id: compteIdSelectionne,
+        actif_id: actifSelectionne.id,
+        type_transaction: type,
+        quantite: parseFloat(quantite),
+        prix_unitaire: parseFloat(prix),
+        date: dateTransaction,
+        user_id: userData.user.id,
+      });
+      error = result.error;
+    }
+
+    setLoadingSubmit(false);
 
     if (error) {
       alert("Erreur lors de l'enregistrement : " + error.message);
       return;
     }
+
+    // Réinitialisation du formulaire
+    setActifSelectionne(null);
+    setRecherche('');
+    setQuantite('');
+    setPrix('');
+    setDateTransaction(new Date().toISOString().split('T')[0]);
 
     if (onTransactionSuccess) onTransactionSuccess();
   };
@@ -393,10 +430,14 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
 
           <button
             type="submit"
-            className={`w-full py-3 rounded-xl font-bold mt-2 transition-colors ${type === 'ACHAT' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-red-600 hover:bg-red-500'
-              }`}
+            disabled={loadingSubmit}
+            className={`w-full py-3 rounded-xl font-bold mt-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              type === 'ACHAT' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-red-600 hover:bg-red-500'
+            }`}
           >
-            {type === 'ACHAT' ? 'Enregistrer l\'achat' : 'Enregistrer la vente'}
+            {loadingSubmit
+              ? 'Enregistrement...'
+              : type === 'ACHAT' ? "Enregistrer l'achat" : 'Enregistrer la vente'}
           </button>
         </form>
       )}
