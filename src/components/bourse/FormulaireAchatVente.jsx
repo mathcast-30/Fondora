@@ -57,8 +57,10 @@ export default function FormulaireAchatVente({ compteId, onTransactionSuccess, o
           .from('historique_prix_actifs')
           .select('prix_cloture')
           .eq('actif_id', actifSelectionne.id)
-          .eq('date', dateTransaction)
-          .single();
+          .lte('date', dateTransaction)
+          .order('date', { ascending: false })
+          .limit(1)
+          .maybeSingle();
           
         if (histData?.prix_cloture) {
           setPrix(histData.prix_cloture.toString());
@@ -69,7 +71,7 @@ export default function FormulaireAchatVente({ compteId, onTransactionSuccess, o
               .from('cache_des_prix_des_actifs')
               .select('prix')
               .eq('ticker', actifSelectionne.ticker)
-              .single();
+              .maybeSingle();
               
             if (cacheData?.prix) {
               setPrix(cacheData.prix.toString());
