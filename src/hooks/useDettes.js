@@ -54,13 +54,13 @@ export function useDettes() {
             const { data, error } = await supabase
                 .from('dettes')
                 .select(`
-          *,
-          biens_immobiliers (
-            id,
-            nom,
-            adresse
-          )
-        `)
+      *,
+      biens_immobiliers!dettes_bien_immobilier_id_fkey (
+        id,
+        nom,
+        adresse
+      )
+    `)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
