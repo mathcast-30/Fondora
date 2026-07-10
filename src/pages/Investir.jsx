@@ -700,6 +700,7 @@ function Investir() {
                     key={modalAchatVenteOuvert ? `open-${typeOrdre}` : 'closed'}
                     typeInitial={typeOrdre}
                     positionsExistantes={positions}
+                    comptes={comptes}
                     compteId={comptes.find(c => c.type === 'PEA' || c.type === 'CTO')?.id}
                     onSelectActif={setSelectedActifId}
                     onTransactionSuccess={() => {

@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 
-export default function FormulaireAchatVente({ compteId, onTransactionSuccess, onSelectActif, typeInitial = 'ACHAT', positionsExistantes = [] }) {
+export default function FormulaireAchatVente({ compteId, comptes = [], onTransactionSuccess, onSelectActif, typeInitial = 'ACHAT', positionsExistantes = [] }) {
+  // Comptes investissement filtrés (PEA, CTO)
+  const comptesInvest = comptes.filter(c => c.type === 'PEA' || c.type === 'CTO');
+
   const [recherche, setRecherche] = useState('');
   const [resultats, setResultats] = useState([]);
   const [actifSelectionne, setActifSelectionne] = useState(null);
@@ -11,6 +14,10 @@ export default function FormulaireAchatVente({ compteId, onTransactionSuccess, o
   const [dateTransaction, setDateTransaction] = useState(new Date().toISOString().split('T')[0]);
   const [loadingEnrich, setLoadingEnrich] = useState(false);
   const [loadingPrix, setLoadingPrix] = useState(false);
+  // Compte sélectionné : priorité au prop compteId, sinon 1er compte invest
+  const [compteIdSelectionne, setCompteIdSelectionne] = useState(
+    () => compteId || comptesInvest[0]?.id || ''
+  );
 
   // Reset quand typeInitial change (ouverture modal achat vs vente)
   useEffect(() => {
@@ -123,6 +130,12 @@ export default function FormulaireAchatVente({ compteId, onTransactionSuccess, o
 
   const soumettreTransaction = async (e) => {
     e.preventDefault();
+
+    if (!compteIdSelectionne) {
+      alert("Veuillez sélectionner un compte (PEA ou CTO) avant de valider.");
+      return;
+    }
+
     const { data: userData } = await supabase.auth.getUser();
 
     // Validation vente : quantité ne peut pas dépasser ce qu'on possède
@@ -134,7 +147,7 @@ export default function FormulaireAchatVente({ compteId, onTransactionSuccess, o
     }
 
     const { error } = await supabase.from('transactions_bourse').insert({
-      compte_id: compteId,
+      compte_id: compteIdSelectionne,
       actif_id: actifSelectionne.id,
       type_transaction: type,
       quantite: parseFloat(quantite),
@@ -157,6 +170,27 @@ export default function FormulaireAchatVente({ compteId, onTransactionSuccess, o
   return (
     <div className="bg-[#0a0f1d] p-6 rounded-2xl border border-slate-800 text-white w-full max-w-md">
       <h3 className="text-xl font-bold mb-4">Enregistrer un ordre</h3>
+
+      {/* Sélecteur de compte */}
+      {comptesInvest.length > 0 ? (
+        <div className="mb-4">
+          <label className="text-xs text-slate-400 block mb-1">Compte d'investissement</label>
+          <select
+            value={compteIdSelectionne}
+            onChange={e => setCompteIdSelectionne(e.target.value)}
+            className="w-full bg-[#161b2c] p-3 rounded-xl border border-slate-700 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          >
+            <option value="">-- Choisir un compte --</option>
+            {comptesInvest.map(c => (
+              <option key={c.id} value={c.id}>{c.nom} ({c.type})</option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <div className="mb-4 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-400">
+          ⚠️ Aucun compte PEA ou CTO trouvé. Créez-en un dans la section Patrimoine.
+        </div>
+      )}
 
       {/* Toggle Achat / Vente */}
       <div className="grid grid-cols-2 gap-2 bg-[#161b2c] p-1 rounded-xl mb-4">
