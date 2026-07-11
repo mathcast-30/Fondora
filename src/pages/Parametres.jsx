@@ -619,3 +619,8 @@ export default function Parametres() {
                             </div>
                         </section>
                     )}
+                </div>
+            </div>
+        </Layout>
+    )
+}
