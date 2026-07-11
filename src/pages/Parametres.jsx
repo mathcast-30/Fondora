@@ -74,7 +74,7 @@ export default function Parametres() {
 
     // Suppression compte
     const [deleteConfirm, setDeleteConfirm] = useState('')
-    const [deleteStep, setDeleteStep] = useState('idle') // idle | pending
+    const [deleteStep, setDeleteStep] = useState('idle') // idle | confirm | success
     const [deleteSending, setDeleteSending] = useState(false)
 
     useEffect(() => {
@@ -168,16 +168,28 @@ export default function Parametres() {
     }
 
     // ── Suppression compte ────────────────────────────────────────────────────
-    async function requestDeletion() {
+    // Remplace requestDeletion par ces deux fonctions :
+    async function confirmDeletion() {
         setDeleteSending(true)
-        const { data, error } = await supabase.functions.invoke('request-account-deletion')
-        setDeleteSending(false)
-        if (error || data?.error) {
-            showMsg(data?.error || error.message, 'error')
-            return
+        try {
+            const { data, error } = await supabase.functions.invoke('delete-account')
+            if (error || data?.error) {
+                showMsg(data?.error || error.message, 'error')
+                setDeleteSending(false)
+                setDeleteStep('idle')
+                return
+            }
+            setDeleteStep('success')
+            // Déconnexion après 3 secondes
+            setTimeout(async () => {
+                await supabase.auth.signOut()
+                window.location.href = '/login'
+            }, 3000)
+        } catch (err) {
+            showMsg(err.message, 'error')
+            setDeleteSending(false)
+            setDeleteStep('idle')
         }
-        setDeleteStep('pending')
-        setDeleteConfirm('')
     }
 
     return (
@@ -511,41 +523,70 @@ export default function Parametres() {
                     )}
 
                     {/* ══ COMPTE ══ */}
+                    {/* ══ COMPTE ══ */}
                     {activeSection === 'compte' && (
                         <section className="parametres-section">
                             <h2 className="parametres-section-titre">Supprimer mon compte</h2>
                             <div className="parametres-section-contenu">
 
-                                {deleteStep === 'pending' ? (
+                                {deleteStep === 'success' ? (
                                     <div style={{
-                                        background: 'rgba(234,179,8,0.05)',
-                                        border: '1px solid rgba(234,179,8,0.2)',
+                                        background: 'rgba(16,185,129,0.05)',
+                                        border: '1px solid rgba(16,185,129,0.2)',
                                         borderRadius: '12px',
                                         padding: '24px',
                                         maxWidth: '460px',
                                         textAlign: 'center'
                                     }}>
-                                        <div style={{ fontSize: '40px', marginBottom: '12px' }}>📧</div>
+                                        <div style={{ fontSize: '48px', marginBottom: '12px' }}>✅</div>
                                         <h3 style={{ color: 'var(--text-h)', margin: '0 0 8px', fontSize: '1.1rem' }}>
-                                            Email de confirmation envoyé
+                                            Compte supprimé
                                         </h3>
-                                        <p style={{ color: 'var(--text)', fontSize: '0.875rem', margin: '0 0 16px', lineHeight: 1.6 }}>
-                                            Un email a été envoyé à <strong>{email}</strong>. Clique sur le lien
-                                            dans l'email pour confirmer la suppression définitive de ton compte.
-                                            <br /><br />
-                                            <strong>Ce lien est valable 24 heures.</strong>
+                                        <p style={{ color: 'var(--text)', fontSize: '0.875rem', lineHeight: 1.6, margin: 0 }}>
+                                            Toutes tes données ont été définitivement supprimées conformément au RGPD (Art. 17).
+                                            Tu vas être déconnecté dans quelques secondes…
                                         </p>
-                                        <p style={{ color: '#6b7280', fontSize: '0.8125rem', margin: '0 0 20px' }}>
-                                            Tu n'as pas reçu l'email ? Vérifie tes spams.
-                                        </p>
-                                        <button
-                                            onClick={() => { setDeleteStep('idle'); setDeleteConfirm('') }}
-                                            className="parametres-btn parametres-btn--primary"
-                                            style={{ width: 'auto' }}
-                                        >
-                                            Annuler la demande
-                                        </button>
                                     </div>
+
+                                ) : deleteStep === 'confirm' ? (
+                                    <div style={{
+                                        background: 'rgba(239,68,68,0.05)',
+                                        border: '1px solid rgba(239,68,68,0.2)',
+                                        borderRadius: '12px',
+                                        padding: '24px',
+                                        maxWidth: '460px',
+                                        textAlign: 'center'
+                                    }}>
+                                        <div style={{ fontSize: '48px', marginBottom: '12px' }}>⚠️</div>
+                                        <h3 style={{ color: '#f87171', margin: '0 0 12px', fontSize: '1.1rem' }}>
+                                            Dernière confirmation
+                                        </h3>
+                                        <p style={{ color: 'var(--text)', fontSize: '0.875rem', lineHeight: 1.6, margin: '0 0 24px' }}>
+                                            Tu es sur le point de supprimer <strong>définitivement</strong> ton compte et
+                                            <strong> toutes tes données</strong> (comptes, transactions, positions, historique…).
+                                            <br /><br />
+                                            Cette action est <strong style={{ color: '#f87171' }}>irréversible</strong>.
+                                        </p>
+                                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                                            <button
+                                                onClick={() => { setDeleteStep('idle'); setDeleteConfirm('') }}
+                                                className="parametres-btn parametres-btn--primary"
+                                                disabled={deleteSending}
+                                                style={{ width: 'auto' }}
+                                            >
+                                                Annuler
+                                            </button>
+                                            <button
+                                                onClick={confirmDeletion}
+                                                disabled={deleteSending}
+                                                className="parametres-btn parametres-btn--danger"
+                                                style={{ width: 'auto' }}
+                                            >
+                                                {deleteSending ? '⏳ Suppression…' : '🗑️ Oui, supprimer définitivement'}
+                                            </button>
+                                        </div>
+                                    </div>
+
                                 ) : (
                                     <>
                                         <p className="parametres-hint" style={{ marginBottom: '16px' }}>
@@ -555,7 +596,7 @@ export default function Parametres() {
                                         </p>
                                         <div className="parametres-danger-zone">
                                             <p className="parametres-label" style={{ marginBottom: '8px' }}>
-                                                Pour confirmer, tape <code className="parametres-code">SUPPRIMER</code> :
+                                                Pour continuer, tape <code className="parametres-code">SUPPRIMER</code> :
                                             </p>
                                             <input
                                                 value={deleteConfirm}
@@ -565,11 +606,11 @@ export default function Parametres() {
                                                 style={{ marginBottom: '14px' }}
                                             />
                                             <button
-                                                onClick={requestDeletion}
-                                                disabled={deleteConfirm !== 'SUPPRIMER' || deleteSending}
+                                                onClick={() => setDeleteStep('confirm')}
+                                                disabled={deleteConfirm !== 'SUPPRIMER'}
                                                 className="parametres-btn parametres-btn--danger"
                                             >
-                                                {deleteSending ? '⏳ Envoi en cours…' : '🗑️ Supprimer mon compte'}
+                                                Continuer →
                                             </button>
                                         </div>
                                     </>
@@ -578,9 +619,3 @@ export default function Parametres() {
                             </div>
                         </section>
                     )}
-
-                </div>
-            </div>
-        </Layout>
-    )
-}
