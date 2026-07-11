@@ -13,6 +13,7 @@ import Onboarding from './pages/Onboarding'
 import ProtectedRoute from './components/ProtectedRoute'
 
 import { CurrencyProvider } from './context/CurrencyContext'
+import SupprimerCompteConfirmer from './pages/SupprimerCompteConfirmer'
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
           <Route path="/analyse" element={<ProtectedRoute><Analyse /></ProtectedRoute>} />
           <Route path="/parametres" element={<ProtectedRoute><Parametres /></ProtectedRoute>} />
           <Route path="/passifs" element={<ProtectedRoute><PassifsPage /></ProtectedRoute>} />
+          <Route path="/supprimer-compte/confirmer" element={<SupprimerCompteConfirmer />} />
         </Routes>
         <Analytics />
       </BrowserRouter>
