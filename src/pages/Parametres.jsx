@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { supabase } from '../lib/supabase'
 import Layout from '../components/Layout'
 import SwitchDevise from '../components/devises/SwitchDevise'
 import AffichageTaux from '../components/devises/AffichageTaux'
