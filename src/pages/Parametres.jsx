@@ -35,7 +35,6 @@ const SECTIONS = [
     { id: 'compte', label: '🗑️ Compte' },
 ]
 
-// ─── Composant Toggle réutilisable ─────────────────────────────────────────
 function Toggle({ value, onChange }) {
     return (
         <div
@@ -47,7 +46,6 @@ function Toggle({ value, onChange }) {
     )
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 export default function Parametres() {
     const [activeSection, setActiveSection] = useState('devises')
     const [saving, setSaving] = useState(false)
@@ -76,6 +74,8 @@ export default function Parametres() {
 
     // Suppression compte
     const [deleteConfirm, setDeleteConfirm] = useState('')
+    const [deleteStep, setDeleteStep] = useState('idle') // idle | pending
+    const [deleteSending, setDeleteSending] = useState(false)
 
     useEffect(() => {
         loadProfile()
@@ -168,18 +168,23 @@ export default function Parametres() {
     }
 
     // ── Suppression compte ────────────────────────────────────────────────────
-    async function deleteAccount() {
-        if (deleteConfirm !== 'SUPPRIMER') return
-        showMsg('Fonctionnalité disponible prochainement (nécessite une Edge Function)', 'error')
+    async function requestDeletion() {
+        setDeleteSending(true)
+        const { data, error } = await supabase.functions.invoke('request-account-deletion')
+        setDeleteSending(false)
+        if (error || data?.error) {
+            showMsg(data?.error || error.message, 'error')
+            return
+        }
+        setDeleteStep('pending')
+        setDeleteConfirm('')
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     return (
         <Layout>
             <h1 className="parametres-titre">Paramètres</h1>
             <p className="parametres-sous-titre">Personnalise ton expérience Fondora.</p>
 
-            {/* Message flash */}
             {msg && (
                 <div className={`parametres-msg ${msg.type === 'error' ? 'parametres-msg--error' : 'parametres-msg--success'}`}>
                     {msg.text}
@@ -187,7 +192,7 @@ export default function Parametres() {
             )}
 
             <div className="parametres-layout">
-                {/* ── Sidebar navigation ── */}
+                {/* ── Sidebar ── */}
                 <nav className="parametres-nav">
                     {SECTIONS.map(s => (
                         <button
@@ -200,10 +205,9 @@ export default function Parametres() {
                     ))}
                 </nav>
 
-                {/* ── Contenu ── */}
                 <div className="parametres-content">
 
-                    {/* ══ DEVISES (existant) ══════════════════════════════════════ */}
+                    {/* ══ DEVISES ══ */}
                     {activeSection === 'devises' && (
                         <section className="parametres-section">
                             <h2 className="parametres-section-titre">Devises &amp; Taux de change</h2>
@@ -216,7 +220,7 @@ export default function Parametres() {
                         </section>
                     )}
 
-                    {/* ══ PROFIL ══════════════════════════════════════════════════ */}
+                    {/* ══ PROFIL ══ */}
                     {activeSection === 'profil' && (
                         <section className="parametres-section">
                             <h2 className="parametres-section-titre">Profil</h2>
@@ -274,7 +278,7 @@ export default function Parametres() {
                         </section>
                     )}
 
-                    {/* ══ PRÉFÉRENCES ═════════════════════════════════════════════ */}
+                    {/* ══ PRÉFÉRENCES ══ */}
                     {activeSection === 'preferences' && (
                         <section className="parametres-section">
                             <h2 className="parametres-section-titre">Préférences</h2>
@@ -306,14 +310,12 @@ export default function Parametres() {
                         </section>
                     )}
 
-                    {/* ══ CATÉGORIES ══════════════════════════════════════════════ */}
+                    {/* ══ CATÉGORIES ══ */}
                     {activeSection === 'categories' && (
                         <section className="parametres-section">
                             <h2 className="parametres-section-titre">Catégories personnalisées</h2>
                             <div className="parametres-section-contenu">
-
-                                {/* Ajouter */}
-                                <div className="parametres-card parametres-card--add">
+                                <div className="parametres-card--add">
                                     <p className="parametres-label" style={{ marginBottom: '10px' }}>Nouvelle catégorie</p>
                                     <div className="parametres-row-add">
                                         <input
@@ -337,22 +339,16 @@ export default function Parametres() {
                                             value={newCategorie.couleur}
                                             onChange={e => setNewCategorie(p => ({ ...p, couleur: e.target.value }))}
                                             className="parametres-color-picker"
-                                            title="Choisir une couleur"
                                         />
                                         <button onClick={addCategorie} className="parametres-btn parametres-btn--success">
                                             + Ajouter
                                         </button>
                                     </div>
                                 </div>
-
-                                {/* Liste */}
                                 <div className="parametres-liste">
                                     {categories.map(cat => (
                                         <div key={cat.id} className="parametres-liste-item">
-                                            <span
-                                                className="parametres-cat-dot"
-                                                style={{ backgroundColor: cat.couleur }}
-                                            />
+                                            <span className="parametres-cat-dot" style={{ backgroundColor: cat.couleur }} />
                                             {editingCat?.id === cat.id ? (
                                                 <>
                                                     <input
@@ -395,12 +391,11 @@ export default function Parametres() {
                                         </div>
                                     ))}
                                 </div>
-
                             </div>
                         </section>
                     )}
 
-                    {/* ══ SMART RULES ═════════════════════════════════════════════ */}
+                    {/* ══ SMART RULES ══ */}
                     {activeSection === 'smart_rules' && (
                         <section className="parametres-section">
                             <h2 className="parametres-section-titre">Règles de catégorisation automatique</h2>
@@ -409,9 +404,7 @@ export default function Parametres() {
                                     Lors d'un import CSV, si la description contient le mot-clé, la transaction est catégorisée automatiquement.
                                     Une priorité plus basse = appliquée en premier.
                                 </p>
-
-                                {/* Ajouter */}
-                                <div className="parametres-card parametres-card--add">
+                                <div className="parametres-card--add">
                                     <p className="parametres-label" style={{ marginBottom: '10px' }}>Nouvelle règle</p>
                                     <div className="parametres-row-add">
                                         <input
@@ -446,8 +439,6 @@ export default function Parametres() {
                                         </button>
                                     </div>
                                 </div>
-
-                                {/* Liste */}
                                 {rulesLoading ? (
                                     <p className="parametres-hint">Chargement…</p>
                                 ) : rules.length === 0 ? (
@@ -460,20 +451,16 @@ export default function Parametres() {
                                                 <span className="parametres-rule-keyword">{rule.mot_cle}</span>
                                                 <span className="parametres-rule-arrow">→</span>
                                                 <span className="parametres-liste-item-nom">{rule.categories?.nom || '—'}</span>
-                                                <button
-                                                    onClick={() => deleteRule(rule.id)}
-                                                    className="parametres-icon-btn parametres-icon-btn--danger"
-                                                >🗑️</button>
+                                                <button onClick={() => deleteRule(rule.id)} className="parametres-icon-btn parametres-icon-btn--danger">🗑️</button>
                                             </div>
                                         ))}
                                     </div>
                                 )}
-
                             </div>
                         </section>
                     )}
 
-                    {/* ══ NOTIFICATIONS ═══════════════════════════════════════════ */}
+                    {/* ══ NOTIFICATIONS ══ */}
                     {activeSection === 'notifications' && (
                         <section className="parametres-section">
                             <h2 className="parametres-section-titre">Mes alertes</h2>
@@ -481,7 +468,6 @@ export default function Parametres() {
                                 <p className="parametres-hint" style={{ marginBottom: '20px' }}>
                                     Active ou désactive chaque type de notification in-app.
                                 </p>
-
                                 {alertesLoading ? (
                                     <p className="parametres-hint">Chargement…</p>
                                 ) : alertes.length === 0 ? (
@@ -524,34 +510,71 @@ export default function Parametres() {
                         </section>
                     )}
 
-                    {/* ══ COMPTE ══════════════════════════════════════════════════ */}
+                    {/* ══ COMPTE ══ */}
                     {activeSection === 'compte' && (
                         <section className="parametres-section">
                             <h2 className="parametres-section-titre">Supprimer mon compte</h2>
                             <div className="parametres-section-contenu">
-                                <p className="parametres-hint" style={{ marginBottom: '16px' }}>
-                                    Cette action est <strong style={{ color: '#f87171' }}>irréversible</strong>.
-                                    Toutes tes données (comptes, transactions, positions, historique…) seront définitivement supprimées.
-                                </p>
-                                <div className="parametres-danger-zone">
-                                    <p className="parametres-label" style={{ marginBottom: '8px' }}>
-                                        Pour confirmer, tape <code className="parametres-code">SUPPRIMER</code> :
-                                    </p>
-                                    <input
-                                        value={deleteConfirm}
-                                        onChange={e => setDeleteConfirm(e.target.value)}
-                                        placeholder="SUPPRIMER"
-                                        className="parametres-input"
-                                        style={{ marginBottom: '14px' }}
-                                    />
-                                    <button
-                                        onClick={deleteAccount}
-                                        disabled={deleteConfirm !== 'SUPPRIMER'}
-                                        className="parametres-btn parametres-btn--danger"
-                                    >
-                                        Supprimer définitivement mon compte
-                                    </button>
-                                </div>
+
+                                {deleteStep === 'pending' ? (
+                                    <div style={{
+                                        background: 'rgba(234,179,8,0.05)',
+                                        border: '1px solid rgba(234,179,8,0.2)',
+                                        borderRadius: '12px',
+                                        padding: '24px',
+                                        maxWidth: '460px',
+                                        textAlign: 'center'
+                                    }}>
+                                        <div style={{ fontSize: '40px', marginBottom: '12px' }}>📧</div>
+                                        <h3 style={{ color: 'var(--text-h)', margin: '0 0 8px', fontSize: '1.1rem' }}>
+                                            Email de confirmation envoyé
+                                        </h3>
+                                        <p style={{ color: 'var(--text)', fontSize: '0.875rem', margin: '0 0 16px', lineHeight: 1.6 }}>
+                                            Un email a été envoyé à <strong>{email}</strong>. Clique sur le lien
+                                            dans l'email pour confirmer la suppression définitive de ton compte.
+                                            <br /><br />
+                                            <strong>Ce lien est valable 24 heures.</strong>
+                                        </p>
+                                        <p style={{ color: '#6b7280', fontSize: '0.8125rem', margin: '0 0 20px' }}>
+                                            Tu n'as pas reçu l'email ? Vérifie tes spams.
+                                        </p>
+                                        <button
+                                            onClick={() => { setDeleteStep('idle'); setDeleteConfirm('') }}
+                                            className="parametres-btn parametres-btn--primary"
+                                            style={{ width: 'auto' }}
+                                        >
+                                            Annuler la demande
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <p className="parametres-hint" style={{ marginBottom: '16px' }}>
+                                            Cette action est <strong style={{ color: '#f87171' }}>irréversible</strong>.
+                                            Toutes tes données (comptes, transactions, positions, historique…) seront
+                                            définitivement supprimées conformément au <strong>RGPD (Art. 17)</strong>.
+                                        </p>
+                                        <div className="parametres-danger-zone">
+                                            <p className="parametres-label" style={{ marginBottom: '8px' }}>
+                                                Pour confirmer, tape <code className="parametres-code">SUPPRIMER</code> :
+                                            </p>
+                                            <input
+                                                value={deleteConfirm}
+                                                onChange={e => setDeleteConfirm(e.target.value)}
+                                                placeholder="SUPPRIMER"
+                                                className="parametres-input"
+                                                style={{ marginBottom: '14px' }}
+                                            />
+                                            <button
+                                                onClick={requestDeletion}
+                                                disabled={deleteConfirm !== 'SUPPRIMER' || deleteSending}
+                                                className="parametres-btn parametres-btn--danger"
+                                            >
+                                                {deleteSending ? '⏳ Envoi en cours…' : '🗑️ Supprimer mon compte'}
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+
                             </div>
                         </section>
                     )}
