@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { RadialBarChart, RadialBar, ResponsiveContainer, PolarAngleAxis } from 'recharts';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import SecureValue from '../SecureValue';
 
 export default function JaugeEpargneChart({ epargneRealisee }) {
     const { user } = useAuth();
@@ -76,9 +77,9 @@ export default function JaugeEpargneChart({ epargneRealisee }) {
             
             <div className="text-center mt-2">
                 <p className="text-slate-600 font-medium">
-                    <span className={pourcentage >= 100 ? 'text-emerald font-bold' : 'text-slate-800'}>{formatMontant(epargne)}</span> 
+                    <span className={pourcentage >= 100 ? 'text-emerald font-bold' : 'text-slate-800'}><SecureValue value={epargne} formatter={formatMontant} /></span> 
                     <span className="text-slate-400 mx-1">/</span> 
-                    {formatMontant(currentObjectif)}
+                    <SecureValue value={currentObjectif} formatter={formatMontant} />
                 </p>
                 <p className="text-xs text-slate-400 mt-1">épargne réalisée ce mois</p>
             </div>

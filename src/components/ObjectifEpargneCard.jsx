@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Target, Pencil } from 'lucide-react'
+import SecureValue from './SecureValue'
 
 function ObjectifEpargneCard({ objectif, soldeActuel, onDefinirObjectif }) {
     const [editionOuverte, setEditionOuverte] = useState(false)
@@ -56,8 +57,8 @@ function ObjectifEpargneCard({ objectif, soldeActuel, onDefinirObjectif }) {
             </div>
 
             <div className="flex items-end justify-between mb-2">
-                <p className="text-navy font-bold text-2xl">{formatMontant(soldeActuel)}</p>
-                <p className="text-gray-400 text-sm">objectif : {formatMontant(montantCible)}</p>
+                <p className="text-navy font-bold text-2xl"><SecureValue value={soldeActuel} formatter={formatMontant} /></p>
+                <p className="text-gray-400 text-sm">objectif : <SecureValue value={montantCible} formatter={formatMontant} /></p>
             </div>
 
             <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden mb-2">

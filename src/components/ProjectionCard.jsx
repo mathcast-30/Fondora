@@ -1,3 +1,5 @@
+import SecureValue from './SecureValue'
+
 function ProjectionCard({ projection }) {
     const { soldeActuel, soldeProjete, jourActuel, joursDansLeMois, estMoisActuel } = projection
 
@@ -18,13 +20,13 @@ function ProjectionCard({ projection }) {
             <div className="flex items-center justify-between mb-3">
                 <div>
                     <p className="text-gray-400 text-xs">Solde actuel</p>
-                    <p className="text-navy font-bold text-lg">{formatMontant(soldeActuel)}</p>
+                    <p className="text-navy font-bold text-lg"><SecureValue value={soldeActuel} formatter={formatMontant} /></p>
                 </div>
                 <div className="text-gray-300 text-xl">→</div>
                 <div className="text-right">
                     <p className="text-gray-400 text-xs">Solde projeté en fin de mois</p>
                     <p className={`font-bold text-lg ${soldeProjete >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                        {formatMontant(soldeProjete)}
+                        <SecureValue value={soldeProjete} formatter={formatMontant} />
                     </p>
                 </div>
             </div>

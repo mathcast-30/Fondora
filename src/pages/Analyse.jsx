@@ -3,6 +3,7 @@ import Layout from '../components/Layout'
 import BarChartComparatif from '../components/BarChartComparatif'
 import LineChartSolde from '../components/LineChartSolde'
 import StatCard from '../components/StatCard'
+import SecureValue from '../components/SecureValue'
 import AnalyseFraisTab from '../components/investir/AnalyseFraisTab'
 import { AnalyseurFiscal } from '../components/analyse/AnalyseurFiscal'
 import { useTransactionsPeriode } from '../hooks/useTransactionsPeriode'
@@ -87,26 +88,26 @@ function Analyse() {
                             <div className="grid grid-cols-4 gap-4">
                                 <StatCard
                                     label="Mois actuel"
-                                    valeur={formatMontant(moisActuel?.solde || 0)}
+                                    valeur={<SecureValue value={moisActuel?.solde || 0} formatter={formatMontant} />}
                                     sousTexte="Solde de ce mois"
                                     couleur={moisActuel?.solde >= 0 ? '#10b981' : '#ef4444'}
                                 />
                                 <StatCard
                                     label="Meilleur mois"
                                     valeur={meilleurMois?.label || '-'}
-                                    sousTexte={formatMontant(meilleurMois?.solde || 0)}
+                                    sousTexte={<SecureValue value={meilleurMois?.solde || 0} formatter={formatMontant} />}
                                 />
                                 <StatCard
                                     label="Moyenne du solde"
-                                    valeur={formatMontant(moyenneSolde)}
+                                    valeur={<SecureValue value={moyenneSolde} formatter={formatMontant} />}
                                     sousTexte={`sur ${nombreMois} mois`}
                                 />
                                 <StatCard
                                     label="Taux d'épargne moyen"
-                                    valeur={`${moyenneTauxEpargne.toFixed(1)} %`}
+                                    valeur={<SecureValue value={moyenneTauxEpargne} formatter={v => `${v.toFixed(1)} %`} />}
                                     sousTexte={
                                         moisActuel
-                                            ? `Ce mois-ci : ${moisActuel.tauxEpargne.toFixed(1)} %`
+                                            ? <span>Ce mois-ci : <SecureValue value={moisActuel.tauxEpargne} formatter={v => `${v.toFixed(1)} %`} /></span>
                                             : ''
                                     }
                                     couleur="#10b981"
@@ -117,8 +118,8 @@ function Analyse() {
                             <div className={`rounded-xl p-4 ${ecartParRapportMoyenne >= 0 ? 'bg-emerald/10' : 'bg-red-50'}`}>
                                 <p className={`text-sm font-medium ${ecartParRapportMoyenne >= 0 ? 'text-emerald' : 'text-red-500'}`}>
                                     {ecartParRapportMoyenne >= 0
-                                        ? `📈 Ce mois-ci tu es ${formatMontant(Math.abs(ecartParRapportMoyenne))} au-dessus de ta moyenne habituelle, continue comme ça !`
-                                        : `📉 Ce mois-ci tu es ${formatMontant(Math.abs(ecartParRapportMoyenne))} en-dessous de ta moyenne habituelle.`}
+                                        ? <span>📈 Ce mois-ci tu es <SecureValue value={Math.abs(ecartParRapportMoyenne)} formatter={formatMontant} /> au-dessus de ta moyenne habituelle, continue comme ça !</span>
+                                        : <span>📉 Ce mois-ci tu es <SecureValue value={Math.abs(ecartParRapportMoyenne)} formatter={formatMontant} /> en-dessous de ta moyenne habituelle.</span>}
                                 </p>
                             </div>
 

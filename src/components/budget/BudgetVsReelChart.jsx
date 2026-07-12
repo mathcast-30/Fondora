@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { useIncognito } from '../../context/IncognitoContext';
 
 export default function BudgetVsReelChart({ transactions = [], budgets = [], categories = [] }) {
+    const { incognito } = useIncognito();
     const [periode, setPeriode] = useState('actuel'); // 'actuel' ou 'precedent'
 
     const hasData = transactions && transactions.length > 0;
@@ -41,10 +43,10 @@ export default function BudgetVsReelChart({ transactions = [], budgets = [], cat
             return (
                 <div className="bg-white p-3 border border-gray-100 shadow-lg rounded-xl">
                     <p className="font-semibold text-navy mb-2">{label}</p>
-                    <p className="text-sm text-slate-600">Budget : {formatMontant(budget)}</p>
-                    <p className="text-sm text-slate-600">Réel : {formatMontant(reel)}</p>
+                    <p className="text-sm text-slate-600">Budget : {incognito ? '••••' : formatMontant(budget)}</p>
+                    <p className="text-sm text-slate-600">Réel : {incognito ? '••••' : formatMontant(reel)}</p>
                     <p className={`text-sm font-medium mt-1 ${ecart >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                        Écart : {ecart >= 0 ? '+' : ''}{formatMontant(ecart)}
+                        Écart : {ecart >= 0 ? '+' : ''}{incognito ? '••••' : formatMontant(ecart)}
                     </p>
                 </div>
             );
@@ -77,7 +79,7 @@ export default function BudgetVsReelChart({ transactions = [], budgets = [], cat
                     <BarChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(val) => `€${val}`} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(val) => incognito ? '••••' : `€${val}`} />
                         <Tooltip content={<CustomTooltip />} />
                         <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
                         <Bar dataKey="budget" name="Budget" fill="#1e3a5f" radius={[4, 4, 0, 0]} barSize={20} />

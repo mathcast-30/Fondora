@@ -4,6 +4,7 @@ import Modal from '../components/Modal'
 import BudgetBar from '../components/BudgetBar'
 import SankeyChart from '../components/SankeyChart'
 import DonutChart from '../components/DonutChart'
+import SecureValue from '../components/SecureValue'
 import { useTransactions } from '../hooks/useTransactions'
 import { useCategories } from '../hooks/useCategories'
 import { useComptes } from '../hooks/useComptes'
@@ -131,15 +132,15 @@ function Budget() {
             <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-white rounded-xl p-4 shadow-sm">
                     <p className="text-gray-400 text-sm mb-1">Revenus</p>
-                    <p className="text-emerald font-bold text-xl">+{formatMontant(totalRevenus)}</p>
+                    <p className="text-emerald font-bold text-xl">+<SecureValue value={totalRevenus} formatter={formatMontant} /></p>
                 </div>
                 <div className="bg-white rounded-xl p-4 shadow-sm">
                     <p className="text-gray-400 text-sm mb-1">Dépenses</p>
-                    <p className="text-red-500 font-bold text-xl">-{formatMontant(totalDepenses)}</p>
+                    <p className="text-red-500 font-bold text-xl">-<SecureValue value={totalDepenses} formatter={formatMontant} /></p>
                 </div>
                 <div className="bg-white rounded-xl p-4 shadow-sm">
                     <p className="text-gray-400 text-sm mb-1">Solde</p>
-                    <p className={`font-bold text-xl ${solde >= 0 ? 'text-navy' : 'text-red-500'}`}>{formatMontant(solde)}</p>
+                    <p className={`font-bold text-xl ${solde >= 0 ? 'text-navy' : 'text-red-500'}`}><SecureValue value={solde} formatter={formatMontant} /></p>
                 </div>
             </div>
 
@@ -150,7 +151,7 @@ function Budget() {
                         {variationsComptes.map((c, idx) => (
                             <li key={idx} className="flex items-center gap-2">
                                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-                                {c.nom} : <span className={c.diff >= 0 ? 'text-emerald font-semibold' : 'text-red-500 font-semibold'}>{c.diff >= 0 ? '+' : ''}{formatMontant(c.diff)}</span>
+                                {c.nom} : <span className={c.diff >= 0 ? 'text-emerald font-semibold' : 'text-red-500 font-semibold'}>{c.diff >= 0 ? '+' : ''}<SecureValue value={c.diff} formatter={formatMontant} /></span>
                             </li>
                         ))}
                     </ul>
@@ -235,7 +236,7 @@ function Budget() {
                             </div>
                             <div className="flex items-center gap-4">
                                 <p className={`font-semibold ${t.type === 'revenu' ? 'text-emerald' : 'text-red-500'}`}>
-                                    {t.type === 'revenu' ? '+' : '-'}{formatMontant(t.montant)}
+                                    {t.type === 'revenu' ? '+' : '-'}<SecureValue value={t.montant} formatter={formatMontant} />
                                 </p>
                                 <button onClick={() => supprimerTransaction(t.id)} className="text-gray-300 hover:text-red-500 transition">
                                     <Trash2 size={16} />

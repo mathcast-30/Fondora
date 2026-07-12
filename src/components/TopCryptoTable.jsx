@@ -1,3 +1,5 @@
+import SecureValue from './SecureValue'
+
 function TopCryptoTable({ data, loading }) {
     const formatMontant = (m) =>
         new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(m)
@@ -33,14 +35,14 @@ function TopCryptoTable({ data, loading }) {
                                     </div>
                                 </div>
                             </td>
-                            <td className="text-right px-4 py-3 font-medium text-navy">{formatMontant(coin.current_price)}</td>
+                            <td className="text-right px-4 py-3 font-medium text-navy"><SecureValue value={coin.current_price} formatter={formatMontant} /></td>
                             <td className={`text-right px-4 py-3 ${coin.price_change_percentage_24h >= 0 ? 'text-emerald' : 'text-red-500'}`}>
                                 {coin.price_change_percentage_24h >= 0 ? '+' : ''}{coin.price_change_percentage_24h?.toFixed(1)}%
                             </td>
                             <td className={`text-right px-4 py-3 ${coin.price_change_percentage_7d_in_currency >= 0 ? 'text-emerald' : 'text-red-500'}`}>
                                 {coin.price_change_percentage_7d_in_currency >= 0 ? '+' : ''}{coin.price_change_percentage_7d_in_currency?.toFixed(1)}%
                             </td>
-                            <td className="text-right px-4 py-3 text-gray-500">{formatCapitalisation(coin.market_cap)}</td>
+                            <td className="text-right px-4 py-3 text-gray-500"><SecureValue value={coin.market_cap} formatter={formatCapitalisation} /></td>
                         </tr>
                     ))}
                 </tbody>

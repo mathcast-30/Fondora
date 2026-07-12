@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 
 const IncognitoContext = createContext();
 
@@ -7,7 +7,7 @@ export function IncognitoProvider({ children }) {
     try {
       const saved = localStorage.getItem('fondora_incognito');
       return saved ? JSON.parse(saved) : false;
-    } catch (e) {
+    } catch {
       return false;
     }
   });
@@ -20,8 +20,10 @@ export function IncognitoProvider({ children }) {
     setIncognito(prev => !prev);
   };
 
+  const value = useMemo(() => ({ incognito, toggleIncognito }), [incognito]);
+
   return (
-    <IncognitoContext.Provider value={{ incognito, toggleIncognito }}>
+    <IncognitoContext.Provider value={value}>
       {children}
     </IncognitoContext.Provider>
   );

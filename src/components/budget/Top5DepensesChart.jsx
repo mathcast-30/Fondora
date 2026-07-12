@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useIncognito } from '../../context/IncognitoContext';
 
 export default function Top5DepensesChart({ transactions = [] }) {
+    const { incognito } = useIncognito();
     const [periode, setPeriode] = useState('actuel');
 
     const hasData = transactions && transactions.length > 0;
@@ -40,7 +42,7 @@ export default function Top5DepensesChart({ transactions = [] }) {
             return (
                 <div className="bg-white p-3 border border-gray-100 shadow-lg rounded-xl">
                     <p className="font-semibold text-navy mb-1">{label}</p>
-                    <p className="text-sm text-red-500 font-medium">-{formatMontant(payload[0].value)}</p>
+                    <p className="text-sm text-red-500 font-medium">-{incognito ? '••••' : formatMontant(payload[0].value)}</p>
                 </div>
             );
         }
@@ -74,7 +76,7 @@ export default function Top5DepensesChart({ transactions = [] }) {
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data} layout="vertical" margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f3f4f6" />
-                        <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(val) => `€${val}`} />
+                        <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(val) => incognito ? '••••' : `€${val}`} />
                         <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#1e3a5f', fontWeight: 500 }} width={80} />
                         <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
                         <Bar dataKey="montant" radius={[0, 4, 4, 0]} barSize={24}>

@@ -1,8 +1,11 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
+import { useIncognito } from '../context/IncognitoContext'
+import SecureValue from './SecureValue'
 
 const COULEURS_DEFAUT = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1']
 
 function DonutChart({ data, total, valueKey = 'montant', nameKey = 'nom', colorKey = 'couleur', libelleCentre = 'Total' }) {
+    const { incognito } = useIncognito()
     const formatMontant = (m) =>
         new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(m)
 
@@ -26,12 +29,12 @@ function DonutChart({ data, total, valueKey = 'montant', nameKey = 'nom', colorK
                             <Cell key={index} fill={entry[colorKey] || COULEURS_DEFAUT[index % COULEURS_DEFAUT.length]} />
                         ))}
                     </Pie>
-                    <Tooltip formatter={(value) => formatMontant(value)} />
+                    <Tooltip formatter={(value) => incognito ? '••••' : formatMontant(value)} />
                 </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <p className="text-gray-400 text-xs">{libelleCentre}</p>
-                <p className="text-navy font-bold text-lg">{formatMontant(total)}</p>
+                <p className="text-navy font-bold text-lg"><SecureValue value={total} formatter={formatMontant} /></p>
             </div>
         </div>
     )

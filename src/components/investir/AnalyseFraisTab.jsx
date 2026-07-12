@@ -2,9 +2,12 @@ import React from 'react'
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
 import { ShieldAlert, AlertTriangle, TrendingDown, Activity } from 'lucide-react'
 import { useAnalyseFrais } from '../../hooks/useAnalyseFrais'
+import SecureValue from '../SecureValue'
+import { useIncognito } from '../../context/IncognitoContext'
 
 export default function AnalyseFraisTab() {
     const { kpis, simulateur, loading, donnees } = useAnalyseFrais()
+    const { incognito } = useIncognito()
 
     const formatMontant = (m) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(m)
     const formatPourcent = (p) => new Intl.NumberFormat('fr-FR', { style: 'percent', minimumFractionDigits: 2 }).format(p)
@@ -55,7 +58,7 @@ export default function AnalyseFraisTab() {
                             </div>
                             <div>
                                 <p className="text-xs text-slate-400 font-medium">Frais Estimés (An 1)</p>
-                                <p className="text-xl font-bold text-red-500">{formatMontant(kpis.totalFraisAnnuels)}</p>
+                                <p className="text-xl font-bold text-red-500"><SecureValue value={kpis.totalFraisAnnuels} formatter={formatMontant} /></p>
                             </div>
                         </div>
                         <div className="bg-[#0f172a] p-5 rounded-2xl shadow-sm border border-slate-800 flex items-center gap-4">
@@ -64,7 +67,7 @@ export default function AnalyseFraisTab() {
                             </div>
                             <div>
                                 <p className="text-xs text-slate-400 font-medium">Siphonné (30 ans)</p>
-                                <p className="text-xl font-bold text-purple-400">-{formatMontant(manque30Ans)}</p>
+                                <p className="text-xl font-bold text-purple-400">-<SecureValue value={manque30Ans} formatter={formatMontant} /></p>
                             </div>
                         </div>
                         <div className="bg-[#0f172a] p-5 rounded-2xl shadow-sm border border-slate-800 flex items-center justify-between">
@@ -90,7 +93,7 @@ export default function AnalyseFraisTab() {
                             </div>
                             <div className="text-right">
                                 <p className="text-xs text-slate-500 font-semibold uppercase">Impact à 20 ans</p>
-                                <p className="text-2xl font-black text-red-500">-{formatMontant(manque20Ans)}</p>
+                                <p className="text-2xl font-black text-red-500">-<SecureValue value={manque20Ans} formatter={formatMontant} /></p>
                             </div>
                         </div>
                         
@@ -108,10 +111,10 @@ export default function AnalyseFraisTab() {
                                         </linearGradient>
                                     </defs>
                                     <XAxis dataKey="annee" stroke="#475569" tickFormatter={(v) => `An ${v}`} />
-                                    <YAxis stroke="#475569" tickFormatter={(v) => `${(v/1000).toFixed(0)}k€`} />
+                                    <YAxis stroke="#475569" tickFormatter={(v) => incognito ? '••••' : `${(v/1000).toFixed(0)}k€`} />
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
                                     <Tooltip 
-                                        formatter={(value, name) => [formatMontant(value), name === 'capitalBrut' ? 'Potentiel Brut (7%)' : 'Net de Frais (Ta poche)']}
+                                        formatter={(value, name) => [incognito ? '••••' : formatMontant(value), name === 'capitalBrut' ? 'Potentiel Brut (7%)' : 'Net de Frais (Ta poche)']}
                                         labelFormatter={(label) => `Année ${label}`}
                                         contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc', borderRadius: '8px' }}
                                         itemStyle={{ color: '#e2e8f0' }}

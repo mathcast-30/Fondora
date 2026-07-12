@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import CompteCard from '../components/CompteCard'
+import SecureValue from '../components/SecureValue'
 import ComparaisonINSEE from '../components/ComparaisonINSEE'
 import { useComptes } from '../hooks/useComptes'
 import { usePositions } from '../hooks/usePositions'
@@ -79,31 +80,31 @@ function Patrimoine() {
             {/* Patrimoine total consolidé */}
             <div className="bg-navy rounded-2xl p-6 mb-6">
                 <p className="text-gray-300 text-sm mb-1">Patrimoine brut total consolidé</p>
-                <p className="text-white text-3xl font-bold mb-1">{formatMontant(patrimoineTotal)}</p>
+                <p className="text-white text-3xl font-bold mb-1"><SecureValue value={patrimoineTotal} formatter={formatMontant} /></p>
                 <p className="text-sm mb-4" style={{ color: totalDettes > 0 ? '#FCA5A5' : '#6EE7B7' }}>
-                    Patrimoine net : <strong>{formatMontant(patrimoineNet)}</strong>
-                    {totalDettes > 0 && <span className="ml-2 text-xs opacity-75">(dettes : -{formatMontant(totalDettes)})</span>}
+                    Patrimoine net : <strong><SecureValue value={patrimoineNet} formatter={formatMontant} /></strong>
+                    {totalDettes > 0 && <span className="ml-2 text-xs opacity-75">(dettes : -<SecureValue value={totalDettes} formatter={formatMontant} />)</span>}
                 </p>
                 <div className="grid grid-cols-4 gap-4">
                     <div>
                         <p className="text-gray-400 text-xs mb-1">Comptes bancaires</p>
-                        <p className="text-white font-semibold">{formatMontant(totalComptes)}</p>
+                        <p className="text-white font-semibold"><SecureValue value={totalComptes} formatter={formatMontant} /></p>
                     </div>
                     <div>
                         <p className="text-gray-400 text-xs mb-1">Actions & ETF</p>
-                        <p className="text-emerald font-semibold">{formatMontant(totalActions)}</p>
+                        <p className="text-emerald font-semibold"><SecureValue value={totalActions} formatter={formatMontant} /></p>
                     </div>
                     <div>
                         <p className="text-gray-400 text-xs mb-1">Crypto</p>
-                        <p className="text-emerald font-semibold">{formatMontant(totalCrypto)}</p>
+                        <p className="text-emerald font-semibold"><SecureValue value={totalCrypto} formatter={formatMontant} /></p>
                     </div>
                     <div>
                         <p className="text-gray-400 text-xs mb-1">Immobilier</p>
-                        <p className="text-emerald font-semibold">{formatMontant(valeurTotaleImmo)}</p>
+                        <p className="text-emerald font-semibold"><SecureValue value={valeurTotaleImmo} formatter={formatMontant} /></p>
                     </div>
                     <div>
                         <p className="text-gray-400 text-xs mb-1">Dettes (CRD)</p>
-                        <p className="font-semibold" style={{ color: '#FCA5A5' }}>-{formatMontant(totalDettes)}</p>
+                        <p className="font-semibold" style={{ color: '#FCA5A5' }}>-<SecureValue value={totalDettes} formatter={formatMontant} /></p>
                     </div>
                 </div>
             </div>

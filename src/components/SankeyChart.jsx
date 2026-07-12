@@ -1,6 +1,8 @@
 import { Sankey, Tooltip, ResponsiveContainer } from 'recharts'
+import { useIncognito } from '../context/IncognitoContext'
 
 function SankeyChart({ totalRevenus, depensesParCategorie }) {
+    const { incognito } = useIncognito()
     // Construction des nœuds : Revenus -> chaque catégorie de dépense
     const nodes = [
         { name: 'Revenus' },
@@ -25,7 +27,7 @@ function SankeyChart({ totalRevenus, depensesParCategorie }) {
                 link={{ stroke: '#10b981', strokeOpacity: 0.3 }}
                 nodePadding={20}
             >
-                <Tooltip />
+                <Tooltip formatter={(value) => incognito ? '••••' : value} />
             </Sankey>
         </ResponsiveContainer>
     )

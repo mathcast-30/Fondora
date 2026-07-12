@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import Modal from './Modal'
+import SecureValue from './SecureValue'
 
 function DividendesCard({ dividendes, totalDouzeMois, valorisationTotale, positions, onAjouter, onSupprimer }) {
     const [modalOuvert, setModalOuvert] = useState(false)
@@ -36,11 +37,11 @@ function DividendesCard({ dividendes, totalDouzeMois, valorisationTotale, positi
             <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                     <p className="text-gray-400 text-xs mb-1">Dividendes (12 mois)</p>
-                    <p className="text-navy font-bold text-xl">{formatMontant(totalDouzeMois)}</p>
+                    <p className="text-navy font-bold text-xl"><SecureValue value={totalDouzeMois} formatter={formatMontant} /></p>
                 </div>
                 <div>
                     <p className="text-gray-400 text-xs mb-1">Rendement</p>
-                    <p className="text-emerald font-bold text-xl">{rendement.toFixed(2)} %</p>
+                    <p className="text-emerald font-bold text-xl"><SecureValue value={rendement} formatter={v => `${v.toFixed(2)} %`} /></p>
                 </div>
             </div>
 
@@ -52,7 +53,7 @@ function DividendesCard({ dividendes, totalDouzeMois, valorisationTotale, positi
                                 {d.positions_financieres?.symbole || 'Global'} • {new Date(d.date).toLocaleDateString('fr-FR')}
                             </span>
                             <div className="flex items-center gap-2">
-                                <span className="text-navy font-medium">{formatMontant(d.montant)}</span>
+                                <span className="text-navy font-medium"><SecureValue value={d.montant} formatter={formatMontant} /></span>
                                 <button onClick={() => onSupprimer(d.id)} className="text-gray-300 hover:text-red-500">
                                     <Trash2 size={14} />
                                 </button>

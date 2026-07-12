@@ -18,6 +18,7 @@ import FormulaireAchatVente from '../components/bourse/FormulaireAchatVente'
 import GraphiqueActif from '../components/bourse/GraphiqueActif'
 import AssuranceVieCard from '../components/assurance-vie/AssuranceVieCard'
 import FormAssuranceVie from '../components/assurance-vie/FormAssuranceVie'
+import SecureValue from '../components/SecureValue'
 import { useComptes } from '../hooks/useComptes'
 import { usePositions } from '../hooks/usePositions'
 import { useCoursBourse } from '../hooks/useCoursBourse'
@@ -29,6 +30,7 @@ import { useTopCrypto } from '../hooks/useTopCrypto'
 import { useBiensImmobiliers } from '../hooks/useBiensImmobiliers'
 import { useAssurancesVie } from '../hooks/useAssurancesVie'
 import { useAuth } from '../context/AuthContext'
+import { useIncognito } from '../context/IncognitoContext'
 import { calculerRentabilite } from '../lib/calculImmo'
 import { calculateXIRR, calculateCryptoRealizedPL, calculatePRU } from '../lib/financialCalculations'
 import { calculateDiversificationScore } from '../lib/diversificationScore'
@@ -36,7 +38,8 @@ import { Plus, Trash2, TrendingUp, Calculator, History, PlusCircle, MinusCircle,
 
 function Investir() {
     const [ongletActif, setOngletActif] = useState('actions')
-    const { user, isIncognito, profile } = useAuth()
+    const { user, profile } = useAuth()
+    const { incognito } = useIncognito()
     const { comptes } = useComptes()
     const [selectedActifId, setSelectedActifId] = useState(null)
     const [typeOrdre, setTypeOrdre] = useState('ACHAT')
@@ -300,9 +303,9 @@ function Investir() {
                     <div className="flex items-center justify-between bg-[#0f172a] rounded-3xl p-6 shadow-sm border border-slate-800">
                         <div>
                             <p className="text-gray-400 text-sm mb-1">Total Portefeuille Actions & ETF</p>
-                            <h2 className="text-white text-3xl font-bold">{formatMontant(valorisationTotale)}</h2>
+                            <h2 className="text-white text-3xl font-bold"><SecureValue value={valorisationTotale} formatter={formatMontant} /></h2>
                             <p className={`font-medium ${plusMoinsValueTotale >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                                {plusMoinsValueTotale >= 0 ? '+' : ''}{formatMontant(plusMoinsValueTotale)} ({investissementTotal > 0 ? ((plusMoinsValueTotale / investissementTotal) * 100).toFixed(2) : 0}%)
+                                {plusMoinsValueTotale >= 0 ? '+' : ''}<SecureValue value={plusMoinsValueTotale} formatter={formatMontant} /> (<SecureValue value={investissementTotal > 0 ? (plusMoinsValueTotale / investissementTotal) * 100 : 0} formatter={v => `${v.toFixed(2)}%`} />)
                             </p>
                         </div>
                         <div className="flex gap-2">
@@ -330,11 +333,11 @@ function Investir() {
                     <div className="grid grid-cols-4 gap-4">
                         <div className="bg-white rounded-xl p-5 shadow-sm">
                             <p className="text-gray-400 text-sm mb-1">Valorisation totale</p>
-                            <p className="text-navy text-2xl font-bold">{formatMontant(valorisationTotale)}</p>
+                            <p className="text-navy text-2xl font-bold"><SecureValue value={valorisationTotale} formatter={formatMontant} /></p>
                         </div>
                         <div className="bg-white rounded-xl p-5 shadow-sm">
                             <p className="text-gray-400 text-sm mb-1">Investi</p>
-                            <p className="text-navy text-2xl font-bold">{formatMontant(investissementTotal)}</p>
+                            <p className="text-navy text-2xl font-bold"><SecureValue value={investissementTotal} formatter={formatMontant} /></p>
                         </div>
                         <div className="bg-white rounded-xl p-5 shadow-sm">
                             <p className="text-gray-400 text-sm mb-1">Plus/moins-value latent</p>
@@ -350,7 +353,7 @@ function Investir() {
                                 <Calculator size={14} /> TRI (XIRR)
                             </p>
                             <p className="text-navy text-2xl font-bold">
-                                {xirrPortfolio !== null ? (xirrPortfolio * 100).toFixed(2) + '%' : 'N/A'}
+                                {xirrPortfolio !== null ? <SecureValue value={xirrPortfolio * 100} formatter={v => `${v.toFixed(2)}%`} /> : 'N/A'}
                             </p>
                         </div>
                     </div>
@@ -395,15 +398,15 @@ function Investir() {
                                                 <div className="flex items-center gap-4">
                                                     <div className="text-right">
                                                         <p className="text-xs text-gray-400">PRU</p>
-                                                        <p className="font-medium text-navy text-sm">{formatMontant(p.prix_achat_moyen, p.devise)}</p>
+                                                        <p className="font-medium text-navy text-sm"><SecureValue value={p.prix_achat_moyen} formatter={v => formatMontant(v, p.devise)} /></p>
                                                     </div>
                                                     <div className="text-right">
                                                         <p className="text-xs text-gray-400">Valeur</p>
-                                                        <p className="font-semibold text-navy text-sm">{formatMontant(valeurActuelle, p.devise)}</p>
+                                                        <p className="font-semibold text-navy text-sm"><SecureValue value={valeurActuelle} formatter={v => formatMontant(v, p.devise)} /></p>
                                                     </div>
                                                     <div className="text-right w-16">
                                                         <p className={`font-semibold text-sm ${plusMoinsValue >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                                                            {plusMoinsValue >= 0 ? '+' : ''}{displayMode === 'euro' ? formatMontant(plusMoinsValue) : pourcentage.toFixed(1) + '%'}
+                                                            {plusMoinsValue >= 0 ? '+' : ''}<SecureValue value={displayMode === 'euro' ? plusMoinsValue : pourcentage} formatter={v => displayMode === 'euro' ? formatMontant(v) : `${v.toFixed(1)}%`} />
                                                         </p>
                                                     </div>
                                                 </div>
@@ -480,16 +483,16 @@ function Investir() {
                     <div className="grid grid-cols-3 gap-4">
                         <div className="bg-white rounded-xl p-4 shadow-sm">
                             <p className="text-gray-400 text-xs mb-1">Valorisation</p>
-                            <p className="text-navy font-bold text-lg">{formatMontant(valorisationCrypto)}</p>
+                            <p className="text-navy font-bold text-lg"><SecureValue value={valorisationCrypto} formatter={formatMontant} /></p>
                         </div>
                         <div className="bg-white rounded-xl p-4 shadow-sm">
                             <p className="text-gray-400 text-xs mb-1">Investi</p>
-                            <p className="text-navy font-bold text-lg">{formatMontant(investiCrypto)}</p>
+                            <p className="text-navy font-bold text-lg"><SecureValue value={investiCrypto} formatter={formatMontant} /></p>
                         </div>
                         <div className="bg-white rounded-xl p-4 shadow-sm">
                             <p className="text-gray-400 text-xs mb-1">Plus/moins-value</p>
                             <p className={`font-bold text-lg ${plusMoinsValueCrypto >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                                {formatMontant(plusMoinsValueCrypto)}
+                                <SecureValue value={plusMoinsValueCrypto} formatter={formatMontant} />
                             </p>
                         </div>
                     </div>
@@ -504,17 +507,17 @@ function Investir() {
                             <div className="grid grid-cols-3 gap-4">
                                 <div>
                                     <p className="text-gray-400 text-sm mb-1">PRU Actuel</p>
-                                    <p className="text-navy text-xl font-bold">{formatMontant(currentPRU)}</p>
+                                    <p className="text-navy text-xl font-bold"><SecureValue value={currentPRU} formatter={formatMontant} /></p>
                                 </div>
                                 <div>
                                     <p className="text-gray-400 text-sm mb-1">Plus-value réalisée</p>
                                     <p className={`text-xl font-bold ${cryptoPnL.realizedPL >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                                        {formatMontant(cryptoPnL.realizedPL)}
+                                        <SecureValue value={cryptoPnL.realizedPL} formatter={formatMontant} />
                                     </p>
                                 </div>
                                 <div>
                                     <p className="text-gray-400 text-sm mb-1">Total investi</p>
-                                    <p className="text-navy text-xl font-bold">{formatMontant(cryptoPnL.totalCost)}</p>
+                                    <p className="text-navy text-xl font-bold"><SecureValue value={cryptoPnL.totalCost} formatter={formatMontant} /></p>
                                 </div>
                             </div>
                             <p className="text-xs text-gray-400 mt-3">
@@ -558,18 +561,18 @@ function Investir() {
                                                 <div className="flex items-center gap-4">
                                                     <div className="text-right">
                                                         <p className="text-xs text-gray-400">Cours</p>
-                                                        <p className="font-medium text-navy text-sm">{formatMontant(prixActuel)}</p>
+                                                        <p className="font-medium text-navy text-sm"><SecureValue value={prixActuel} formatter={formatMontant} /></p>
                                                         <p className={`text-xs ${variation24h >= 0 ? 'text-emerald' : 'text-red-500'}`}>
                                                             {variation24h >= 0 ? '+' : ''}{variation24h.toFixed(1)}% (24h)
                                                         </p>
                                                     </div>
                                                     <div className="text-right">
                                                         <p className="text-xs text-gray-400">Valeur</p>
-                                                        <p className="font-semibold text-navy text-sm">{formatMontant(valeurActuelle)}</p>
+                                                        <p className="font-semibold text-navy text-sm"><SecureValue value={valeurActuelle} formatter={formatMontant} /></p>
                                                     </div>
                                                     <div className="text-right w-16">
                                                         <p className={`font-semibold text-sm ${plusMoinsValue >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                                                            {plusMoinsValue >= 0 ? '+' : ''}{pourcentage.toFixed(1)}%
+                                                            {plusMoinsValue >= 0 ? '+' : ''}<SecureValue value={pourcentage} formatter={v => `${v.toFixed(1)}%`} />
                                                         </p>
                                                     </div>
                                                     <button onClick={() => supprimerCrypto(p.id)} className="text-gray-300 hover:text-red-500 transition">
@@ -600,7 +603,7 @@ function Investir() {
                     <div className="grid grid-cols-3 gap-4">
                         <div className="bg-navy rounded-xl p-5">
                             <p className="text-gray-300 text-sm mb-1">Valeur totale patrimoine immo</p>
-                            <p className="text-white text-2xl font-bold">{formatMontant(valeurTotaleImmo)}</p>
+                            <p className="text-white text-2xl font-bold"><SecureValue value={valeurTotaleImmo} formatter={formatMontant} /></p>
                         </div>
                         <div className="bg-white rounded-xl p-5 shadow-sm">
                             <p className="text-gray-400 text-sm mb-1">Nombre de biens</p>
@@ -609,7 +612,7 @@ function Investir() {
                         <div className="bg-white rounded-xl p-5 shadow-sm">
                             <p className="text-gray-400 text-sm mb-1">Cash-flow total mensuel</p>
                             <p className={`text-2xl font-bold ${cashFlowTotal >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                                {formatMontant(cashFlowTotal)}/mois
+                                <SecureValue value={cashFlowTotal} formatter={formatMontant} />/mois
                             </p>
                         </div>
                     </div>
@@ -752,7 +755,7 @@ function Investir() {
                         <div>
                             <p style={{ color: '#64748b', fontSize: '13px', margin: 0 }}>Patrimoine Assurance Vie</p>
                             <p style={{ color: '#f1f5f9', fontSize: '28px', fontWeight: 800, margin: '4px 0 0', letterSpacing: '-0.5px' }}>
-                                {isIncognito ? '••••••' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(valeurTotaleAV)}
+                                <SecureValue value={valeurTotaleAV} formatter={v => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(v)} />
                             </p>
                             <p style={{ color: '#64748b', fontSize: '12px', margin: '2px 0 0' }}>
                                 {contratsAV.length} contrat{contratsAV.length !== 1 ? 's' : ''}
@@ -798,7 +801,7 @@ function Investir() {
                                 <AssuranceVieCard
                                     key={contrat.id}
                                     metriques={metriques}
-                                    isIncognito={isIncognito}
+                                    isIncognito={incognito}
                                     situationFamiliale={profile?.situation_familiale || 'celibataire'}
                                     onOuvrirForm={ouvrirFormAV}
                                     onSupprimer={supprimerContratAV}

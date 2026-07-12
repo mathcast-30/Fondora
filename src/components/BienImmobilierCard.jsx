@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Trash2, ChevronDown, ChevronUp, Home, TrendingUp, TrendingDown, SlidersHorizontal } from 'lucide-react'
 import { calculerRentabilite } from '../lib/calculImmo'
 import { useDettes } from '../hooks/useDettes'
+import SecureValue from './SecureValue'
 
 function BienImmobilierCard({ bien, onSupprimer }) {
     const [deplié, setDeplié] = useState(false)
@@ -53,15 +54,15 @@ function BienImmobilierCard({ bien, onSupprimer }) {
                 <div className="flex items-center gap-4">
                     <div className="text-right">
                         <p className="text-xs text-gray-400">Valeur nette</p>
-                        <p className="font-bold text-navy">{fmt(valeurNette)}</p>
-                        <p className="text-xs text-gray-400">Valeur: {fmt(bienSim.valeur_actuelle)}</p>
+                        <p className="font-bold text-navy"><SecureValue value={valeurNette} formatter={fmt} /></p>
+                        <p className="text-xs text-gray-400">Valeur: <SecureValue value={bienSim.valeur_actuelle} formatter={fmt} /></p>
                     </div>
                     {estLocatif && (
                         <div className={`text-right ${cashFlowMensuel >= 0 ? 'text-emerald' : 'text-red-500'}`}>
                             <p className="text-xs text-gray-400">Cash-flow/mois</p>
                             <p className="font-bold flex items-center gap-1">
                                 {cashFlowMensuel >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                                {fmt(cashFlowMensuel)}
+                                <SecureValue value={cashFlowMensuel} formatter={fmt} />
                             </p>
                         </div>
                     )}
@@ -125,25 +126,25 @@ function BienImmobilierCard({ bien, onSupprimer }) {
                             <>
                                 <div className="bg-white rounded-lg p-3 text-center">
                                     <p className="text-xs text-gray-400">Rentabilité brute</p>
-                                    <p className="font-bold text-navy text-sm">{fmtPct(rentabiliteBrute)}</p>
+                                    <p className="font-bold text-navy text-sm"><SecureValue value={rentabiliteBrute} formatter={fmtPct} /></p>
                                 </div>
                                 <div className="bg-white rounded-lg p-3 text-center">
                                     <p className="text-xs text-gray-400">Rentabilité nette</p>
                                     <p className={`font-bold text-sm ${rentabiliteNette >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                                        {fmtPct(rentabiliteNette)}
+                                        <SecureValue value={rentabiliteNette} formatter={fmtPct} />
                                     </p>
                                 </div>
                                 <div className="bg-white rounded-lg p-3 text-center">
                                     <p className="text-xs text-gray-400">Cash-flow/mois</p>
                                     <p className={`font-bold text-sm ${cashFlowMensuel >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                                        {fmt(cashFlowMensuel)}
+                                        <SecureValue value={cashFlowMensuel} formatter={fmt} />
                                     </p>
                                 </div>
                             </>
                         )}
                         <div className="bg-white rounded-lg p-3 text-center">
                             <p className="text-xs text-gray-400">Valeur nette</p>
-                            <p className="font-bold text-navy text-sm">{fmt(valeurNette)}</p>
+                            <p className="font-bold text-navy text-sm"><SecureValue value={valeurNette} formatter={fmt} /></p>
                         </div>
                     </div>
                 </div>
@@ -157,16 +158,16 @@ function BienImmobilierCard({ bien, onSupprimer }) {
                         <h4 className="text-sm font-semibold text-navy mb-2">Valeur & Plus-value</h4>
                         <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Prix d'achat</span>
-                            <span className="font-medium text-navy">{fmt(bien.prix_achat)}</span>
+                            <span className="font-medium text-navy"><SecureValue value={bien.prix_achat} formatter={fmt} /></span>
                         </div>
                         <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Valeur actuelle</span>
-                            <span className="font-medium text-navy">{fmt(bienSim.valeur_actuelle)}</span>
+                            <span className="font-medium text-navy"><SecureValue value={bienSim.valeur_actuelle} formatter={fmt} /></span>
                         </div>
                         <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Plus-value latente</span>
                             <span className={`font-semibold ${plusValue >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                                {plusValue >= 0 ? '+' : ''}{fmt(plusValue)}
+                                {plusValue >= 0 ? '+' : ''}<SecureValue value={plusValue} formatter={fmt} />
                             </span>
                         </div>
 
@@ -176,7 +177,7 @@ function BienImmobilierCard({ bien, onSupprimer }) {
                                 <h4 className="text-sm font-semibold text-navy mt-3 mb-2">Crédit {detteLiee ? '(Lié)' : '(Legacy)'}</h4>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Montant emprunté</span>
-                                    <span className="font-medium text-navy">{fmt(detteLiee ? detteLiee.capital_emprunte : bien.montant_credit)}</span>
+                                    <span className="font-medium text-navy"><SecureValue value={detteLiee ? detteLiee.capital_emprunte : bien.montant_credit} formatter={fmt} /></span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Taux</span>
@@ -184,11 +185,11 @@ function BienImmobilierCard({ bien, onSupprimer }) {
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Mensualité</span>
-                                    <span className="font-medium text-navy">{fmt(detteLiee ? detteLiee.mensualite : mensualiteCredit)}/mois</span>
+                                    <span className="font-medium text-navy"><SecureValue value={detteLiee ? detteLiee.mensualite : mensualiteCredit} formatter={fmt} />/mois</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Capital restant dû</span>
-                                    <span className="font-semibold text-red-500">−{fmt(detteLiee ? detteLiee.crdActuel : capitalRestantDu)}</span>
+                                    <span className="font-semibold text-red-500">−<SecureValue value={detteLiee ? detteLiee.crdActuel : capitalRestantDu} formatter={fmt} /></span>
                                 </div>
                                 {(detteLiee ? (detteLiee.progression > 0) : (moisEcoules > 0)) && (
                                     <div className="flex justify-between text-sm">
@@ -198,7 +199,7 @@ function BienImmobilierCard({ bien, onSupprimer }) {
                                 )}
                                 <div className="flex justify-between text-sm border-t pt-2">
                                     <span className="text-gray-600 font-medium">Valeur nette</span>
-                                    <span className="font-bold text-navy">{fmt(bienSim.valeur_actuelle - (detteLiee ? detteLiee.crdActuel : capitalRestantDu))}</span>
+                                    <span className="font-bold text-navy"><SecureValue value={bienSim.valeur_actuelle - (detteLiee ? detteLiee.crdActuel : capitalRestantDu)} formatter={fmt} /></span>
                                 </div>
                             </>
                         )}
@@ -210,43 +211,43 @@ function BienImmobilierCard({ bien, onSupprimer }) {
                             <h4 className="text-sm font-semibold text-navy mb-2">Détail du cash-flow mensuel</h4>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-500">Loyer brut</span>
-                                <span className="font-medium text-emerald">+{fmt(bien.loyer_mensuel)}</span>
+                                <span className="font-medium text-emerald">+<SecureValue value={bien.loyer_mensuel} formatter={fmt} /></span>
                             </div>
                             {bien.taux_vacance > 0 && (
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Vacance locative ({bien.taux_vacance}%)</span>
                                     <span className="font-medium text-red-400">
-                                        −{fmt(bien.loyer_mensuel * (bien.taux_vacance / 100))}
+                                        −<SecureValue value={bien.loyer_mensuel * (bien.taux_vacance / 100)} formatter={fmt} />
                                     </span>
                                 </div>
                             )}
                             {mensualiteCredit > 0 && (
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Mensualité crédit</span>
-                                    <span className="font-medium text-red-500">−{fmt(mensualiteCredit)}</span>
+                                    <span className="font-medium text-red-500">−<SecureValue value={mensualiteCredit} formatter={fmt} /></span>
                                 </div>
                             )}
                             {chargesAnnuelles > 0 && (
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Charges (ramené/mois)</span>
-                                    <span className="font-medium text-red-500">−{fmt(chargesAnnuelles / 12)}</span>
+                                    <span className="font-medium text-red-500">−<SecureValue value={chargesAnnuelles / 12} formatter={fmt} /></span>
                                 </div>
                             )}
                             <div className="border-t pt-2 space-y-2">
                                 <div className="flex justify-between text-sm font-bold">
                                     <span className="text-gray-700">Cash-flow net/mois</span>
                                     <span className={cashFlowMensuel >= 0 ? 'text-emerald' : 'text-red-500'}>
-                                        {cashFlowMensuel >= 0 ? '+' : ''}{fmt(cashFlowMensuel)}
+                                        {cashFlowMensuel >= 0 ? '+' : ''}<SecureValue value={cashFlowMensuel} formatter={fmt} />
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Rentabilité brute</span>
-                                    <span className="font-semibold text-navy">{fmtPct(rentabiliteBrute)}</span>
+                                    <span className="font-semibold text-navy"><SecureValue value={rentabiliteBrute} formatter={fmtPct} /></span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Rentabilité nette</span>
                                     <span className={`font-semibold ${rentabiliteNette >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                                        {fmtPct(rentabiliteNette)}
+                                        <SecureValue value={rentabiliteNette} formatter={fmtPct} />
                                     </span>
                                 </div>
                             </div>

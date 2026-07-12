@@ -1,4 +1,5 @@
 // src/components/passifs/DetteCard.jsx
+import SecureValue from '../SecureValue';
 
 const CONFIG_TYPE = {
     Immobilier: { couleur: '#3B82F6', bg: '#EFF6FF', emoji: '🏠' },
@@ -137,13 +138,13 @@ export function DetteCard({ dette, onEdit, onDelete, onVoirTableau }) {
                 <div>
                     <p style={{ fontSize: 12, color: '#6B7280', margin: '0 0 2px', fontWeight: 500 }}>Capital Restant Dû</p>
                     <p style={{ fontSize: 20, fontWeight: 700, margin: 0, color: config.couleur }}>
-                        {dette.crd.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                        <SecureValue value={dette.crd} formatter={v => v.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} />
                     </p>
                 </div>
                 <div>
                     <p style={{ fontSize: 12, color: '#6B7280', margin: '0 0 2px', fontWeight: 500 }}>Mensualité</p>
                     <p style={{ fontSize: 16, fontWeight: 600, margin: 0, color: '#111827' }}>
-                        {dette.mensualite.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}<span style={{ fontSize: 13, color: '#6B7280' }}>/mois</span>
+                        <SecureValue value={dette.mensualite} formatter={v => v.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} /><span style={{ fontSize: 13, color: '#6B7280' }}>/mois</span>
                     </p>
                 </div>
                 <div>
@@ -175,7 +176,7 @@ export function DetteCard({ dette, onEdit, onDelete, onVoirTableau }) {
                         0 € · Début {new Date(dette.date_debut).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })}
                     </span>
                     <span style={{ fontSize: 11, color: '#9CA3AF' }}>
-                        {dette.capital_emprunte.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                        <SecureValue value={dette.capital_emprunte} formatter={v => v.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} />
                     </span>
                 </div>
             </div>
@@ -184,7 +185,7 @@ export function DetteCard({ dette, onEdit, onDelete, onVoirTableau }) {
             <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: 12, marginBottom: 0, borderTop: '1px solid #F3F4F6', paddingTop: 10 }}>
                 💡 Coût total des intérêts :{' '}
                 <strong style={{ color: '#6B7280' }}>
-                    {dette.coutTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                    <SecureValue value={dette.coutTotal} formatter={v => v.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} />
                 </strong>
                 {' '}· Taux : <strong style={{ color: '#6B7280' }}>{dette.taux_interet}%</strong>
             </p>

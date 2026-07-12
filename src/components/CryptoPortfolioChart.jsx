@@ -1,5 +1,7 @@
 import { useMemo, useCallback } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import SecureValue from './SecureValue'
+import { useIncognito } from '../context/IncognitoContext'
 
 /**
  * Chart component for displaying crypto portfolio historical valuation
@@ -10,6 +12,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
  * @returns {JSX.Element} Crypto portfolio chart
  */
 function CryptoPortfolioChart({ data, periode, setPeriode }) {
+    const { incognito } = useIncognito()
     const PERIODES = [
         { label: '7 jours', valeur: '7j' },
         { label: '30 jours', valeur: '30j' },
@@ -57,11 +60,11 @@ function CryptoPortfolioChart({ data, periode, setPeriode }) {
                 <div>
                     <p className="text-gray-300 text-sm mb-1">Valorisation du portefeuille crypto</p>
                     <div className="flex items-baseline gap-3">
-                        <p className="text-white text-3xl font-bold">{formatMontant(derniereValeur)}</p>
+                        <p className="text-white text-3xl font-bold"><SecureValue value={derniereValeur} formatter={formatMontant} /></p>
                         {chartData.length > 1 && (
                             <p className={`text-sm font-medium ${variation >= 0 ? 'text-emerald' : 'text-red-400'}`}>
-                                {variation >= 0 ? '+' : ''}{formatMontant(variation)} 
-                                ({variationPourcent >= 0 ? '+' : ''}{variationPourcent.toFixed(2)}%)
+                                {variation >= 0 ? '+' : ''}<SecureValue value={variation} formatter={formatMontant} /> 
+                                <SecureValue value={variationPourcent} formatter={v => ` (${v >= 0 ? '+' : ''}${v.toFixed(2)}%)`} />
                             </p>
                         )}
                     </div>
@@ -110,12 +113,12 @@ function CryptoPortfolioChart({ data, periode, setPeriode }) {
                         />
                         <YAxis 
                             tick={{ fill: '#94a3b8', fontSize: 11 }} 
-                            tickFormatter={formatMontant} 
+                            tickFormatter={(v) => incognito ? '••••' : formatMontant(v)} 
                             axisLine={false} 
                             tickLine={false} 
                         />
                         <Tooltip
-                            formatter={(value) => formatMontant(value)}
+                            formatter={(value) => incognito ? '••••' : formatMontant(value)}
                             contentStyle={{
                                 backgroundColor: '#122a44', 
                                 border: 'none', 

@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useTransactionsPeriode } from '../../hooks/useTransactionsPeriode';
+import { useIncognito } from '../../context/IncognitoContext';
 
 export default function EvolutionTempsChart() {
+    const { incognito } = useIncognito();
     const [periode, setPeriode] = useState('6M');
 
     const getNombreMois = (p) => {
@@ -49,7 +51,7 @@ export default function EvolutionTempsChart() {
                     <p className="font-semibold text-navy mb-2">{label}</p>
                     {payload.map((entry, index) => (
                         <p key={`item-${index}`} className="text-sm font-medium" style={{ color: entry.color }}>
-                            {entry.name} : {formatMontant(entry.value)}
+                            {entry.name} : {incognito ? '••••' : formatMontant(entry.value)}
                         </p>
                     ))}
                 </div>
@@ -80,7 +82,7 @@ export default function EvolutionTempsChart() {
                     <LineChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(val) => `€${val}`} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(val) => incognito ? '••••' : `€${val}`} />
                         <Tooltip content={<CustomTooltip />} />
                         <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
                         <Line type="monotone" dataKey="revenus" name="Revenus" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} fillOpacity={0.1} />

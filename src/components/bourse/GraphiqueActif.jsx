@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '../../lib/supabase';
+import { useIncognito } from '../../context/IncognitoContext';
 
 export default function GraphiqueActif({ actifId }) {
+  const { incognito } = useIncognito();
   const [periode, setPeriode] = useState('1Y'); // 7D, 30D, 1Y, MAX
   const [data, setData] = useState([]);
 
@@ -67,7 +69,7 @@ export default function GraphiqueActif({ actifId }) {
               contentStyle={{ backgroundColor: '#161b2c', borderColor: '#334155', borderRadius: '12px' }}
               labelStyle={{ color: '#94a3b8' }}
               itemStyle={{ color: '#fff', fontWeight: 'bold' }}
-              formatter={(value) => [`${Number(value).toFixed(2)} €`, 'Cours']}
+              formatter={(value) => incognito ? ['••••', 'Cours'] : [`${Number(value).toFixed(2)} €`, 'Cours']}
             />
             <Area type="monotone" dataKey="prix_cloture" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#colorPrice)" />
           </AreaChart>

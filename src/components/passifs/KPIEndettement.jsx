@@ -1,4 +1,5 @@
 // src/components/passifs/KPIEndettement.jsx
+import SecureValue from '../SecureValue';
 
 export function KPIEndettement({ kpis, revenusRecurrents }) {
     const tauxEndettement = revenusRecurrents > 0
@@ -56,7 +57,7 @@ export function KPIEndettement({ kpis, revenusRecurrents }) {
             <div style={cardStyle}>
                 <p style={labelStyle}>Dette Totale (CRD)</p>
                 <p style={valuStyle('#EF4444')}>
-                    {kpis.totalDettes.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                    <SecureValue value={kpis.totalDettes} formatter={v => v.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} />
                 </p>
                 <p style={subStyle}>{kpis.nombreActifs} crédit(s) actif(s)</p>
             </div>
@@ -65,7 +66,7 @@ export function KPIEndettement({ kpis, revenusRecurrents }) {
             <div style={cardStyle}>
                 <p style={labelStyle}>Mensualités Totales</p>
                 <p style={valuStyle()}>
-                    {kpis.totalMensualites.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                    <SecureValue value={kpis.totalMensualites} formatter={v => v.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} />
                     <span style={{ fontSize: 15, fontWeight: 500, color: '#6B7280' }}>/mois</span>
                 </p>
                 <p style={subStyle}>Charges de remboursement mensuelles</p>
