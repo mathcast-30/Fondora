@@ -15,6 +15,7 @@
  */
 
 import { useMemo } from 'react'
+import { useIncognito } from '../../context/IncognitoContext'
 import {
     AreaChart,
     Area,
@@ -31,6 +32,7 @@ import { formatCurrency } from '../../lib/financialCalculations'
 // ─── Tooltip personnalisé ─────────────────────────────────────────────────────
 
 function TooltipFrais({ active, payload, label }) {
+    const { incognito } = useIncognito()
     if (!active || !payload || payload.length === 0) return null
 
     const optimise = payload.find((p) => p.dataKey === 'capitalOptimise')
@@ -55,13 +57,13 @@ function TooltipFrais({ active, payload, label }) {
             {optimise && (
                 <p style={{ color: '#6ee7b7', fontSize: '13px', margin: '4px 0' }}>
                     <span style={{ opacity: 0.7 }}>Optimisé&nbsp;</span>
-                    <strong>{formatCurrency(optimise.value)}</strong>
+                    <strong>{incognito ? '••••' : formatCurrency(optimise.value)}</strong>
                 </p>
             )}
             {actuel && (
                 <p style={{ color: '#f87171', fontSize: '13px', margin: '4px 0' }}>
                     <span style={{ opacity: 0.7 }}>Actuel&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                    <strong>{formatCurrency(actuel.value)}</strong>
+                    <strong>{incognito ? '••••' : formatCurrency(actuel.value)}</strong>
                 </p>
             )}
             {ecart > 1 && (
@@ -74,7 +76,7 @@ function TooltipFrais({ active, payload, label }) {
                         borderTop: '1px solid rgba(255,255,255,0.1)',
                     }}
                 >
-                    Manque à gagner : <strong>{formatCurrency(ecart)}</strong>
+                    Manque à gagner : <strong>{incognito ? '••••' : formatCurrency(ecart)}</strong>
                 </p>
             )}
         </div>
@@ -92,6 +94,7 @@ function formaterYAxis(value) {
 // ─── Composant principal ──────────────────────────────────────────────────────
 
 export default function GraphiqueFraisComparatif({ valeurActuelle, fraisEnveloppe, fraisTerMoyen }) {
+    const { incognito } = useIncognito()
     const donnees = useMemo(
         () => genererDonneesGraphiqueFrais(valeurActuelle, fraisEnveloppe, fraisTerMoyen),
         [valeurActuelle, fraisEnveloppe, fraisTerMoyen]
@@ -181,7 +184,7 @@ export default function GraphiqueFraisComparatif({ valeurActuelle, fraisEnvelopp
                         tick={{ fill: '#64748b', fontSize: 11 }}
                         tickLine={false}
                         axisLine={false}
-                        tickFormatter={formaterYAxis}
+                        tickFormatter={(v) => incognito ? '••••' : formaterYAxis(v)}
                         width={60}
                     />
 
