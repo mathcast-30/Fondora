@@ -1,3 +1,5 @@
+import SecureValue from './SecureValue'
+
 function BudgetBar({ nom, couleur, depense, budgetMax }) {
     const pourcentage = budgetMax > 0 ? Math.min((depense / budgetMax) * 100, 100) : 0
     const depasse = budgetMax > 0 && depense > budgetMax
@@ -13,7 +15,7 @@ function BudgetBar({ nom, couleur, depense, budgetMax }) {
                     <span className="text-sm font-medium text-navy">{nom}</span>
                 </div>
                 <span className={`text-sm font-semibold ${depasse ? 'text-red-500' : 'text-gray-500'}`}>
-                    {formatMontant(depense)} {budgetMax > 0 && `/ ${formatMontant(budgetMax)}`}
+                    <SecureValue value={depense} formatter={formatMontant} /> {budgetMax > 0 && <span>/ <SecureValue value={budgetMax} formatter={formatMontant} /></span>}
                 </span>
             </div>
             {budgetMax > 0 && (
@@ -29,7 +31,7 @@ function BudgetBar({ nom, couleur, depense, budgetMax }) {
             )}
             {depasse && (
                 <p className="text-xs text-red-500 mt-1">
-                    ⚠️ Budget dépassé de {formatMontant(depense - budgetMax)}
+                    ⚠️ Budget dépassé de <SecureValue value={depense - budgetMax} formatter={formatMontant} />
                 </p>
             )}
         </div>
