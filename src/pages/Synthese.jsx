@@ -6,6 +6,7 @@ import { useTransactions } from '../hooks/useTransactions'
 import { useComptes } from '../hooks/useComptes'
 import { useObjectifEpargne } from '../hooks/useObjectifEpargne'
 import { calculerProjection } from '../lib/projection'
+import SecureValue from '../components/SecureValue'
 
 function Synthese() {
     const aujourdHui = new Date()
@@ -35,17 +36,17 @@ function Synthese() {
                     <div className="grid grid-cols-3 gap-4 mb-6">
                         <StatCard
                             label="Patrimoine total"
-                            valeur={formatMontant(patrimoineTotal)}
+                            valeur={<SecureValue value={patrimoineTotal} formatter={formatMontant} />}
                             sousTexte={`${comptes.length} compte(s)`}
                         />
                         <StatCard
                             label="Solde du mois"
-                            valeur={formatMontant(projection.soldeActuel)}
+                            valeur={<SecureValue value={projection.soldeActuel} formatter={formatMontant} />}
                             couleur={projection.soldeActuel >= 0 ? '#10b981' : '#ef4444'}
                         />
                         <StatCard
                             label="Solde projeté en fin de mois"
-                            valeur={formatMontant(projection.soldeProjete)}
+                            valeur={<SecureValue value={projection.soldeProjete} formatter={formatMontant} />}
                             couleur={projection.soldeProjete >= 0 ? '#10b981' : '#ef4444'}
                         />
                     </div>
@@ -74,7 +75,10 @@ function Synthese() {
                                             <span className="text-sm text-navy">{c.nom}</span>
                                         </div>
                                         <span className="text-sm font-semibold text-navy">
-                                            {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: c.devise }).format(c.soldeReel ?? c.solde)}
+                                            <SecureValue 
+                                                value={c.soldeReel ?? c.solde} 
+                                                formatter={(v) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: c.devise }).format(v)} 
+                                            />
                                         </span>
                                     </div>
                                 ))}
