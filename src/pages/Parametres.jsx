@@ -5,6 +5,7 @@ import SwitchDevise from '../components/devises/SwitchDevise'
 import AffichageTaux from '../components/devises/AffichageTaux'
 import { useSmartRules } from '../hooks/useSmartRules'
 import { useAlertes } from '../hooks/useAlertes'
+import MFASetup from '../components/mfa/MFASetup'
 import './Parametres.css'
 
 // ─── Config ────────────────────────────────────────────────────────────────
@@ -530,7 +531,8 @@ export default function Parametres() {
                     {/* ══ COMPTE ══ */}
                     {activeSection === 'compte' && (
                         <section className="parametres-section">
-                            <h2 className="parametres-section-titre">Supprimer mon compte</h2>
+                            <MFASetup />
+                            <h2 className="parametres-section-titre" style={{ marginTop: '2rem' }}>Supprimer mon compte</h2>
                             <div className="parametres-section-contenu">
 
                                 {deleteStep === 'success' ? (
