@@ -95,7 +95,12 @@ export default function Parametres() {
     }
 
     async function loadCategories() {
-        const { data } = await supabase.from('categories').select('*').order('nom')
+        const { data: { user } } = await supabase.auth.getUser()
+        const { data } = await supabase
+            .from('categories')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('nom')
         setCategories(data || [])
     }
 
@@ -522,7 +527,6 @@ export default function Parametres() {
                         </section>
                     )}
 
-                    {/* ══ COMPTE ══ */}
                     {/* ══ COMPTE ══ */}
                     {activeSection === 'compte' && (
                         <section className="parametres-section">
