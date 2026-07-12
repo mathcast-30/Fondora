@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Wallet, PieChart, TrendingUp, BarChart3, Settings, LogOut, ShieldAlert } from 'lucide-react'
+import { LayoutDashboard, Wallet, PieChart, TrendingUp, BarChart3, Settings, LogOut, ShieldAlert, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useIncognito } from '../context/IncognitoContext'
 
 const navItems = [
     { to: '/', label: 'Synthèse', icon: LayoutDashboard },
@@ -13,6 +14,7 @@ const navItems = [
 
 function Sidebar() {
     const { signOut, user } = useAuth()
+    const { incognito, toggleIncognito } = useIncognito()
 
     return (
         <aside className="w-64 bg-navy h-screen flex flex-col fixed left-0 top-0 border-r border-navy-light">
@@ -42,6 +44,18 @@ function Sidebar() {
 
             {/* Bas de la sidebar : paramètres + utilisateur */}
             <div className="px-3 py-4 border-t border-navy-light space-y-1">
+                <button
+                    onClick={toggleIncognito}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
+                      incognito
+                        ? 'bg-navy-light text-emerald'
+                        : 'text-gray-300 hover:bg-navy-light hover:text-white'
+                    }`}
+                >
+                    {incognito ? <EyeOff size={20} /> : <Eye size={20} />}
+                    Mode discret
+                </button>
+
                 <NavLink
                     to="/parametres"
                     className={({ isActive }) =>

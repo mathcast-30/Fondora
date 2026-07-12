@@ -15,6 +15,7 @@ import VerifyMFA from './pages/auth/VerifyMFA'
 import MFAGuard from './components/auth/MFAGuard'
 import { CurrencyProvider } from './context/CurrencyContext'
 import SupprimerCompteConfirmer from './pages/SupprimerCompteConfirmer'
+import { IncognitoProvider } from './context/IncognitoContext'
 
 function AppRoutes() {
   return (
@@ -39,12 +40,14 @@ function AppRoutes() {
 
 function App() {
   return (
-    <CurrencyProvider>
-      <BrowserRouter>
-        <AppRoutes />
-        <Analytics />
-      </BrowserRouter>
-    </CurrencyProvider>
+    <IncognitoProvider>
+      <CurrencyProvider>
+        <BrowserRouter>
+          <AppRoutes />
+          <Analytics />
+        </BrowserRouter>
+      </CurrencyProvider>
+    </IncognitoProvider>
   )
 }
 
