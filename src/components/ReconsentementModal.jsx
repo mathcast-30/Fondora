@@ -59,22 +59,20 @@ export default function ReconsentementModal() {
                 </p>
 
                 <div className="flex flex-col gap-3 mb-6 bg-navy-light/40 p-4 rounded-lg border border-navy-light">
-                    <a 
-                        href="/cgu" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-emerald hover:underline text-sm font-medium flex items-center justify-between"
+                    <button
+                        type="button"
+                        onClick={() => window.open(window.location.origin + '/cgu', '_blank', 'noopener,noreferrer')}
+                        className="text-emerald hover:underline text-sm font-medium flex items-center justify-between w-full cursor-pointer"
                     >
                         📄 Lire les CGU (v1.0) <span className="text-xs text-gray-500">Ouvre un nouvel onglet ↗</span>
-                    </a>
-                    <a 
-                        href="/politique-confidentialite" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-emerald hover:underline text-sm font-medium flex items-center justify-between"
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => window.open(window.location.origin + '/politique-confidentialite', '_blank', 'noopener,noreferrer')}
+                        className="text-emerald hover:underline text-sm font-medium flex items-center justify-between w-full cursor-pointer"
                     >
                         🔒 Lire la Politique de Confidentialité (v1.0) <span className="text-xs text-gray-500">Ouvre un nouvel onglet ↗</span>
-                    </a>
+                    </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
