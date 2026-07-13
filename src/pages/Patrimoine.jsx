@@ -4,6 +4,7 @@ import Modal from '../components/Modal'
 import CompteCard from '../components/CompteCard'
 import SecureValue from '../components/SecureValue'
 import ComparaisonINSEE from '../components/ComparaisonINSEE'
+import NetWorthChart from '../components/NetWorthChart'
 import { useComptes } from '../hooks/useComptes'
 import { usePositions } from '../hooks/usePositions'
 import { useCoursBourse } from '../hooks/useCoursBourse'
@@ -75,6 +76,11 @@ function Patrimoine() {
                 <button onClick={() => setModalOuvert(true)} className="bg-emerald hover:bg-emerald-light text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition">
                     <Plus size={18} /> Ajouter un compte
                 </button>
+            </div>
+            {/* Évolution du patrimoine */}
+            <div className="bg-white rounded-xl p-5 shadow-sm mb-6">
+                <h2 className="text-navy font-bold text-lg mb-4">Évolution du patrimoine</h2>
+                <NetWorthChart />
             </div>
 
             {/* Patrimoine total consolidé */}

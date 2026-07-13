@@ -5,11 +5,12 @@ import BudgetBar from '../components/BudgetBar'
 import SankeyChart from '../components/SankeyChart'
 import DonutChart from '../components/DonutChart'
 import SecureValue from '../components/SecureValue'
+import ImportCSVModal from '../components/ImportCSVModal'
 import { useTransactions } from '../hooks/useTransactions'
 import { useCategories } from '../hooks/useCategories'
 import { useComptes } from '../hooks/useComptes'
 import { useBudgets } from '../hooks/useBudgets'
-import { Plus, Trash2, ChevronLeft, ChevronRight, Settings2 } from 'lucide-react'
+import { Plus, Trash2, ChevronLeft, ChevronRight, Settings2, Upload } from 'lucide-react'
 import BudgetGraphiqueSelector from '../components/budget/BudgetGraphiqueSelector'
 import BudgetVsReelChart from '../components/budget/BudgetVsReelChart'
 import EvolutionTempsChart from '../components/budget/EvolutionTempsChart'
@@ -30,6 +31,7 @@ function Budget() {
 
     const [modalOuvert, setModalOuvert] = useState(false)
     const [modalBudgetOuvert, setModalBudgetOuvert] = useState(false)
+    const [modalImportOuvert, setModalImportOuvert] = useState(false)
     const [form, setForm] = useState({
         description: '', montant: '', type: 'depense',
         compte_id: '', categorie_id: '', date: new Date().toISOString().split('T')[0],
@@ -114,6 +116,9 @@ function Budget() {
                 <div className="flex gap-2">
                     <button onClick={() => setModalBudgetOuvert(true)} className="bg-white border border-gray-200 text-navy font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition hover:bg-gray-50">
                         <Settings2 size={18} /> Définir budgets
+                    </button>
+                    <button onClick={() => setModalImportOuvert(true)} className="bg-white border border-gray-200 text-navy font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition hover:bg-gray-50">
+                        <Upload size={18} /> Importer un CSV
                     </button>
                     <button onClick={() => setModalOuvert(true)} className="bg-emerald hover:bg-emerald-light text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition">
                         <Plus size={18} /> Ajouter
@@ -329,6 +334,14 @@ function Budget() {
                     </button>
                 </form>
             </Modal>
+
+            <ImportCSVModal
+                isOpen={modalImportOuvert}
+                onClose={() => setModalImportOuvert(false)}
+                categories={categories}
+                comptes={comptes}
+                onImportSuccess={() => { setModalImportOuvert(false); charger() }}
+            />
         </Layout>
     )
 }
