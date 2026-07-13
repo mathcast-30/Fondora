@@ -48,8 +48,8 @@ export default function ImportCSVModal({ isOpen, onClose, categories = [], compt
   const [sauvegarderFormat, setSauvegarderFormat] = useState(false);
   const [nomTemplate, setNomTemplate] = useState('');
 
-  // States pour la création de règle de catégorisation automatique
   const [reglePopup, setReglePopup] = useState(null);
+  const [templateEnAttente, setTemplateEnAttente] = useState(null);
 
   // Initialisation du compte par défaut
   useEffect(() => {
@@ -121,18 +121,17 @@ export default function ImportCSVModal({ isOpen, onClose, categories = [], compt
       alert("Veuillez d'abord sélectionner un compte.");
       return;
     }
-    if (fileInputRef.current && fileInputRef.current.files && fileInputRef.current.files[0]) {
-      chargerFichier(fileInputRef.current.files[0], compteSelectionne);
-      // after loading, we can apply template:
-      // wait, the process will parse, then check bank. If not detected, we can apply template.
-      // We will store the template to apply:
-      setTimeout(() => {
-        validerMapping(template.mapping_config, compteSelectionne);
-      }, 500);
-    } else {
-      alert("Veuillez d'abord glisser-déposer ou sélectionner un fichier CSV.");
-    }
+    setTemplateEnAttente(template);
+    fileInputRef.current?.click();
   };
+
+  // Appliquer le template automatiquement quand le fichier est parsé et l'étape passe à 'mapping'
+  useEffect(() => {
+    if (etape === 'mapping' && templateEnAttente) {
+      validerMapping(templateEnAttente.mapping_config, compteSelectionne);
+      setTemplateEnAttente(null);
+    }
+  }, [etape, templateEnAttente]);
 
   // Gestion des changements de catégorie en ligne dans la revue
   const handleCategorieChange = (txId, newCatId, libelle) => {
