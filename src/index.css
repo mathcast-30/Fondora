@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+:root {
+  --bg-primary: #0a1f33;
+  --text-primary: #ffffff;
+  --bg-secondary: #122a44;
+  --text-muted: #9ca3af;
+  --border-color: #1e3a5f;
+}
+
 @theme {
     --color-navy: #0a1f33;
     --color-navy-light: #122a44;

@@ -17,13 +17,29 @@ import { CurrencyProvider } from './context/CurrencyContext'
 import SupprimerCompteConfirmer from './pages/SupprimerCompteConfirmer'
 import { IncognitoProvider } from './context/IncognitoContext'
 
+// Pages Légales et Export
+import MentionsLegales from './pages/legal/MentionsLegales'
+import Cgu from './pages/legal/CGU'
+import PolitiqueConfidentialite from './pages/legal/PolitiqueConfidentialite'
+import ExportDonnees from './pages/ExportDonnees'
+
+// Composants globaux RGPD
+import CookieBanner from './components/CookieBanner'
+import ReconsentementModal from './components/ReconsentementModal'
+
 function AppRoutes() {
   return (
     <MFAGuard>
       <Routes>
+        {/* Routes Publiques */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/auth/verify-mfa" element={<VerifyMFA />} />
+        <Route path="/mentions-legales" element={<MentionsLegales />} />
+        <Route path="/cgu" element={<Cgu />} />
+        <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+        
+        {/* Routes Protégées */}
         <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
         <Route path="/" element={<ProtectedRoute><Synthese /></ProtectedRoute>} />
         <Route path="/budget" element={<ProtectedRoute><Budget /></ProtectedRoute>} />
@@ -32,8 +48,11 @@ function AppRoutes() {
         <Route path="/analyse" element={<ProtectedRoute><Analyse /></ProtectedRoute>} />
         <Route path="/parametres" element={<ProtectedRoute><Parametres /></ProtectedRoute>} />
         <Route path="/passifs" element={<ProtectedRoute><PassifsPage /></ProtectedRoute>} />
+        <Route path="/export-donnees" element={<ProtectedRoute><ExportDonnees /></ProtectedRoute>} />
         <Route path="/supprimer-compte/confirmer" element={<SupprimerCompteConfirmer />} />
       </Routes>
+      <CookieBanner />
+      <ReconsentementModal />
     </MFAGuard>
   )
 }
