@@ -31,14 +31,11 @@ function AppRoutes() {
   return (
     <MFAGuard>
       <Routes>
-        {/* Routes Publiques */}
+        {/* Routes Publiques auth */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/auth/verify-mfa" element={<VerifyMFA />} />
-        <Route path="/mentions-legales" element={<MentionsLegales />} />
-        <Route path="/cgu" element={<Cgu />} />
-        <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
-        
+
         {/* Routes Protégées */}
         <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
         <Route path="/" element={<ProtectedRoute><Synthese /></ProtectedRoute>} />
@@ -62,7 +59,15 @@ function App() {
     <IncognitoProvider>
       <CurrencyProvider>
         <BrowserRouter>
-          <AppRoutes />
+          <Routes>
+            {/* ✅ Pages légales TOTALEMENT hors MFAGuard et hors auth */}
+            <Route path="/mentions-legales" element={<MentionsLegales />} />
+            <Route path="/cgu" element={<Cgu />} />
+            <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+
+            {/* Tout le reste passe par AppRoutes avec MFAGuard */}
+            <Route path="/*" element={<AppRoutes />} />
+          </Routes>
           <Analytics />
         </BrowserRouter>
       </CurrencyProvider>
