@@ -2,13 +2,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import Papa from 'papaparse';
 import {
-  detecterBanque,
   trouverLigneEntete,
   normaliserMontant,
   genererImportHash,
   appliquerSmartRules,
-  BANK_SIGNATURES
+  BANK_SIGNATURES,
+  parserCSVBrut,
+  detecterEncodageEtDelimiteur
 } from '../utils/csvParser';
+import { detecterBanque } from '../utils/bankSignatures';
+import { normaliserLigne } from '../utils/normalisationTransactions';
 
 export function useImportCSV() {
   const [etape, setEtape] = useState('upload'); // 'upload' | 'mapping' | 'revue' | 'succes'
@@ -340,6 +343,85 @@ export function useImportCSV() {
     }
   };
 
+  // Parser et normaliser un fichier CSV en mémoire (sans écriture DB)
+  const parseFichier = useCallback((file, compteId) => {
+    return new Promise((resolve, reject) => {
+      if (!file) {
+        reject(new Error("Aucun fichier fourni."));
+        return;
+      }
+
+      const reader = new FileReader();
+
+      // Fonction d'aide pour exécuter la normalisation des lignes
+      const executerTraitements = async (text) => {
+        try {
+          const { headers, lignes } = parserCSVBrut(text);
+          const banqueInfo = detecterBanque(headers);
+
+          if (!banqueInfo) {
+            return {
+              banqueDetectee: null,
+              transactions: [],
+              nonReconnu: true
+            };
+          }
+
+          const normalisees = [];
+          for (const ligne of lignes) {
+            // Ignorer les lignes vides ou sans date/description
+            const dateCol = banqueInfo.colonnes.date;
+            const libelleCol = banqueInfo.colonnes.libelle;
+            if (!ligne[dateCol] || !ligne[libelleCol]) {
+              continue;
+            }
+
+            const tx = await normaliserLigne(ligne, banqueInfo, compteId);
+            normalisees.push(tx);
+          }
+
+          return {
+            banqueDetectee: banqueInfo.nom,
+            transactions: normalisees,
+            nonReconnu: false
+          };
+        } catch (err) {
+          throw new Error("Erreur de traitement du CSV : " + err.message);
+        }
+      };
+
+      reader.onload = async (e) => {
+        try {
+          const textInitial = e.target.result;
+          const { encodage } = detecterEncodageEtDelimiteur(textInitial);
+
+          if (encodage === 'ISO-8859-1') {
+            // Relire le fichier avec l'encodage adéquat
+            const subReader = new FileReader();
+            subReader.onload = async (subEv) => {
+              try {
+                const res = await executerTraitements(subEv.target.result);
+                resolve(res);
+              } catch (subErr) {
+                reject(subErr);
+              }
+            };
+            subReader.onerror = () => reject(new Error("Erreur de re-lecture du fichier."));
+            subReader.readAsText(file, 'ISO-8859-1');
+          } else {
+            const res = await executerTraitements(textInitial);
+            resolve(res);
+          }
+        } catch (err) {
+          reject(err);
+        }
+      };
+
+      reader.onerror = () => reject(new Error("Erreur de lecture du fichier."));
+      reader.readAsText(file, 'UTF-8');
+    });
+  }, []);
+
   return {
     etape,
     banqueDetectee,
@@ -361,6 +443,8 @@ export function useImportCSV() {
     confirmerImport,
     sauvegarderTemplate,
     reinitialiser,
-    setTransactionsRevue
+    setTransactionsRevue,
+    parseFichier
   };
 }
+
