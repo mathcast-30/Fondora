@@ -3,7 +3,7 @@ import { useImportCSV } from '../../hooks/useImportCSV';
 import { useImportTemplates } from '../../hooks/useImportTemplates';
 import MapperVisuelCSV from './MapperVisuelCSV';
 import EcranRevueImport from './EcranRevueImport';
-import { X, Upload, FileSpreadsheet, Check, AlertTriangle, RefreshCw } from 'lucide-react';
+import { X, Upload, FileSpreadsheet, FileText, Check, AlertTriangle, RefreshCw } from 'lucide-react';
 import { parserCSVBrut } from '../../utils/csvParser';
 import { normaliserLigne } from '../../utils/normalisationTransactions';
 
@@ -28,6 +28,10 @@ export default function ImportCSVModal({ compteId, onFerme }) {
   const [lignesApercuCSV, setLignesApercuCSV] = useState([]);
   const [transactionsNormalisees, setTransactionsNormalisees] = useState([]);
   const [banqueNomDetecte, setBanqueNomDetecte] = useState(null);
+
+  // État spécifique PDF
+  const [sourceType, setSourceType] = useState('csv'); // 'csv' | 'pdf'
+  const [progressionPDF, setProgressionPDF] = useState(''); // message de progression
 
   const fileInputRef = useRef(null);
   const { parseFichier } = useImportCSV();
@@ -68,25 +72,35 @@ export default function ImportCSVModal({ compteId, onFerme }) {
     }
   };
 
-  // Lecture et traitement initial du fichier CSV
+  // Lecture et traitement initial du fichier (CSV ou PDF)
   const traiterFichierSelectionne = async (file) => {
     if (!file) return;
     setLoading(true);
     setErreur('');
+    setProgressionPDF('');
 
+    const estPDF = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
+
+    if (estPDF) {
+      setSourceType('pdf');
+      await traiterFichierPDF(file);
+    } else {
+      setSourceType('csv');
+      await traiterFichierCSV(file);
+    }
+  };
+
+  // Traitement d'un fichier CSV
+  const traiterFichierCSV = async (file) => {
     try {
-      // 1. Lire le contenu du fichier sous forme de chaîne de caractères
       const fileText = await lireFichierTexte(file);
       setFichierContenuText(fileText);
 
-      // 2. Tenter le parsing via le hook de base useImportCSV
       const res = await parseFichier(file, compteId);
 
       if (res.nonReconnu) {
-        // Sauvegarder les lignes pour le mapper visuel
         const parsingBrut = parserCSVBrut(fileText);
         setHeadersCSV(parsingBrut.headers);
-        // On prend 4 lignes de données pour l'aperçu
         const lignesApercu = parsingBrut.lignes.slice(0, 4).map(ligne => 
           parsingBrut.headers.map(h => ligne[h] || '')
         );
@@ -98,8 +112,68 @@ export default function ImportCSVModal({ compteId, onFerme }) {
         setEtape('revue');
       }
     } catch (err) {
-      setErreur(err.message || "Erreur de traitement du fichier.");
+      setErreur(err.message || "Erreur de traitement du fichier CSV.");
     } finally {
+      setLoading(false);
+    }
+  };
+
+  // Traitement d'un fichier PDF
+  const traiterFichierPDF = async (file) => {
+    try {
+      // 1. Import dynamique de l'extracteur de texte natif
+      setProgressionPDF('Chargement du moteur PDF…');
+      const { extraireTextePDF } = await import('../../utils/pdfTextExtractor');
+
+      // 2. Extraction du texte natif page par page
+      const { pages, pdfDoc } = await extraireTextePDF(file, (pageTraitee, total) => {
+        setProgressionPDF(`Extraction du texte : page ${pageTraitee}/${total}`);
+      });
+
+      // 3. Identifier les pages nécessitant un OCR
+      const pagesSansTexte = pages.filter(p => p.videDeTexte).map(p => p.pageNum);
+      let lignesOCR = new Map();
+
+      if (pagesSansTexte.length > 0) {
+        setProgressionPDF(`OCR en cours sur ${pagesSansTexte.length} page(s) scannée(s)…`);
+        const { ocrPagesManquantes } = await import('../../utils/pdfOcrExtractor');
+
+        lignesOCR = await ocrPagesManquantes(pdfDoc, pagesSansTexte, (pageOcr, totalOcr, progress) => {
+          const pct = Math.round(progress * 100);
+          setProgressionPDF(`OCR page ${pageOcr}/${totalOcr} — ${pct}%`);
+        });
+      }
+
+      // 4. Fusionner les lignes (texte natif + OCR) dans l'ordre des pages
+      const toutesLesLignes = [];
+      for (const page of pages) {
+        if (page.videDeTexte && lignesOCR.has(page.pageNum)) {
+          toutesLesLignes.push(...lignesOCR.get(page.pageNum));
+        } else {
+          toutesLesLignes.push(...page.lignes);
+        }
+      }
+
+      if (toutesLesLignes.length === 0) {
+        throw new Error('Aucun texte exploitable n\'a pu être extrait de ce PDF.');
+      }
+
+      // 5. Détection heuristique des transactions
+      setProgressionPDF('Détection des transactions…');
+      const { detecterTransactionsPDF } = await import('../../utils/detectionLignesPDF');
+      const transactions = await detecterTransactionsPDF(toutesLesLignes, compteId);
+
+      if (transactions.length === 0) {
+        throw new Error('Aucune transaction n\'a été détectée dans ce PDF. Vérifiez que le fichier est bien un relevé bancaire.');
+      }
+
+      setBanqueNomDetecte(pagesSansTexte.length > 0 ? 'PDF scanné (OCR)' : 'PDF natif');
+      setTransactionsNormalisees(transactions);
+      setEtape('revue');
+    } catch (err) {
+      setErreur(err.message || 'Erreur de traitement du fichier PDF.');
+    } finally {
+      setProgressionPDF('');
       setLoading(false);
     }
   };
@@ -232,16 +306,16 @@ export default function ImportCSVModal({ compteId, onFerme }) {
         {/* Header du modal */}
         <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-[#0a0f1d]">
           <div className="flex items-center gap-2.5">
-            <div className="bg-emerald-500/10 text-emerald-400 p-2 rounded-lg">
-              <FileSpreadsheet size={20} />
+            <div className={`p-2 rounded-lg ${sourceType === 'pdf' ? 'bg-rose-500/10 text-rose-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+              {sourceType === 'pdf' ? <FileText size={20} /> : <FileSpreadsheet size={20} />}
             </div>
             <div>
               <h2 className="font-bold text-white text-base leading-tight">
-                Importateur de relevés bancaires CSV
+                Importateur de relevés bancaires
               </h2>
               {banqueNomDetecte && etape === 'revue' && (
                 <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold uppercase tracking-wider">
-                  Banque : {banqueNomDetecte}
+                  {sourceType === 'pdf' ? 'Source' : 'Banque'} : {banqueNomDetecte}
                 </span>
               )}
             </div>
@@ -266,7 +340,9 @@ export default function ImportCSVModal({ compteId, onFerme }) {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 space-y-4">
               <RefreshCw className="animate-spin text-emerald-400" size={32} />
-              <p className="text-slate-400 text-sm">Traitement du fichier...</p>
+              <p className="text-slate-400 text-sm">
+                {progressionPDF || 'Traitement du fichier…'}
+              </p>
             </div>
           ) : (
             <>
@@ -293,15 +369,15 @@ export default function ImportCSVModal({ compteId, onFerme }) {
                       type="file"
                       ref={fileInputRef}
                       onChange={window.__pendingTemplateImport ? handleFileChangeWithTemplate : handleFileChange}
-                      accept=".csv"
+                      accept=".csv,.pdf"
                       className="hidden"
                     />
                     <Upload className="text-slate-400 mb-4" size={40} />
                     <p className="text-white font-medium text-sm mb-1">
-                      Glissez-déposez votre relevé bancaire CSV ici
+                      Glissez-déposez votre relevé bancaire ici
                     </p>
                     <p className="text-slate-400 text-xs">
-                      ou cliquez pour parcourir vos fichiers
+                      CSV ou PDF — cliquez pour parcourir vos fichiers
                     </p>
                   </div>
 
@@ -327,8 +403,9 @@ export default function ImportCSVModal({ compteId, onFerme }) {
                   )}
 
                   <div className="text-xs text-slate-400 bg-[#161b2c]/35 p-3.5 rounded-lg border border-slate-800 leading-relaxed">
-                    <strong>Banques prises en charge d'office :</strong> BNP Paribas, Boursorama, Crédit Agricole, Société Générale, Crédit Mutuel, Fortuneo, Revolut.<br />
-                    <em>Tout autre relevé est accepté : vous pourrez mapper manuellement ses colonnes via un configurateur visuel.</em>
+                    <strong>Banques prises en charge d'office (CSV) :</strong> BNP Paribas, Boursorama, Crédit Agricole, Société Générale, Crédit Mutuel, Fortuneo, Revolut.<br />
+                    <em>Tout autre relevé CSV est accepté : vous pourrez mapper manuellement ses colonnes.</em><br />
+                    <strong className="text-indigo-400">Nouveau :</strong> les relevés PDF (texte ou scannés) sont aussi pris en charge avec extraction automatique.
                   </div>
                 </div>
               )}
@@ -349,6 +426,7 @@ export default function ImportCSVModal({ compteId, onFerme }) {
                   transactionsParsees={transactionsNormalisees}
                   banqueDetectee={banqueNomDetecte}
                   compteId={compteId}
+                  sourceType={sourceType}
                   onTermine={() => setEtape('termine')}
                   onAnnuler={() => setEtape('upload')}
                 />

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useCategoryPredictor } from '../../hooks/useCategoryPredictor';
 import { useCategoriesResolver } from '../../hooks/useCategoriesResolver';
 import { useBulkImportTransactions } from '../../hooks/useBulkImportTransactions';
-import { Trash2, Folder, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Trash2, Folder, ShieldCheck, AlertTriangle, AlertCircle } from 'lucide-react';
 
 /**
  * EcranRevueImport
@@ -12,6 +12,7 @@ export default function EcranRevueImport({
   transactionsParsees = [],
   banqueDetectee = null,
   compteId,
+  sourceType = 'csv',
   onTermine,
   onAnnuler
 }) {
@@ -61,8 +62,9 @@ export default function EcranRevueImport({
             import_hash: tx.import_hash,
             categorie_id: categorieId,
             statut: statut,
+            confiance: tx.confiance || 'haute',
             doublon: false,
-            selectionne: true,
+            selectionne: sourceType === 'pdf' && tx.confiance === 'moyenne' ? false : true,
             modificationManuelle: false
           });
         }
@@ -254,6 +256,20 @@ export default function EcranRevueImport({
         </div>
       )}
 
+      {/* Bandeau d'avertissement PDF */}
+      {sourceType === 'pdf' && (
+        <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-xl p-4 flex gap-3 text-indigo-400 text-xs">
+          <AlertCircle className="shrink-0" size={16} />
+          <div>
+            <span className="font-semibold">⚠️ Extraction PDF — à vérifier.</span>{' '}
+            <span className="text-slate-400">
+              Les montants et descriptions ont été extraits automatiquement. 
+              Les lignes de confiance « moyenne » sont désélectionnées par défaut — cochez-les manuellement après vérification.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Titre et sous-titre */}
       <div className="flex justify-between items-center">
         <div>
@@ -361,6 +377,11 @@ export default function EcranRevueImport({
                       {tx.statut === 'doublon' && (
                         <span className="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded border border-slate-700 whitespace-nowrap">
                           Doublon
+                        </span>
+                      )}
+                      {sourceType === 'pdf' && tx.confiance === 'moyenne' && (
+                        <span className="text-[9px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/20 whitespace-nowrap">
+                          À vérifier
                         </span>
                       )}
                     </div>
