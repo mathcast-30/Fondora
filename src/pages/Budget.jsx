@@ -24,7 +24,7 @@ function Budget() {
     const [mois, setMois] = useState(aujourdHui.getMonth() + 1)
     const [annee, setAnnee] = useState(aujourdHui.getFullYear())
 
-    const { transactions, loading, ajouterTransaction, supprimerTransaction } = useTransactions(mois, annee)
+    const { transactions, loading, ajouterTransaction, supprimerTransaction, charger } = useTransactions(mois, annee)
     const { categories } = useCategories()
     const { comptes } = useComptes()
     const { budgets, definirBudget } = useBudgets(mois, annee)
