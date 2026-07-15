@@ -5,7 +5,7 @@ import BudgetBar from '../components/BudgetBar'
 import SankeyChart from '../components/SankeyChart'
 import DonutChart from '../components/DonutChart'
 import SecureValue from '../components/SecureValue'
-import ImportCSVModal from '../components/ImportCSVModal'
+import ImportCSVModal from '../components/import/ImportCSVModal'
 import { useTransactions } from '../hooks/useTransactions'
 import { useCategories } from '../hooks/useCategories'
 import { useComptes } from '../hooks/useComptes'
@@ -32,6 +32,15 @@ function Budget() {
     const [modalOuvert, setModalOuvert] = useState(false)
     const [modalBudgetOuvert, setModalBudgetOuvert] = useState(false)
     const [modalImportOuvert, setModalImportOuvert] = useState(false)
+    const [compteSelectionne, setCompteSelectionne] = useState('')
+
+    // Initialiser le compte par défaut dès que la liste est chargée
+    useEffect(() => {
+        if (comptes && comptes.length > 0 && !compteSelectionne) {
+            setCompteSelectionne(comptes[0].id)
+        }
+    }, [comptes, compteSelectionne])
+
     const [form, setForm] = useState({
         description: '', montant: '', type: 'depense',
         compte_id: '', categorie_id: '', date: new Date().toISOString().split('T')[0],
@@ -335,13 +344,15 @@ function Budget() {
                 </form>
             </Modal>
 
-            <ImportCSVModal
-                isOpen={modalImportOuvert}
-                onClose={() => setModalImportOuvert(false)}
-                categories={categories}
-                comptes={comptes}
-                onImportSuccess={() => { setModalImportOuvert(false); charger() }}
-            />
+            {modalImportOuvert && (
+                <ImportCSVModal
+                    compteId={compteSelectionne}
+                    onFerme={() => {
+                        setModalImportOuvert(false);
+                        charger();
+                    }}
+                />
+            )}
         </Layout>
     )
 }
