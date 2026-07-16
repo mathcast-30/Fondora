@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 
-// Icônes SVG légères haute performance
+// Icônes SVG haute performance adaptées à la finance
 const Icons = {
     Synthese: () => (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -47,7 +47,7 @@ export const menuItems = [
 
 export default function Sidebar() {
     return (
-        <aside className="hidden md:flex flex-col w-64 border-r border-white/5 bg-[#0a1f33]/40 backdrop-blur-xl fixed h-full z-20">
+        <aside className="hidden md:flex flex-col w-64 border-r border-white/5 bg-[#0a1f33] fixed h-full z-20">
             {/* Zone Logo Premium */}
             <div className="h-20 flex items-center px-8 border-b border-white/5">
                 <span className="text-2xl font-black tracking-widest text-[#10b981] drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]">
@@ -55,7 +55,7 @@ export default function Sidebar() {
                 </span>
             </div>
 
-            {/* Navigation principale */}
+            {/* Navigation principale (Pas de <ul>/<li> pour éviter les puces parasites) */}
             <nav className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
                 {menuItems.map((item) => (
                     <NavLink
