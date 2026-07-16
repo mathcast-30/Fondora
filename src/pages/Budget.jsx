@@ -41,6 +41,13 @@ function Budget() {
         }
     }, [comptes, compteSelectionne])
 
+    // Pré-sélectionner automatiquement le compte si l'utilisateur n'en a qu'un
+    useEffect(() => {
+        if (comptes && comptes.length === 1) {
+            setForm(prev => prev.compte_id ? prev : { ...prev, compte_id: comptes[0].id })
+        }
+    }, [comptes])
+
     const [form, setForm] = useState({
         description: '', montant: '', type: 'depense',
         compte_id: '', categorie_id: '', date: new Date().toISOString().split('T')[0],
@@ -88,13 +95,14 @@ function Budget() {
         e.preventDefault()
         const { error } = await ajouterTransaction({
             ...form,
-            montant: parseFloat(form.montant),
-            compte_id: form.compte_id || null,
+            montant: Math.abs(parseFloat(form.montant)),
+            compte_id: form.compte_id,
             categorie_id: form.categorie_id || null,
             jour_recurrence: form.recurrente ? Number(new Date(form.date).getDate()) : null,
         })
         if (!error) {
-            setForm({ description: '', montant: '', type: 'depense', compte_id: '', categorie_id: '', date: new Date().toISOString().split('T')[0], recurrente: false, jour_recurrence: 1 })
+            const compteDefaut = comptes.length === 1 ? comptes[0].id : ''
+            setForm({ description: '', montant: '', type: 'depense', compte_id: compteDefaut, categorie_id: '', date: new Date().toISOString().split('T')[0], recurrente: false, jour_recurrence: 1 })
             setModalOuvert(false)
         }
     }
@@ -279,7 +287,7 @@ function Budget() {
                         onChange={(e) => setForm({ ...form, description: e.target.value })}
                         className="w-full border rounded-lg px-3 py-2" />
 
-                    <input type="number" step="0.01" required placeholder="Montant" value={form.montant}
+                    <input type="number" step="0.01" min="0" required placeholder="Montant" value={form.montant}
                         onChange={(e) => setForm({ ...form, montant: e.target.value })}
                         className="w-full border rounded-lg px-3 py-2" />
 
@@ -292,11 +300,16 @@ function Budget() {
                     </select>
 
                     <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                        <label className="text-sm font-semibold text-gray-700 block mb-1">Associer à un compte</label>
-                        <p className="text-xs text-gray-500 mb-2">Permet de mettre à jour automatiquement le solde du compte dans Patrimoine.</p>
-                        <select value={form.compte_id} onChange={(e) => setForm({ ...form, compte_id: e.target.value })}
+                        <label className="text-sm font-semibold text-gray-700 block mb-1">
+                            Compte <span className="text-red-500">*</span>
+                        </label>
+                        <p className="text-xs text-gray-500 mb-2">Obligatoire — met à jour automatiquement le solde du compte dans Patrimoine.</p>
+                        <select
+                            value={form.compte_id}
+                            onChange={(e) => setForm({ ...form, compte_id: e.target.value })}
+                            required
                             className="w-full border rounded-lg px-3 py-2 bg-white">
-                            <option value="">Aucun compte (solde non impacté)</option>
+                            <option value="" disabled>Choisir un compte…</option>
                             {comptes.map((c) => (
                                 <option key={c.id} value={c.id}>{c.nom}</option>
                             ))}

@@ -30,7 +30,7 @@ export function unifierMontant(ligne, signature) {
 
     // Déterminer le montant final
     if (credit > 0) {
-      return { montant: Math.round(credit * 100) / 100, type: 'recette' };
+      return { montant: Math.round(credit * 100) / 100, type: 'revenu' };
     } else {
       return { montant: Math.round(debit * 100) / 100, type: 'depense' };
     }
@@ -39,7 +39,7 @@ export function unifierMontant(ligne, signature) {
     const valeur = parseFloat(montantStr) || 0;
 
     const absolu = Math.round(Math.abs(valeur) * 100) / 100;
-    const type = valeur >= 0 ? 'recette' : 'depense';
+    const type = valeur >= 0 ? 'revenu' : 'depense';
 
     return { montant: absolu, type };
   }

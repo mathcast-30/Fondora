@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useCategoryPredictor } from '../../hooks/useCategoryPredictor';
 import { useCategoriesResolver } from '../../hooks/useCategoriesResolver';
 import { useBulkImportTransactions } from '../../hooks/useBulkImportTransactions';
-import { Trash2, Folder, ShieldCheck, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Trash2, Folder, ShieldCheck, AlertTriangle, AlertCircle, RefreshCw } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 /**
  * EcranRevueImport
@@ -22,6 +23,8 @@ export default function EcranRevueImport({
   const [importing, setImporting] = useState(false);
   const [erreurImport, setErreurImport] = useState('');
   const [modificationManuelleFaite, setModificationManuelleFaite] = useState(false);
+  const [dettes, setDettes] = useState([]);
+  const [rpcLoading, setRpcLoading] = useState(false);
 
   const { chargerSmartRulesUtilisateur, predictCategory } = useCategoryPredictor();
   const { resolveCategorieId, categoriesCache, loading: loadingResolver } = useCategoriesResolver();
@@ -32,7 +35,14 @@ export default function EcranRevueImport({
     async function initialiserRevue() {
       try {
         setLoading(true);
+        setRpcLoading(true);
+        
+        // Charger la liste des dettes
+        const { data: dettesList } = await supabase.from('dettes').select('id, nom');
+        setDettes(dettesList || []);
+
         const smartRules = await chargerSmartRulesUtilisateur();
+        const { data: { user } } = await supabase.auth.getUser();
 
         // 1. Première passe de prédiction et de normalisation
         const transactionsEnrichies = [];
@@ -65,32 +75,85 @@ export default function EcranRevueImport({
             confiance: tx.confiance || 'haute',
             doublon: false,
             selectionne: sourceType === 'pdf' && tx.confiance === 'moyenne' ? false : true,
-            modificationManuelle: false
+            modificationManuelle: false,
+            dette_suggeree: null,
+            dette_id: null,
+            doublon_flou: false,
+            doublon_flou_importer: null
           });
         }
 
-        // 2. Vérification des doublons contre la base de données
+        // 2. Vérification des doublons exacts contre la base de données
         const verification = await verifierDoublons(transactionsEnrichies, compteId);
         
         // Mettre à jour le statut des doublons détectés
-        const finalTxs = transactionsEnrichies.map(tx => {
+        let tempTxs = transactionsEnrichies.map(tx => {
           const estDoublon = verification.doublons.some(d => d.import_hash === tx.import_hash);
           if (estDoublon) {
             return {
               ...tx,
               statut: 'doublon',
               doublon: true,
-              selectionne: false // Décoché par défaut si doublon
+              selectionne: false // Décoché par défaut si doublon exact
             };
           }
           return tx;
         });
 
-        setTransactionsLocal(finalTxs);
+        // 3. Appels RPC en parallèle pour fn_matcher_dette et fn_detecter_doublons_import
+        if (user) {
+          const promises = tempTxs.map(async (tx) => {
+            const updates = {};
+            
+            // fn_detecter_doublons_import
+            try {
+              const { data: dupData } = await supabase.rpc('fn_detecter_doublons_import', {
+                user_id: user.id,
+                date: tx.date,
+                montant: tx.montant,
+                categorie_id: tx.categorie_id,
+                type: tx.type
+              });
+              if (dupData && dupData.length > 0) {
+                updates.doublon_flou = true;
+              }
+            } catch (err) {
+              console.error("Error in fn_detecter_doublons_import:", err);
+            }
+
+            // fn_matcher_dette pour mots-clés liés aux dettes
+            const isDebtKeyword = /prlv|prelevement|credit|mensualite/i.test(tx.description);
+            if (isDebtKeyword) {
+              try {
+                const { data: debtData } = await supabase.rpc('fn_matcher_dette', {
+                  user_id: user.id,
+                  libelle: tx.description,
+                  montant: tx.montant
+                });
+                if (debtData && debtData.length > 0) {
+                  updates.dette_suggeree = { id: debtData[0].id, nom: debtData[0].nom };
+                }
+              } catch (err) {
+                console.error("Error in fn_matcher_dette:", err);
+              }
+            }
+
+            return { id: tx.id, updates };
+          });
+
+          const results = await Promise.all(promises);
+          tempTxs = tempTxs.map(tx => {
+            const res = results.find(r => r.id === tx.id);
+            return res ? { ...tx, ...res.updates } : tx;
+          });
+        }
+
+        setTransactionsLocal(tempTxs);
       } catch (err) {
         console.error("Erreur d'initialisation de l'écran de revue:", err);
       } finally {
         setLoading(false);
+        setRpcLoading(false);
       }
     }
 
@@ -183,9 +246,29 @@ export default function EcranRevueImport({
     }
   };
 
+  // Actions de liaison de dette
+  const handleConfirmDette = (id, detteId) => {
+    setTransactionsLocal(prev =>
+      prev.map(tx => tx.id === id ? { ...tx, dette_id: detteId } : tx)
+    );
+  };
+
+  const handleUnlinkDette = (id) => {
+    setTransactionsLocal(prev =>
+      prev.map(tx => tx.id === id ? { ...tx, dette_id: null } : tx)
+    );
+  };
+
+  // Action sur décision de doublon potentiel (flou)
+  const handleFuzzyDupDecision = (id, keep) => {
+    setTransactionsLocal(prev =>
+      prev.map(tx => tx.id === id ? { ...tx, doublon_flou_importer: keep, selectionne: keep } : tx)
+    );
+  };
+
   // Soumission finale en bulk
   const handleConfirmerImport = async () => {
-    if (selectedTxs.length === 0) return;
+    if (selectedTxs.length === 0 || !compteId) return;
     try {
       setImporting(true);
       setErreurImport('');
@@ -210,12 +293,12 @@ export default function EcranRevueImport({
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(val);
   };
 
-  if (loading || loadingResolver) {
+  if (loading || loadingResolver || rpcLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="w-10 h-10 border-4 border-slate-700 border-t-emerald-500 rounded-full animate-spin"></div>
+        <RefreshCw className="w-10 h-10 text-emerald-500 animate-spin" />
         <p className="text-slate-400 text-sm">
-          Analyse des transactions et prédiction des catégories...
+          Analyse des transactions, détection des doublons flous et rapprochement des dettes...
         </p>
       </div>
     );
@@ -322,7 +405,7 @@ export default function EcranRevueImport({
                 <tr
                   key={tx.id}
                   className={`border-b border-slate-800 last:border-b-0 hover:bg-[#12182c] transition-colors ${
-                    tx.doublon && !forcerLesDoublons ? 'opacity-40 bg-slate-900/30' : ''
+                    (tx.doublon && !forcerLesDoublons) || tx.doublon_flou_importer === false ? 'opacity-40 bg-slate-900/30' : ''
                   }`}
                 >
                   <td className="p-3 text-center">
@@ -336,8 +419,68 @@ export default function EcranRevueImport({
                   <td className="p-3 text-xs text-slate-300 whitespace-nowrap">
                     {tx.date}
                   </td>
-                  <td className="p-3 text-xs text-slate-200 truncate max-w-[220px]" title={tx.description}>
-                    {tx.description}
+                  <td className="p-3 text-xs text-slate-200 max-w-[220px]" title={tx.description}>
+                    <div className="truncate">{tx.description}</div>
+                    
+                    {/* Dette section */}
+                    {tx.dette_suggeree && (
+                      <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                        {tx.dette_id ? (
+                          <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded flex items-center gap-1">
+                            💳 Dette associée : {tx.dette_suggeree.nom}
+                            <button
+                              type="button"
+                              onClick={() => handleUnlinkDette(tx.id)}
+                              className="text-rose-400 hover:text-rose-300 font-bold ml-1"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ) : (
+                          <span className="text-[10px] bg-[#161b2c] text-indigo-400 border border-indigo-500/20 px-1.5 py-0.5 rounded flex items-center gap-1.5">
+                            Association dette ? : {tx.dette_suggeree.nom}
+                            <button
+                              type="button"
+                              onClick={() => handleConfirmDette(tx.id, tx.dette_suggeree.id)}
+                              className="bg-indigo-600 hover:bg-indigo-500 text-white text-[9px] px-1 rounded font-bold"
+                            >
+                              Associer
+                            </button>
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Doublon flou section */}
+                    {tx.doublon_flou && (
+                      <div className="mt-1 flex items-center gap-1.5">
+                        <span className="text-[10px] bg-amber-500/15 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded flex items-center gap-1">
+                          ⚠️ Doublon potentiel
+                          {tx.doublon_flou_importer === null ? (
+                            <div className="flex gap-1 ml-1">
+                              <button
+                                type="button"
+                                onClick={() => handleFuzzyDupDecision(tx.id, true)}
+                                className="bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] px-1 rounded font-bold"
+                              >
+                                Importer quand même
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleFuzzyDupDecision(tx.id, false)}
+                                className="bg-rose-600 hover:bg-rose-500 text-white text-[9px] px-1 rounded font-bold"
+                              >
+                                Ignorer
+                              </button>
+                            </div>
+                          ) : tx.doublon_flou_importer ? (
+                            <span className="text-emerald-400 font-semibold ml-1">(Conservé)</span>
+                          ) : (
+                            <span className="text-rose-400 font-semibold ml-1">(Ignoré)</span>
+                          )}
+                        </span>
+                      </div>
+                    )}
                   </td>
                   <td className={`p-3 text-xs font-semibold whitespace-nowrap ${
                     tx.type === 'depense' ? 'text-rose-400' : 'text-emerald-400'

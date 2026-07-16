@@ -6,6 +6,7 @@ import EcranRevueImport from './EcranRevueImport';
 import { X, Upload, FileSpreadsheet, FileText, Check, AlertTriangle, RefreshCw } from 'lucide-react';
 import { parserCSVBrut } from '../../utils/csvParser';
 import { normaliserLigne } from '../../utils/normalisationTransactions';
+import { useComptes } from '../../hooks/useComptes';
 
 /**
  * ImportCSVModal
@@ -15,6 +16,8 @@ import { normaliserLigne } from '../../utils/normalisationTransactions';
  * @param {function} onFerme - Callback de fermeture du modal.
  */
 export default function ImportCSVModal({ compteId, onFerme }) {
+  const { comptes } = useComptes();
+  const [selectedCompteId, setSelectedCompteId] = useState(compteId || '');
   const [etape, setEtape] = useState('upload'); // 'upload' | 'mapping' | 'revue' | 'termine'
   const [loading, setLoading] = useState(false);
   const [erreur, setErreur] = useState('');
@@ -96,7 +99,7 @@ export default function ImportCSVModal({ compteId, onFerme }) {
       const fileText = await lireFichierTexte(file);
       setFichierContenuText(fileText);
 
-      const res = await parseFichier(file, compteId);
+      const res = await parseFichier(file, selectedCompteId);
 
       if (res.nonReconnu) {
         const parsingBrut = parserCSVBrut(fileText);
@@ -161,7 +164,7 @@ export default function ImportCSVModal({ compteId, onFerme }) {
       // 5. Détection heuristique des transactions
       setProgressionPDF('Détection des transactions…');
       const { detecterTransactionsPDF } = await import('../../utils/detectionLignesPDF');
-      const transactions = await detecterTransactionsPDF(toutesLesLignes, compteId);
+      const transactions = await detecterTransactionsPDF(toutesLesLignes, selectedCompteId);
 
       if (transactions.length === 0) {
         throw new Error('Aucune transaction n\'a été détectée dans ce PDF. Vérifiez que le fichier est bien un relevé bancaire.');
@@ -231,7 +234,7 @@ export default function ImportCSVModal({ compteId, onFerme }) {
 
       for (const ligne of parsingBrut.lignes) {
         if (ligne[signatureALaVolee.colonnes.date] && ligne[signatureALaVolee.colonnes.libelle]) {
-          const tx = await normaliserLigne(ligne, signatureALaVolee, compteId);
+          const tx = await normaliserLigne(ligne, signatureALaVolee, selectedCompteId);
           normalisees.push(tx);
         }
       }
@@ -283,7 +286,7 @@ export default function ImportCSVModal({ compteId, onFerme }) {
   };
 
   const fichierInputPret = () => {
-    if (!compteId) {
+    if (!selectedCompteId) {
       setErreur("Veuillez sélectionner un compte de destination.");
       return false;
     }
@@ -349,6 +352,22 @@ export default function ImportCSVModal({ compteId, onFerme }) {
               {/* Étape 1 : UPLOAD */}
               {etape === 'upload' && (
                 <div className="space-y-6">
+                  <div className="bg-[#161b2c] p-4 rounded-xl border border-slate-800">
+                    <label className="text-xs font-semibold text-slate-300 block mb-2">
+                      Compte bancaire de destination <span className="text-rose-400">*</span>
+                    </label>
+                    <select
+                      value={selectedCompteId}
+                      onChange={(e) => setSelectedCompteId(e.target.value)}
+                      className="w-full bg-[#0a0f1d] border border-slate-800 rounded-lg px-3 py-2 text-slate-200 text-sm focus:outline-none focus:border-emerald-500"
+                    >
+                      <option value="">-- Choisir le compte associé --</option>
+                      {comptes.map(c => (
+                        <option key={c.id} value={c.id}>{c.nom}</option>
+                      ))}
+                    </select>
+                  </div>
+
                   <div
                     onDragEnter={handleDrag}
                     onDragOver={handleDrag}
@@ -425,7 +444,7 @@ export default function ImportCSVModal({ compteId, onFerme }) {
                 <EcranRevueImport
                   transactionsParsees={transactionsNormalisees}
                   banqueDetectee={banqueNomDetecte}
-                  compteId={compteId}
+                  compteId={selectedCompteId}
                   sourceType={sourceType}
                   onTermine={() => setEtape('termine')}
                   onAnnuler={() => setEtape('upload')}

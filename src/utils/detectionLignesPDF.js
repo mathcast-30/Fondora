@@ -143,7 +143,7 @@ function extraireMontant(ligne) {
   const dernier = matchs.at(-1);
   return {
     montant: Math.abs(dernier.valeur),
-    type: dernier.valeur < 0 ? 'depense' : 'recette',
+    type: dernier.valeur < 0 ? 'depense' : 'revenu',
     index: dernier.index
   };
 }

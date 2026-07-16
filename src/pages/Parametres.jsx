@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import Layout from '../components/Layout'
 import SwitchDevise from '../components/devises/SwitchDevise'
 import AffichageTaux from '../components/devises/AffichageTaux'
+import { useCategories } from '../hooks/useCategories'
 import { useSmartRules } from '../hooks/useSmartRules'
 import { useAlertes } from '../hooks/useAlertes'
 import MFASetup from '../components/mfa/MFASetup'
@@ -61,8 +62,14 @@ export default function Parametres() {
     // Préférences
     const [modulesActifs, setModulesActifs] = useState([])
 
-    // Catégories
-    const [categories, setCategories] = useState([])
+    // Catégories — désormais géré par le hook (globales + perso + masquage)
+    const {
+        categories,
+        loading: categoriesLoading,
+        ajouterCategorie,
+        supprimerCategorie,
+        charger: rafraichirCategories,
+    } = useCategories()
     const [newCategorie, setNewCategorie] = useState({ nom: '', type: 'depense', couleur: '#10b981' })
     const [editingCat, setEditingCat] = useState(null)
 
@@ -80,7 +87,6 @@ export default function Parametres() {
 
     useEffect(() => {
         loadProfile()
-        loadCategories()
     }, [])
 
     async function loadProfile() {
@@ -93,16 +99,6 @@ export default function Parametres() {
             setSituationFamiliale(data.situation_familiale || 'celibataire')
             setModulesActifs(data.modules_actifs || [])
         }
-    }
-
-    async function loadCategories() {
-        const { data: { user } } = await supabase.auth.getUser()
-        const { data } = await supabase
-            .from('categories')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('nom')
-        setCategories(data || [])
     }
 
     function showMsg(text, type = 'success') {
@@ -146,24 +142,39 @@ export default function Parametres() {
     // ── Catégories ────────────────────────────────────────────────────────────
     async function addCategorie() {
         if (!newCategorie.nom.trim()) return
-        const { data: { user } } = await supabase.auth.getUser()
-        await supabase.from('categories').insert({ ...newCategorie, user_id: user.id })
-        loadCategories()
+        const { error } = await ajouterCategorie(newCategorie)
+        if (error) {
+            showMsg(error.message, 'error')
+            return
+        }
         setNewCategorie({ nom: '', type: 'depense', couleur: '#10b981' })
     }
 
     async function saveCategorie(cat) {
-        await supabase.from('categories')
+        // Uniquement pour les catégories perso (globales non éditables directement)
+        const { error } = await supabase.from('categories')
             .update({ nom: cat.nom, type: cat.type, couleur: cat.couleur })
             .eq('id', cat.id)
         setEditingCat(null)
-        loadCategories()
+        if (error) {
+            showMsg(error.message, 'error')
+            return
+        }
+        await rafraichirCategories()
     }
 
-    async function deleteCategorie(id) {
-        if (!confirm('Supprimer cette catégorie ? Les transactions liées ne seront pas supprimées.')) return
-        await supabase.from('categories').delete().eq('id', id)
-        loadCategories()
+    async function deleteCategorie(cat) {
+        const estGlobale = cat.user_id === null
+        const message = estGlobale
+            ? 'Masquer cette catégorie par défaut ? Elle ne réapparaîtra plus dans tes listes. Les transactions liées ne seront pas supprimées.'
+            : 'Supprimer cette catégorie ? Les transactions liées ne seront pas supprimées.'
+        if (!confirm(message)) return
+        const { error } = await supprimerCategorie(cat.id)
+        if (error) {
+            showMsg(error.message, 'error')
+            return
+        }
+        showMsg(estGlobale ? 'Catégorie masquée ✓' : 'Catégorie supprimée ✓')
     }
 
     // ── Smart Rules ───────────────────────────────────────────────────────────
@@ -174,7 +185,6 @@ export default function Parametres() {
     }
 
     // ── Suppression compte ────────────────────────────────────────────────────
-    // Remplace requestDeletion par ces deux fonctions :
     async function confirmDeletion() {
         setDeleteSending(true)
         try {
@@ -331,8 +341,12 @@ export default function Parametres() {
                     {/* ══ CATÉGORIES ══ */}
                     {activeSection === 'categories' && (
                         <section className="parametres-section">
-                            <h2 className="parametres-section-titre">Catégories personnalisées</h2>
+                            <h2 className="parametres-section-titre">Catégories</h2>
                             <div className="parametres-section-contenu">
+                                <p className="parametres-hint" style={{ marginBottom: '12px' }}>
+                                    Les catégories <strong>par défaut</strong> sont partagées par tous les utilisateurs.
+                                    Tu peux les masquer si tu ne les utilises pas — elles ne réapparaîtront plus.
+                                </p>
                                 <div className="parametres-card--add">
                                     <p className="parametres-label" style={{ marginBottom: '10px' }}>Nouvelle catégorie</p>
                                     <div className="parametres-row-add">
@@ -363,52 +377,61 @@ export default function Parametres() {
                                         </button>
                                     </div>
                                 </div>
-                                <div className="parametres-liste">
-                                    {categories.map(cat => (
-                                        <div key={cat.id} className="parametres-liste-item">
-                                            <span className="parametres-cat-dot" style={{ backgroundColor: cat.couleur }} />
-                                            {editingCat?.id === cat.id ? (
-                                                <>
-                                                    <input
-                                                        value={editingCat.nom}
-                                                        onChange={e => setEditingCat(p => ({ ...p, nom: e.target.value }))}
-                                                        className="parametres-input parametres-input--inline"
-                                                    />
-                                                    <select
-                                                        value={editingCat.type}
-                                                        onChange={e => setEditingCat(p => ({ ...p, type: e.target.value }))}
-                                                        className="parametres-input"
-                                                        style={{ width: 110 }}
-                                                    >
-                                                        <option value="depense">Dépense</option>
-                                                        <option value="revenu">Revenu</option>
-                                                    </select>
-                                                    <input
-                                                        type="color"
-                                                        value={editingCat.couleur}
-                                                        onChange={e => setEditingCat(p => ({ ...p, couleur: e.target.value }))}
-                                                        className="parametres-color-picker"
-                                                    />
-                                                    <button onClick={() => saveCategorie(editingCat)} className="parametres-icon-btn parametres-icon-btn--confirm">✓</button>
-                                                    <button onClick={() => setEditingCat(null)} className="parametres-icon-btn">✕</button>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <span className="parametres-liste-item-nom">{cat.nom}</span>
-                                                    <span className="parametres-badge">{cat.type}</span>
-                                                    {cat.user_id ? (
-                                                        <>
-                                                            <button onClick={() => setEditingCat({ ...cat })} className="parametres-icon-btn">✏️</button>
-                                                            <button onClick={() => deleteCategorie(cat.id)} className="parametres-icon-btn parametres-icon-btn--danger">🗑️</button>
-                                                        </>
-                                                    ) : (
-                                                        <span className="parametres-hint">par défaut</span>
-                                                    )}
-                                                </>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
+                                {categoriesLoading ? (
+                                    <p className="parametres-hint">Chargement…</p>
+                                ) : categories.length === 0 ? (
+                                    <p className="parametres-empty">Aucune catégorie visible pour l'instant.</p>
+                                ) : (
+                                    <div className="parametres-liste">
+                                        {categories.map(cat => (
+                                            <div key={cat.id} className="parametres-liste-item">
+                                                <span className="parametres-cat-dot" style={{ backgroundColor: cat.couleur }} />
+                                                {editingCat?.id === cat.id ? (
+                                                    <>
+                                                        <input
+                                                            value={editingCat.nom}
+                                                            onChange={e => setEditingCat(p => ({ ...p, nom: e.target.value }))}
+                                                            className="parametres-input parametres-input--inline"
+                                                        />
+                                                        <select
+                                                            value={editingCat.type}
+                                                            onChange={e => setEditingCat(p => ({ ...p, type: e.target.value }))}
+                                                            className="parametres-input"
+                                                            style={{ width: 110 }}
+                                                        >
+                                                            <option value="depense">Dépense</option>
+                                                            <option value="revenu">Revenu</option>
+                                                        </select>
+                                                        <input
+                                                            type="color"
+                                                            value={editingCat.couleur}
+                                                            onChange={e => setEditingCat(p => ({ ...p, couleur: e.target.value }))}
+                                                            className="parametres-color-picker"
+                                                        />
+                                                        <button onClick={() => saveCategorie(editingCat)} className="parametres-icon-btn parametres-icon-btn--confirm">✓</button>
+                                                        <button onClick={() => setEditingCat(null)} className="parametres-icon-btn">✕</button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span className="parametres-liste-item-nom">{cat.nom}</span>
+                                                        <span className="parametres-badge">{cat.type}</span>
+                                                        {cat.user_id ? (
+                                                            <>
+                                                                <button onClick={() => setEditingCat({ ...cat })} className="parametres-icon-btn">✏️</button>
+                                                                <button onClick={() => deleteCategorie(cat)} className="parametres-icon-btn parametres-icon-btn--danger">🗑️</button>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <span className="parametres-hint">par défaut</span>
+                                                                <button onClick={() => deleteCategorie(cat)} className="parametres-icon-btn parametres-icon-btn--danger" title="Masquer cette catégorie">🙈 Masquer</button>
+                                                            </>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </section>
                     )}

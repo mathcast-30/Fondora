@@ -358,6 +358,7 @@ export function normaliserMontant(valeurDebit, valeurCredit, separateurDecimal) 
   // Arrondir à 2 décimales
   montant = Math.round(montant * 100) / 100;
   const type = montant < 0 ? 'depense' : 'revenu';
+  montant = Math.abs(montant);
 
   return { montant, type };
 }
