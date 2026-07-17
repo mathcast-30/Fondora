@@ -70,46 +70,46 @@ function Patrimoine() {
         <Layout>
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-navy text-3xl font-bold mb-1">Patrimoine</h1>
-                    <p className="text-gray-500">Vue consolidée de tous tes actifs.</p>
+                    <h1 className="text-[var(--text-h)] text-3xl font-bold mb-1">Patrimoine</h1>
+                    <p className="text-[var(--text)]">Vue consolidée de tous tes actifs.</p>
                 </div>
                 <button onClick={() => setModalOuvert(true)} className="bg-emerald hover:bg-emerald-light text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition">
                     <Plus size={18} /> Ajouter un compte
                 </button>
             </div>
             {/* Évolution du patrimoine */}
-            <div className="bg-white rounded-xl p-5 shadow-sm mb-6">
-                <h2 className="text-navy font-bold text-lg mb-4">Évolution du patrimoine</h2>
+            <div className="bg-card rounded-xl p-5 border border-[var(--border)] mb-6">
+                <h2 className="text-[var(--text-h)] font-bold text-lg mb-4">Évolution du patrimoine</h2>
                 <NetWorthChart />
             </div>
 
             {/* Patrimoine total consolidé */}
-            <div className="bg-navy rounded-2xl p-6 mb-6">
-                <p className="text-gray-300 text-sm mb-1">Patrimoine brut total consolidé</p>
-                <p className="text-white text-3xl font-bold mb-1"><SecureValue value={patrimoineTotal} formatter={formatMontant} /></p>
+            <div className="bg-surface rounded-2xl p-6 mb-6 border border-[var(--border)]">
+                <p className="text-[var(--text)] text-sm mb-1">Patrimoine brut total consolidé</p>
+                <p className="text-[var(--text-h)] text-3xl font-bold mb-1"><SecureValue value={patrimoineTotal} formatter={formatMontant} /></p>
                 <p className="text-sm mb-4" style={{ color: totalDettes > 0 ? '#FCA5A5' : '#6EE7B7' }}>
                     Patrimoine net : <strong><SecureValue value={patrimoineNet} formatter={formatMontant} /></strong>
                     {totalDettes > 0 && <span className="ml-2 text-xs opacity-75">(dettes : -<SecureValue value={totalDettes} formatter={formatMontant} />)</span>}
                 </p>
                 <div className="grid grid-cols-4 gap-4">
                     <div>
-                        <p className="text-gray-400 text-xs mb-1">Comptes bancaires</p>
-                        <p className="text-white font-semibold"><SecureValue value={totalComptes} formatter={formatMontant} /></p>
+                        <p className="text-[var(--text)] text-xs mb-1">Comptes bancaires</p>
+                        <p className="text-[var(--text-h)] font-semibold"><SecureValue value={totalComptes} formatter={formatMontant} /></p>
                     </div>
                     <div>
-                        <p className="text-gray-400 text-xs mb-1">Actions & ETF</p>
+                        <p className="text-[var(--text)] text-xs mb-1">Actions & ETF</p>
                         <p className="text-emerald font-semibold"><SecureValue value={totalActions} formatter={formatMontant} /></p>
                     </div>
                     <div>
-                        <p className="text-gray-400 text-xs mb-1">Crypto</p>
+                        <p className="text-[var(--text)] text-xs mb-1">Crypto</p>
                         <p className="text-emerald font-semibold"><SecureValue value={totalCrypto} formatter={formatMontant} /></p>
                     </div>
                     <div>
-                        <p className="text-gray-400 text-xs mb-1">Immobilier</p>
+                        <p className="text-[var(--text)] text-xs mb-1">Immobilier</p>
                         <p className="text-emerald font-semibold"><SecureValue value={valeurTotaleImmo} formatter={formatMontant} /></p>
                     </div>
                     <div>
-                        <p className="text-gray-400 text-xs mb-1">Dettes (CRD)</p>
+                        <p className="text-[var(--text)] text-xs mb-1">Dettes (CRD)</p>
                         <p className="font-semibold" style={{ color: '#FCA5A5' }}>-<SecureValue value={totalDettes} formatter={formatMontant} /></p>
                     </div>
                 </div>
@@ -122,9 +122,9 @@ function Patrimoine() {
 
             {/* Liste des comptes */}
             {loading ? (
-                <p className="text-gray-400">Chargement...</p>
+                <p className="text-[var(--text)]">Chargement...</p>
             ) : comptes.length === 0 ? (
-                <div className="bg-white rounded-xl p-8 text-center text-gray-400">
+                <div className="bg-card rounded-xl p-8 text-center text-[var(--text)] border border-[var(--border)]">
                     Aucun compte pour l'instant. Clique sur "Ajouter un compte" pour commencer.
                 </div>
             ) : (
@@ -139,36 +139,36 @@ function Patrimoine() {
             <Modal isOpen={modalOuvert} onClose={() => setModalOuvert(false)} title="Nouveau compte">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="text-sm text-gray-600 mb-1 block">Nom du compte</label>
+                        <label className="text-sm text-[var(--text)] mb-1 block">Nom du compte</label>
                         <input type="text" required value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })}
-                            placeholder="Ex: Compte Boursorama" className="w-full border rounded-lg px-3 py-2" />
+                            placeholder="Ex: Compte Boursorama" className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2" />
                     </div>
                     <div>
-                        <label className="text-sm text-gray-600 mb-1 block">Type de compte</label>
-                        <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="w-full border rounded-lg px-3 py-2">
+                        <label className="text-sm text-[var(--text)] mb-1 block">Type de compte</label>
+                        <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2">
                             {TYPES_COMPTES.map((type) => <option key={type} value={type}>{type}</option>)}
                         </select>
                     </div>
                     <div className="flex gap-3">
                         <div className="flex-1">
-                            <label className="text-sm text-gray-600 mb-1 block">Solde actuel</label>
+                            <label className="text-sm text-[var(--text)] mb-1 block">Solde actuel</label>
                             <input type="number" step="0.01" required value={form.solde}
-                                onChange={(e) => setForm({ ...form, solde: e.target.value })} placeholder="0.00" className="w-full border rounded-lg px-3 py-2" />
+                                onChange={(e) => setForm({ ...form, solde: e.target.value })} placeholder="0.00" className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2" />
                         </div>
                         <div className="w-28">
-                            <label className="text-sm text-gray-600 mb-1 block">Devise</label>
-                            <select value={form.devise} onChange={(e) => setForm({ ...form, devise: e.target.value })} className="w-full border rounded-lg px-3 py-2">
+                            <label className="text-sm text-[var(--text)] mb-1 block">Devise</label>
+                            <select value={form.devise} onChange={(e) => setForm({ ...form, devise: e.target.value })} className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2">
                                 <option value="EUR">EUR</option>
                                 <option value="USD">USD</option>
                             </select>
                         </div>
                     </div>
                     <div>
-                        <label className="text-sm text-gray-600 mb-1 block">Couleur</label>
+                        <label className="text-sm text-[var(--text)] mb-1 block">Couleur</label>
                         <div className="flex gap-2">
                             {COULEURS.map((couleur) => (
                                 <button key={couleur} type="button" onClick={() => setForm({ ...form, couleur })}
-                                    className={`w-8 h-8 rounded-full border-2 ${form.couleur === couleur ? 'border-navy' : 'border-transparent'}`}
+                                    className={`w-8 h-8 rounded-full border-2 ${form.couleur === couleur ? 'border-emerald' : 'border-transparent'}`}
                                     style={{ backgroundColor: couleur }} />
                             ))}
                         </div>

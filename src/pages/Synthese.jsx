@@ -25,11 +25,11 @@ function Synthese() {
 
     return (
         <Layout>
-            <h1 className="text-navy text-3xl font-bold mb-1">Synthèse</h1>
-            <p className="text-gray-500 mb-6">Vue d'ensemble de tes finances.</p>
+            <h1 className="text-[var(--text-h)] text-3xl font-bold mb-1">Synthèse</h1>
+            <p className="text-[var(--text)] mb-6">Vue d'ensemble de tes finances.</p>
 
             {loading ? (
-                <p className="text-gray-400">Chargement...</p>
+                <p className="text-[var(--text)]">Chargement...</p>
             ) : (
                 <>
                     {/* Stats principales */}
@@ -62,19 +62,19 @@ function Synthese() {
                     </div>
 
                     {/* Liste rapide des comptes */}
-                    <div className="bg-white rounded-xl p-5 shadow-sm">
-                        <h3 className="text-navy font-semibold mb-4">Mes comptes</h3>
+                    <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
+                        <h3 className="text-[var(--text-h)] font-semibold mb-4">Mes comptes</h3>
                         {comptes.length === 0 ? (
-                            <p className="text-gray-400 text-sm">Aucun compte créé pour l'instant.</p>
+                            <p className="text-[var(--text)] text-sm">Aucun compte créé pour l'instant.</p>
                         ) : (
                             <div className="space-y-2">
                                 {comptes.map((c) => (
-                                    <div key={c.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                                    <div key={c.id} className="flex items-center justify-between py-2 border-b border-[var(--border)] last:border-0">
                                         <div className="flex items-center gap-2">
                                             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.couleur }} />
-                                            <span className="text-sm text-navy">{c.nom}</span>
+                                            <span className="text-sm text-[var(--text-h)]">{c.nom}</span>
                                         </div>
-                                        <span className="text-sm font-semibold text-navy">
+                                        <span className="text-sm font-semibold text-[var(--text-h)]">
                                             <SecureValue 
                                                 value={c.soldeReel ?? c.solde} 
                                                 formatter={(v) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: c.devise }).format(v)} 

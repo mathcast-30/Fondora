@@ -37,28 +37,28 @@ function Analyse() {
         <Layout>
             <div className="flex items-center justify-between mb-4">
                 <div>
-                    <h1 className="text-navy text-3xl font-bold mb-1">Analyse</h1>
-                    <p className="text-gray-500">Statistiques de ton patrimoine et optimisation.</p>
+                    <h1 className="text-[var(--text-h)] text-3xl font-bold mb-1">Analyse</h1>
+                    <p className="text-[var(--text)]">Statistiques de ton patrimoine et optimisation.</p>
                 </div>
             </div>
 
             {/* Barre de navigation secondaire */}
-            <div className="flex gap-2 mb-6 bg-white p-1 rounded-lg shadow-sm w-fit overflow-x-auto max-w-full">
+            <div className="flex gap-2 mb-6 bg-surface p-1 rounded-lg border border-[var(--border)] w-fit overflow-x-auto max-w-full">
                 <button
                     onClick={() => setOngletActif('epargne')}
-                    className={`px-4 py-2 whitespace-nowrap rounded-md text-sm font-medium transition flex items-center gap-2 ${ongletActif === 'epargne' ? 'bg-navy text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+                    className={`px-4 py-2 whitespace-nowrap rounded-md text-sm font-medium transition flex items-center gap-2 ${ongletActif === 'epargne' ? 'bg-card text-[var(--text-h)] border border-[var(--border)]' : 'text-[var(--text)] hover:text-[var(--text-h)]'}`}
                 >
                     <PiggyBank size={18} /> Analyse de l'Épargne
                 </button>
                 <button
                     onClick={() => setOngletActif('frais')}
-                    className={`px-4 py-2 whitespace-nowrap rounded-md text-sm font-medium transition flex items-center gap-2 ${ongletActif === 'frais' ? 'bg-navy text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+                    className={`px-4 py-2 whitespace-nowrap rounded-md text-sm font-medium transition flex items-center gap-2 ${ongletActif === 'frais' ? 'bg-card text-[var(--text-h)] border border-[var(--border)]' : 'text-[var(--text)] hover:text-[var(--text-h)]'}`}
                 >
                     <TrendingDown size={18} /> Optimisation des Frais
                 </button>
                 <button
                     onClick={() => setOngletActif('fiscal')}
-                    className={`px-4 py-2 whitespace-nowrap rounded-md text-sm font-medium transition flex items-center gap-2 ${ongletActif === 'fiscal' ? 'bg-navy text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+                    className={`px-4 py-2 whitespace-nowrap rounded-md text-sm font-medium transition flex items-center gap-2 ${ongletActif === 'fiscal' ? 'bg-card text-[var(--text-h)] border border-[var(--border)]' : 'text-[var(--text)] hover:text-[var(--text-h)]'}`}
                 >
                     🧾 Analyse Fiscale
                 </button>
@@ -67,12 +67,12 @@ function Analyse() {
             {ongletActif === 'epargne' && (
                 <div className="space-y-6">
                     <div className="flex justify-end">
-                        <div className="flex gap-2 bg-white p-1 rounded-lg shadow-sm">
+                        <div className="flex gap-2 bg-surface p-1 rounded-lg border border-[var(--border)]">
                             {PERIODES.map((p) => (
                                 <button
                                     key={p.valeur}
                                     onClick={() => setNombreMois(p.valeur)}
-                                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${nombreMois === p.valeur ? 'bg-emerald text-white' : 'text-gray-500'}`}
+                                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${nombreMois === p.valeur ? 'bg-emerald text-white' : 'text-[var(--text)]'}`}
                                 >
                                     {p.label}
                                 </button>
@@ -81,7 +81,7 @@ function Analyse() {
                     </div>
 
                     {loading ? (
-                        <p className="text-gray-400">Chargement...</p>
+                        <p className="text-[var(--text)]">Chargement...</p>
                     ) : (
                         <>
                             {/* Stats comparatives */}
@@ -115,8 +115,8 @@ function Analyse() {
                             </div>
 
                             {/* Comparaison à la moyenne */}
-                            <div className={`rounded-xl p-4 ${ecartParRapportMoyenne >= 0 ? 'bg-emerald/10' : 'bg-red-50'}`}>
-                                <p className={`text-sm font-medium ${ecartParRapportMoyenne >= 0 ? 'text-emerald' : 'text-red-500'}`}>
+                            <div className={`rounded-xl p-4 border ${ecartParRapportMoyenne >= 0 ? 'bg-emerald/10 border-emerald/20' : 'bg-[var(--negative)]/10 border-[var(--negative)]/20'}`}>
+                                <p className={`text-sm font-medium ${ecartParRapportMoyenne >= 0 ? 'text-emerald' : 'text-[var(--negative)]'}`}>
                                     {ecartParRapportMoyenne >= 0
                                         ? <span>📈 Ce mois-ci tu es <SecureValue value={Math.abs(ecartParRapportMoyenne)} formatter={formatMontant} /> au-dessus de ta moyenne habituelle, continue comme ça !</span>
                                         : <span>📉 Ce mois-ci tu es <SecureValue value={Math.abs(ecartParRapportMoyenne)} formatter={formatMontant} /> en-dessous de ta moyenne habituelle.</span>}
@@ -124,14 +124,14 @@ function Analyse() {
                             </div>
 
                             {/* Graphique à barres comparatif */}
-                            <div className="bg-white rounded-xl p-5 shadow-sm">
-                                <h3 className="text-navy font-semibold mb-2">Revenus vs Dépenses par mois</h3>
+                            <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
+                                <h3 className="text-[var(--text-h)] font-semibold mb-2">Revenus vs Dépenses par mois</h3>
                                 <BarChartComparatif data={data} />
                             </div>
 
                             {/* Courbe d'évolution du solde */}
-                            <div className="bg-white rounded-xl p-5 shadow-sm">
-                                <h3 className="text-navy font-semibold mb-2">Évolution du solde mensuel</h3>
+                            <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
+                                <h3 className="text-[var(--text-h)] font-semibold mb-2">Évolution du solde mensuel</h3>
                                 <LineChartSolde data={data} />
                             </div>
                         </>
@@ -144,7 +144,7 @@ function Analyse() {
             )}
 
             {ongletActif === 'fiscal' && (
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden pb-4">
+                <div className="bg-card rounded-xl border border-[var(--border)] overflow-hidden pb-4">
                     <AnalyseurFiscal />
                 </div>
             )}
