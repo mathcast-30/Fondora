@@ -54,7 +54,7 @@ function Budget() {
         recurrente: false, jour_recurrence: 1,
     })
     const [budgetForm, setBudgetForm] = useState({})
-    
+
     const [graphiquesVisibles, setGraphiquesVisibles] = useState(() => {
         const saved = localStorage.getItem('fondora_budget_graphiques');
         if (saved) {
@@ -186,14 +186,14 @@ function Budget() {
                     <h2 className="text-lg font-bold text-[var(--text-h)]">Analyses visuelles</h2>
                     <BudgetGraphiqueSelector graphiquesVisibles={graphiquesVisibles} setGraphiquesVisibles={setGraphiquesVisibles} />
                 </div>
-                
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {graphiquesVisibles.includes('budget_vs_reel') && <BudgetVsReelChart transactions={transactions} budgets={budgets} categories={categories} />}
                     {graphiquesVisibles.includes('evolution_temps') && <EvolutionTempsChart />}
                     {graphiquesVisibles.includes('objectif_epargne') && <JaugeEpargneChart epargneRealisee={solde} />}
                     {graphiquesVisibles.includes('top5_depenses') && <Top5DepensesChart transactions={transactions} categories={categories} />}
                 </div>
-                
+
                 {graphiquesVisibles.length === 0 && (
                     <div className="text-center py-12 text-[var(--text)] bg-card rounded-xl border border-[var(--border)] mt-4">
                         Aucun graphique affiché. Cliquez sur ⚙️ pour en ajouter.
@@ -332,26 +332,29 @@ function Budget() {
             </Modal>
 
             {/* Modal définition des budgets */}
+            {/* Modal définition des budgets */}
             <Modal isOpen={modalBudgetOuvert} onClose={() => setModalBudgetOuvert(false)} title="Définir les budgets mensuels">
-                <form onSubmit={handleSubmitBudgets} className="space-y-3">
-                    {categories.filter(c => c.type === 'depense').map((c) => {
-                        const budgetExistant = budgets.find(b => b.categorie_id === c.id)
-                        return (
-                            <div key={c.id} className="flex items-center gap-3">
-                                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.couleur }} />
-                                <span className="flex-1 text-sm text-[var(--text-h)]">{c.nom}</span>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    placeholder="Max €"
-                                    defaultValue={budgetExistant?.montant_max || ''}
-                                    onChange={(e) => setBudgetForm({ ...budgetForm, [c.id]: e.target.value })}
-                                    className="w-28 border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-2 py-1.5 text-sm"
-                                />
-                            </div>
-                        )
-                    })}
-                    <button type="submit" className="w-full bg-emerald hover:bg-emerald-light text-white font-semibold py-2 rounded-lg transition mt-4">
+                <form onSubmit={handleSubmitBudgets} className="flex flex-col gap-3">
+                    <div className="overflow-y-auto max-h-[60vh] space-y-3 pr-1">
+                        {categories.filter(c => c.type === 'depense').map((c) => {
+                            const budgetExistant = budgets.find(b => b.categorie_id === c.id)
+                            return (
+                                <div key={c.id} className="flex items-center gap-3">
+                                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.couleur }} />
+                                    <span className="flex-1 text-sm text-[var(--text-h)]">{c.nom}</span>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        placeholder="Max €"
+                                        defaultValue={budgetExistant?.montant_max || ''}
+                                        onChange={(e) => setBudgetForm({ ...budgetForm, [c.id]: e.target.value })}
+                                        className="w-28 border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-2 py-1.5 text-sm"
+                                    />
+                                </div>
+                            )
+                        })}
+                    </div>
+                    <button type="submit" className="w-full bg-emerald hover:bg-emerald-light text-white font-semibold py-2 rounded-lg transition mt-2">
                         Enregistrer les budgets
                     </button>
                 </form>
