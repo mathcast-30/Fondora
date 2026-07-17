@@ -1,19 +1,86 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+body {
+  font-family: var(--sans);
+}
+
+.kpi-value {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-h);
+  line-height: 1.2;
+}
+
+.kpi-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
 
 :root {
-  --bg-primary: #0a1f33;
-  --text-primary: #ffffff;
-  --bg-secondary: #122a44;
-  --text-muted: #9ca3af;
-  --border-color: #1e3a5f;
+  /* ── Fonds (3 niveaux, jamais de blanc pur) ── */
+  --bg-page: #0a0f1d;
+  /* sidebar / fond global */
+  --bg-surface: #111a2c;
+  /* zone centrale */
+  --bg-card: #1a2537;
+  /* cartes */
+  --bg-card-hover: #1e2b40;
+  /* hover carte */
+  --border: rgba(148, 163, 184, 0.08);
+  --border-strong: #334155;
+
+  /* ── Texte ── */
+  --text-h: #f8fafc;
+  /* titres / chiffres clés */
+  --text: #94a3b8;
+  /* texte courant / labels */
+  --text-muted: #64748b;
+  /* légendes, jamais plus clair que ça sur ce fond */
+
+  /* ── Sémantique ── */
+  --positive: #34d399;
+  --negative: #f87171;
+  --accent: #10b981;
+  /* émeraude */
+  --accent-light: #34d399;
+  --accent-bg: rgba(16, 185, 129, 0.08);
+  --accent-border: rgba(16, 185, 129, 0.3);
+  --accent-2: #6366f1;
+  /* indigo, comparaisons secondaires */
+  --accent-3: #f59e0b;
+  /* ambre */
+
+  /* ── Divers déjà référencés dans tes .css existants ── */
+  --card-bg: var(--bg-card);
+  --code-bg: var(--bg-surface);
+  --social-bg: var(--bg-card);
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --sans: 'Inter', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* ── Compat rétro (anciens noms utilisés dans certains composants) ── */
+  --bg-primary: var(--bg-page);
+  --text-primary: var(--text-h);
+  --bg-secondary: var(--bg-surface);
+  --border-color: var(--border);
 }
 
 @theme {
-    --color-navy: #0a1f33;
-    --color-navy-light: #122a44;
-    --color-emerald: #10b981;
-    --color-emerald-light: #34d399;
-    --color-graylight: #f1f5f9;
+  --color-navy: var(--bg-page);
+  --color-navy-light: var(--bg-surface);
+  --color-emerald: var(--accent);
+  --color-emerald-light: var(--accent-light);
+  --color-graylight: var(--bg-card);
+  /* attention : renommage sémantique, voir plus bas */
+  --color-card: var(--bg-card);
+  --color-card-hover: var(--bg-card-hover);
+  --color-indigo: var(--accent-2);
+  --color-amber: var(--accent-3);
 }
 
 .analyseur-fiscal {
@@ -38,8 +105,15 @@
   gap: 8px;
 }
 
-.kpi span { font-size: 14px; color: gray; }
-.kpi strong { font-size: 20px; color: var(--color-navy); }
+.kpi span {
+  font-size: 14px;
+  color: gray;
+}
+
+.kpi strong {
+  font-size: 20px;
+  color: var(--color-navy);
+}
 
 .profil-fiscal-note {
   display: flex;
@@ -82,7 +156,11 @@
   margin-bottom: 12px;
 }
 
-.carte-lignes { display: flex; flex-direction: column; gap: 6px; }
+.carte-lignes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
 .ligne {
   display: flex;
@@ -90,7 +168,11 @@
   font-size: 14px;
 }
 
-.recommandations-liste { display: flex; flex-direction: column; gap: 12px; }
+.recommandations-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
 .recommandation {
   display: flex;
@@ -101,12 +183,32 @@
   font-size: 14px;
 }
 
-.recommandation.warning { background: rgba(245, 158, 11, 0.1); border-left: 3px solid #f59e0b; }
-.recommandation.info { background: rgba(99, 102, 241, 0.1); border-left: 3px solid #6366f1; }
-.recommandation.success { background: rgba(16, 185, 129, 0.1); border-left: 3px solid #10b981; }
-.recommandation p { margin: 4px 0 0; color: gray; }
+.recommandation.warning {
+  background: rgba(245, 158, 11, 0.1);
+  border-left: 3px solid #f59e0b;
+}
+
+.recommandation.info {
+  background: rgba(99, 102, 241, 0.1);
+  border-left: 3px solid #6366f1;
+}
+
+.recommandation.success {
+  background: rgba(16, 185, 129, 0.1);
+  border-left: 3px solid #10b981;
+}
+
+.recommandation p {
+  margin: 4px 0 0;
+  color: gray;
+}
 
 @media (max-width: 1024px) {
-  .bandeau-recap { grid-template-columns: repeat(2, 1fr); }
-  .grille-deux-colonnes { grid-template-columns: 1fr; }
-}
+  .bandeau-recap {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grille-deux-colonnes {
+    grid-template-columns: 1fr;
+  }
+}
