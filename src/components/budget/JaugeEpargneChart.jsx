@@ -45,8 +45,8 @@ export default function JaugeEpargneChart({ epargneRealisee }) {
     const formatMontant = (m) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(m);
 
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-center items-center">
-            <h3 className="text-navy font-semibold mb-2 self-start w-full">Objectif d'épargne</h3>
+        <div className="bg-card rounded-2xl border border-[var(--border)] p-6 flex flex-col justify-center items-center">
+            <h3 className="text-[var(--text-h)] font-semibold mb-2 self-start w-full">Objectif d'épargne</h3>
             
             <div className="h-48 w-full relative">
                 <ResponsiveContainer width="100%" height="100%">
@@ -63,7 +63,7 @@ export default function JaugeEpargneChart({ epargneRealisee }) {
                         <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
                         <RadialBar 
                             minAngle={15} 
-                            background={{ fill: '#f3f4f6' }} 
+                            background={{ fill: 'var(--bg-surface)' }} 
                             clockWise={true}
                             dataKey="value" 
                             cornerRadius={10} 
@@ -71,17 +71,17 @@ export default function JaugeEpargneChart({ epargneRealisee }) {
                     </RadialBarChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center mt-8">
-                    <span className="text-3xl font-bold text-navy">{pourcentage}%</span>
+                    <span className="text-3xl font-bold text-[var(--text-h)]">{pourcentage}%</span>
                 </div>
             </div>
             
             <div className="text-center mt-2">
-                <p className="text-slate-600 font-medium">
-                    <span className={pourcentage >= 100 ? 'text-emerald font-bold' : 'text-slate-800'}><SecureValue value={epargne} formatter={formatMontant} /></span> 
-                    <span className="text-slate-400 mx-1">/</span> 
+                <p className="text-[var(--text)] font-medium">
+                    <span className={pourcentage >= 100 ? 'text-emerald font-bold' : 'text-[var(--text-h)]'}><SecureValue value={epargne} formatter={formatMontant} /></span> 
+                    <span className="text-[var(--text-muted)] mx-1">/</span> 
                     <SecureValue value={currentObjectif} formatter={formatMontant} />
                 </p>
-                <p className="text-xs text-slate-400 mt-1">épargne réalisée ce mois</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">épargne réalisée ce mois</p>
             </div>
         </div>
     );

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings } from 'lucide-react';
 
 const GRAPHIQUES_DISPONIBLES = [
@@ -10,7 +10,7 @@ const GRAPHIQUES_DISPONIBLES = [
 
 export default function BudgetGraphiqueSelector({ graphiquesVisibles, setGraphiquesVisibles }) {
     const [isOpen, setIsOpen] = useState(false);
-    const dropdownRef = useRef(null);
+    const dropdownRef = { current: null };
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -22,7 +22,7 @@ export default function BudgetGraphiqueSelector({ graphiquesVisibles, setGraphiq
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, [dropdownRef]);
+    }, []);
 
     const toggleGraphique = (id) => {
         let nouveauxVisibles;
@@ -36,28 +36,28 @@ export default function BudgetGraphiqueSelector({ graphiquesVisibles, setGraphiq
     };
 
     return (
-        <div className="relative" ref={dropdownRef}>
+        <div className="relative">
             <button 
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 text-sm font-medium text-slate-600 bg-white border border-gray-200 px-3 py-2 rounded-lg hover:bg-gray-50 transition shadow-sm"
+                className="flex items-center gap-2 text-sm font-medium text-[var(--text)] bg-card border border-[var(--border)] px-3 py-2 rounded-lg hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-h)] transition"
             >
                 <Settings size={16} />
                 Personnaliser les graphiques
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-lg z-10 p-4">
-                    <h4 className="text-sm font-semibold text-navy mb-3">Affichage des graphiques</h4>
+                <div className="absolute right-0 mt-2 w-72 bg-card border border-[var(--border)] rounded-xl shadow-lg z-10 p-4">
+                    <h4 className="text-sm font-semibold text-[var(--text-h)] mb-3">Affichage des graphiques</h4>
                     <div className="space-y-3">
                         {GRAPHIQUES_DISPONIBLES.map(graph => (
                             <label key={graph.id} className="flex items-center gap-3 cursor-pointer">
                                 <input 
                                     type="checkbox"
-                                    className="w-4 h-4 text-emerald rounded border-gray-300 focus:ring-emerald accent-emerald"
+                                    className="w-4 h-4 text-emerald rounded border-[var(--border)] focus:ring-emerald accent-emerald"
                                     checked={graphiquesVisibles.includes(graph.id)}
                                     onChange={() => toggleGraphique(graph.id)}
                                 />
-                                <span className="text-sm text-slate-700">{graph.label}</span>
+                                <span className="text-sm text-[var(--text)]">{graph.label}</span>
                             </label>
                         ))}
                     </div>
