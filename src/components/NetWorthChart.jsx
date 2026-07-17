@@ -39,10 +39,10 @@ const CustomTooltip = ({ active, payload, label }) => {
   const dettes = payload.find(p => p.name === 'total_dettes')?.value || 0;
   const patrimoine = total - dettes;
   return (
-    <div style={{ background: '#122a44', border: '1px solid #1e3a5f', borderRadius: 10, padding: '10px 14px', fontSize: 12 }}>
-      <p style={{ color: '#9ca3af', marginBottom: 6 }}>{formatDate(label)}</p>
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', fontSize: 12 }}>
+      <p style={{ color: 'var(--text)', marginBottom: 6 }}>{formatDate(label)}</p>
       {payload.filter(p => p.name !== 'total_dettes').map(p => (
-        <div key={p.name} className="flex justify-between gap-4" style={{ color: p.fill || p.stroke || '#fff' }}>
+        <div key={p.name} className="flex justify-between gap-4" style={{ color: p.fill || p.stroke || 'var(--text-h)' }}>
           <span>{LAYERS.find(l => l.key === p.name)?.label || p.name}</span>
           <span>{formatYAxis(p.value)}</span>
         </div>
@@ -52,7 +52,7 @@ const CustomTooltip = ({ active, payload, label }) => {
           <span>Dettes</span><span>-{formatYAxis(dettes)}</span>
         </div>
       )}
-      <div style={{ borderTop: '1px solid #1e3a5f', marginTop: 6, paddingTop: 6, color: '#fff', fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}>
+      <div style={{ borderTop: '1px solid var(--border)', marginTop: 6, paddingTop: 6, color: 'var(--text-h)', fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}>
         <span>Patrimoine net</span><span>{formatYAxis(patrimoine)}</span>
       </div>
     </div>
@@ -88,13 +88,13 @@ export default function NetWorthChart({ height = 320 }) {
   const yAxisTickFormatter = incognito ? () => '•••' : formatYAxis;
 
   if (loading) return (
-    <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+    <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text)' }}>
       Chargement...
     </div>
   );
 
   if (filtered.length < 2) return (
-    <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: '#9ca3af', padding: '0 24px' }}>
+    <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: 'var(--text)', padding: '0 24px' }}>
       <p>📈 Votre historique de patrimoine apparaîtra ici après quelques jours d'utilisation.</p>
     </div>
   );
@@ -108,8 +108,8 @@ export default function NetWorthChart({ height = 320 }) {
             onClick={() => setPeriod(p.label)}
             className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
               period === p.label
-                ? 'bg-navy text-white'
-                : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'
+                ? 'bg-surface text-[var(--text-h)] border border-[var(--border-strong)]'
+                : 'bg-surface border border-[var(--border)] text-[var(--text)] hover:text-[var(--text-h)]'
             }`}
           >
             {p.label}
@@ -127,24 +127,24 @@ export default function NetWorthChart({ height = 320 }) {
               </linearGradient>
             ))}
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e3a5f" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis
             dataKey="date"
             tickFormatter={formatDate}
-            tick={{ fontSize: 11, fill: '#9ca3af' }}
-            axisLine={{ stroke: '#1e3a5f' }}
+            tick={{ fontSize: 11, fill: 'var(--text)' }}
+            axisLine={{ stroke: 'var(--border)' }}
             tickLine={false}
           />
           <YAxis
             tickFormatter={yAxisTickFormatter}
-            tick={{ fontSize: 11, fill: '#9ca3af' }}
+            tick={{ fontSize: 11, fill: 'var(--text)' }}
             axisLine={false}
             tickLine={false}
             width={60}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend
-            wrapperStyle={{ fontSize: 12, paddingTop: 16 }}
+            wrapperStyle={{ fontSize: 12, paddingTop: 16, color: 'var(--text)' }}
             formatter={(value) => {
               const l = LAYERS.find(x => x.key === value);
               return l ? l.label : value;
