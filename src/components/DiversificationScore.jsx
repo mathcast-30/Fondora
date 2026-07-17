@@ -22,19 +22,19 @@ function DiversificationScore({ positions, total }) {
     }
 
     return (
-        <div className="bg-white rounded-xl p-5 shadow-sm">
+        <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
             <div className="flex items-center gap-2 mb-4">
                 <BarChart3 size={18} className="text-emerald" />
-                <h3 className="text-navy font-semibold">Score de diversification</h3>
+                <h3 className="text-[var(--text-h)] font-semibold">Score de diversification</h3>
             </div>
 
             {/* Main Score Display */}
             <div className={`flex items-center justify-between mb-4 p-4 rounded-xl ${bgColorClass}`}>
                 <div>
-                    <p className="text-gray-400 text-sm mb-1">Score global</p>
+                    <p className="text-[var(--text)] text-sm mb-1">Score global</p>
                     <div className="flex items-baseline gap-2">
                         <p className={`text-4xl font-bold ${colorClass}`}>{formatScore(score)}</p>
-                        <span className="text-2xl font-bold text-gray-400">/100</span>
+                        <span className="text-2xl font-bold text-[var(--text)]">/100</span>
                     </div>
                 </div>
                 <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold ${colorClass} bg-opacity-10`}>
@@ -47,63 +47,63 @@ function DiversificationScore({ positions, total }) {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-emerald" />
-                        <span className="text-sm text-gray-600">Classes d'actifs</span>
+                        <span className="text-sm text-[var(--text)]">Classes d'actifs</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-navy">{formatScore(breakdown.assetClass)}</span>
-                        <span className="text-xs text-gray-400">/40</span>
+                        <span className="text-sm font-medium text-[var(--text-h)]">{formatScore(breakdown.assetClass)}</span>
+                        <span className="text-xs text-[var(--text-muted)]">/40</span>
                     </div>
                 </div>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-blue-500" />
-                        <span className="text-sm text-gray-600">Secteurs</span>
+                        <span className="text-sm text-[var(--text)]">Secteurs</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-navy">{formatScore(breakdown.sector)}</span>
-                        <span className="text-xs text-gray-400">/30</span>
+                        <span className="text-sm font-medium text-[var(--text-h)]">{formatScore(breakdown.sector)}</span>
+                        <span className="text-xs text-[var(--text-muted)]">/30</span>
                     </div>
                 </div>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                        <span className="text-sm text-gray-600">Concentration</span>
+                        <span className="text-sm text-[var(--text)]">Concentration</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-navy">{formatScore(breakdown.concentration)}</span>
-                        <span className="text-xs text-gray-400">/30</span>
+                        <span className="text-sm font-medium text-[var(--text-h)]">{formatScore(breakdown.concentration)}</span>
+                        <span className="text-xs text-[var(--text-muted)]">/30</span>
                     </div>
                 </div>
             </div>
 
             {/* Advice */}
-            <div className={`p-3 rounded-lg ${grade === 'A' ? 'bg-emerald/5 text-emerald' : 'bg-graylight'}`}>
-                <p className="text-xs">{advice}</p>
+            <div className={`p-3 rounded-lg ${grade === 'A' ? 'bg-emerald/10 text-emerald' : 'bg-surface'}`}>
+                <p className="text-xs text-[var(--text)]">{advice}</p>
             </div>
 
             {/* Legend */}
-            <div className="mt-4 pt-3 border-t border-gray-100">
-                <p className="text-xs text-gray-400 mb-2">Interprétation du score</p>
+            <div className="mt-4 pt-3 border-t border-[var(--border)]">
+                <p className="text-xs text-[var(--text-muted)] mb-2">Interprétation du score</p>
                 <div className="flex justify-between text-xs">
                     <div className="flex items-center gap-1">
                         <span className="text-emerald font-bold">A</span>
-                        <span className="text-gray-500">Excellent</span>
+                        <span className="text-[var(--text)]">Excellent</span>
                     </div>
                     <div className="flex items-center gap-1">
                         <span className="text-blue-500 font-bold">B</span>
-                        <span className="text-gray-500">Bon</span>
+                        <span className="text-[var(--text)]">Bon</span>
                     </div>
                     <div className="flex items-center gap-1">
                         <span className="text-yellow-500 font-bold">C</span>
-                        <span className="text-gray-500">Moyen</span>
+                        <span className="text-[var(--text)]">Moyen</span>
                     </div>
                     <div className="flex items-center gap-1">
                         <span className="text-orange-500 font-bold">D</span>
-                        <span className="text-gray-500">Faible</span>
+                        <span className="text-[var(--text)]">Faible</span>
                     </div>
                     <div className="flex items-center gap-1">
-                        <span className="text-red-500 font-bold">F</span>
-                        <span className="text-gray-500">À améliorer</span>
+                        <span className="text-[var(--negative)] font-bold">F</span>
+                        <span className="text-[var(--text)]">À améliorer</span>
                     </div>
                 </div>
             </div>

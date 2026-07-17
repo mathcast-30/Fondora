@@ -47,8 +47,8 @@ export default function EvolutionTempsChart() {
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
             return (
-                <div className="bg-white p-3 border border-gray-100 shadow-lg rounded-xl">
-                    <p className="font-semibold text-navy mb-2">{label}</p>
+                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', fontSize: 12 }}>
+                    <p className="font-semibold text-[var(--text-h)] mb-2">{label}</p>
                     {payload.map((entry, index) => (
                         <p key={`item-${index}`} className="text-sm font-medium" style={{ color: entry.color }}>
                             {entry.name} : {incognito ? '••••' : formatMontant(entry.value)}
@@ -61,15 +61,15 @@ export default function EvolutionTempsChart() {
     };
 
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-card rounded-2xl border border-[var(--border)] p-6">
             <div className="flex justify-between items-center mb-6">
-                <h3 className="text-navy font-semibold">Évolution dans le temps</h3>
+                <h3 className="text-[var(--text-h)] font-semibold">Évolution dans le temps</h3>
                 <div className="flex gap-2">
                     {['3M', '6M', '1Y'].map(p => (
                         <button 
                             key={p}
                             onClick={() => setPeriode(p)}
-                            className={`text-xs px-3 py-1 rounded-full font-medium transition ${periode === p ? 'bg-navy text-white' : 'bg-gray-100 text-slate-600 hover:bg-gray-200'}`}
+                            className={`text-xs px-3 py-1 rounded-full font-medium transition ${periode === p ? 'bg-surface text-[var(--text-h)] border border-[var(--border-strong)]' : 'bg-surface text-[var(--text)] hover:text-[var(--text-h)]'}`}
                         >
                             {p}
                         </button>
@@ -80,11 +80,11 @@ export default function EvolutionTempsChart() {
             <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(val) => incognito ? '••••' : `€${val}`} />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text)' }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text)' }} tickFormatter={(val) => incognito ? '••••' : `€${val}`} />
                         <Tooltip content={<CustomTooltip />} />
-                        <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                        <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', color: 'var(--text)' }} />
                         <Line type="monotone" dataKey="revenus" name="Revenus" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} fillOpacity={0.1} />
                         <Line type="monotone" dataKey="depenses" name="Dépenses" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} fillOpacity={0.1} />
                     </LineChart>

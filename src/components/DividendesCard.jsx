@@ -26,9 +26,9 @@ function DividendesCard({ dividendes, totalDouzeMois, valorisationTotale, positi
     }
 
     return (
-        <div className="bg-white rounded-xl p-5 shadow-sm mb-6">
+        <div className="bg-card rounded-xl p-5 border border-[var(--border)] mb-6">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-navy font-semibold">Dividendes</h3>
+                <h3 className="text-[var(--text-h)] font-semibold">Dividendes</h3>
                 <button onClick={() => setModalOuvert(true)} className="text-emerald hover:text-emerald-light flex items-center gap-1 text-sm font-medium">
                     <Plus size={16} /> Ajouter
                 </button>
@@ -36,25 +36,25 @@ function DividendesCard({ dividendes, totalDouzeMois, valorisationTotale, positi
 
             <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                    <p className="text-gray-400 text-xs mb-1">Dividendes (12 mois)</p>
-                    <p className="text-navy font-bold text-xl"><SecureValue value={totalDouzeMois} formatter={formatMontant} /></p>
+                    <p className="text-[var(--text)] text-xs mb-1">Dividendes (12 mois)</p>
+                    <p className="text-[var(--text-h)] font-bold text-xl"><SecureValue value={totalDouzeMois} formatter={formatMontant} /></p>
                 </div>
                 <div>
-                    <p className="text-gray-400 text-xs mb-1">Rendement</p>
+                    <p className="text-[var(--text)] text-xs mb-1">Rendement</p>
                     <p className="text-emerald font-bold text-xl"><SecureValue value={rendement} formatter={v => `${v.toFixed(2)} %`} /></p>
                 </div>
             </div>
 
             {dividendes.length > 0 && (
-                <div className="border-t pt-3 space-y-1 max-h-40 overflow-y-auto">
+                <div className="border-t border-[var(--border)] pt-3 space-y-1 max-h-40 overflow-y-auto">
                     {dividendes.map((d) => (
                         <div key={d.id} className="flex items-center justify-between text-sm py-1">
-                            <span className="text-gray-500">
+                            <span className="text-[var(--text)]">
                                 {d.positions_financieres?.symbole || 'Global'} • {new Date(d.date).toLocaleDateString('fr-FR')}
                             </span>
                             <div className="flex items-center gap-2">
-                                <span className="text-navy font-medium"><SecureValue value={d.montant} formatter={formatMontant} /></span>
-                                <button onClick={() => onSupprimer(d.id)} className="text-gray-300 hover:text-red-500">
+                                <span className="text-[var(--text-h)] font-medium"><SecureValue value={d.montant} formatter={formatMontant} /></span>
+                                <button onClick={() => onSupprimer(d.id)} className="text-[var(--text-muted)] hover:text-[var(--negative)]">
                                     <Trash2 size={14} />
                                 </button>
                             </div>
@@ -68,7 +68,7 @@ function DividendesCard({ dividendes, totalDouzeMois, valorisationTotale, positi
                     <select
                         value={form.position_id}
                         onChange={(e) => setForm({ ...form, position_id: e.target.value })}
-                        className="w-full border rounded-lg px-3 py-2"
+                        className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2"
                     >
                         <option value="">Dividende global (toutes positions)</option>
                         {positions.map((p) => (
@@ -83,14 +83,14 @@ function DividendesCard({ dividendes, totalDouzeMois, valorisationTotale, positi
                         placeholder="Montant reçu"
                         value={form.montant}
                         onChange={(e) => setForm({ ...form, montant: e.target.value })}
-                        className="w-full border rounded-lg px-3 py-2"
+                        className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2 placeholder-[var(--text-muted)]"
                     />
 
                     <input
                         type="date"
                         value={form.date}
                         onChange={(e) => setForm({ ...form, date: e.target.value })}
-                        className="w-full border rounded-lg px-3 py-2"
+                        className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2"
                     />
 
                     <button type="submit" className="w-full bg-emerald hover:bg-emerald-light text-white font-semibold py-2 rounded-lg transition">
