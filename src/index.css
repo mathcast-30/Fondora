@@ -1,69 +1,37 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-
-body {
-  font-family: var(--sans);
-}
-
-.kpi-value {
-  font-size: 2rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text-h);
-  line-height: 1.2;
-}
-
-.kpi-label {
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-  font-weight: 600;
-}
+@import "tailwindcss";
 
 :root {
-  /* ── Fonds (3 niveaux, jamais de blanc pur) ── */
+  /* Fonds — 3 niveaux, jamais de blanc pur */
   --bg-page: #0a0f1d;
-  /* sidebar / fond global */
   --bg-surface: #111a2c;
-  /* zone centrale */
   --bg-card: #1a2537;
-  /* cartes */
   --bg-card-hover: #1e2b40;
-  /* hover carte */
   --border: rgba(148, 163, 184, 0.08);
   --border-strong: #334155;
 
-  /* ── Texte ── */
+  /* Texte */
   --text-h: #f8fafc;
-  /* titres / chiffres clés */
   --text: #94a3b8;
-  /* texte courant / labels */
   --text-muted: #64748b;
-  /* légendes, jamais plus clair que ça sur ce fond */
 
-  /* ── Sémantique ── */
+  /* Sémantique */
   --positive: #34d399;
   --negative: #f87171;
   --accent: #10b981;
-  /* émeraude */
   --accent-light: #34d399;
   --accent-bg: rgba(16, 185, 129, 0.08);
   --accent-border: rgba(16, 185, 129, 0.3);
   --accent-2: #6366f1;
-  /* indigo, comparaisons secondaires */
   --accent-3: #f59e0b;
-  /* ambre */
 
-  /* ── Divers déjà référencés dans tes .css existants ── */
+  /* Compat noms déjà utilisés dans les .css existants */
   --card-bg: var(--bg-card);
   --code-bg: var(--bg-surface);
   --social-bg: var(--bg-card);
   --shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   --sans: 'Inter', system-ui, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, monospace;
-
-  /* ── Compat rétro (anciens noms utilisés dans certains composants) ── */
   --bg-primary: var(--bg-page);
   --text-primary: var(--text-h);
   --bg-secondary: var(--bg-surface);
@@ -71,16 +39,41 @@ body {
 }
 
 @theme {
-  --color-navy: var(--bg-page);
-  --color-navy-light: var(--bg-surface);
-  --color-emerald: var(--accent);
-  --color-emerald-light: var(--accent-light);
-  --color-graylight: var(--bg-card);
-  /* attention : renommage sémantique, voir plus bas */
-  --color-card: var(--bg-card);
-  --color-card-hover: var(--bg-card-hover);
-  --color-indigo: var(--accent-2);
-  --color-amber: var(--accent-3);
+    /* Rétrocompatibilité temporaire pour ne pas casser les pages non migrées */
+    --color-navy: #0a1f33;
+    --color-navy-light: #122a44;
+    --color-graylight: #f1f5f9;
+
+    /* Nouveaux tokens de thème sombre */
+    --color-page: #0a0f1d;
+    --color-surface: #111a2c;
+    --color-card: #1a2537;
+    --color-card-hover: #1e2b40;
+    --color-emerald: #10b981;
+    --color-emerald-light: #34d399;
+    --color-indigo: #6366f1;
+    --color-amber: #f59e0b;
+}
+
+body {
+  font-family: var(--sans);
+  background: var(--bg-page);
+}
+
+.kpi-value {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-h);
+    line-height: 1.2;
+}
+
+.kpi-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    font-weight: 600;
 }
 
 .analyseur-fiscal {
@@ -97,7 +90,7 @@ body {
 }
 
 .kpi {
-  background: var(--color-graylight);
+  background: var(--bg-card);
   border-radius: 8px;
   padding: 16px;
   display: flex;
@@ -107,12 +100,12 @@ body {
 
 .kpi span {
   font-size: 14px;
-  color: gray;
+  color: var(--text-muted);
 }
 
 .kpi strong {
   font-size: 20px;
-  color: var(--color-navy);
+  color: var(--text-h);
 }
 
 .profil-fiscal-note {
@@ -120,11 +113,12 @@ body {
   gap: 8px;
   align-items: center;
   padding: 12px 16px;
-  background: #f0fdfa;
+  background: var(--accent-bg);
   border-radius: 8px;
   font-size: 14px;
   margin-bottom: 24px;
-  border: 1px solid #ccfbf1;
+  border: 1px solid var(--accent-border);
+  color: var(--text-h);
 }
 
 .grille-deux-colonnes {
@@ -135,7 +129,7 @@ body {
 }
 
 .score-card {
-  background: var(--color-graylight);
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 24px;
   text-align: center;
@@ -143,7 +137,7 @@ body {
 }
 
 .carte-enveloppe {
-  background: var(--color-graylight);
+  background: var(--bg-card);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 12px;
@@ -200,7 +194,7 @@ body {
 
 .recommandation p {
   margin: 4px 0 0;
-  color: gray;
+  color: var(--text-muted);
 }
 
 @media (max-width: 1024px) {

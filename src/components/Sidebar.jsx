@@ -47,9 +47,9 @@ export const menuItems = [
 
 export default function Sidebar() {
     return (
-        <aside className="hidden md:flex flex-col w-64 border-r border-white/5 bg-[#0a1f33] fixed h-full z-20">
+        <aside className="hidden md:flex flex-col w-64 border-r border-[var(--border)] bg-surface fixed h-full z-20">
             {/* Zone Logo Premium */}
-            <div className="h-20 flex items-center px-8 border-b border-white/5">
+            <div className="h-20 flex items-center px-8 border-b border-[var(--border)]">
                 <span className="text-2xl font-black tracking-widest text-[#10b981] drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]">
                     FONDORA
                 </span>
