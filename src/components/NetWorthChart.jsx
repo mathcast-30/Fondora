@@ -28,9 +28,34 @@ function formatYAxis(value) {
   return `${value}€`;
 }
 
-function formatDate(dateStr) {
+// Formatage adaptatif : jour+mois si la période couvre moins de ~60 jours,
+// sinon mois+année pour ne pas surcharger l'axe sur de longues périodes.
+function makeDateFormatter(dataset) {
+  if (!dataset || dataset.length < 2) {
+    return (dateStr) => {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    };
+  }
+  const first = new Date(dataset[0].date);
+  const last = new Date(dataset[dataset.length - 1].date);
+  const spanDays = (last - first) / (1000 * 60 * 60 * 24);
+
+  if (spanDays <= 60) {
+    return (dateStr) => {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    };
+  }
+  return (dateStr) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
+  };
+}
+
+function formatTooltipDate(dateStr) {
   const d = new Date(dateStr);
-  return d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -40,7 +65,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   const patrimoine = total - dettes;
   return (
     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', fontSize: 12 }}>
-      <p style={{ color: 'var(--text)', marginBottom: 6 }}>{formatDate(label)}</p>
+      <p style={{ color: 'var(--text)', marginBottom: 6 }}>{formatTooltipDate(label)}</p>
       {payload.filter(p => p.name !== 'total_dettes').map(p => (
         <div key={p.name} className="flex justify-between gap-4" style={{ color: p.fill || p.stroke || 'var(--text-h)' }}>
           <span>{LAYERS.find(l => l.key === p.name)?.label || p.name}</span>
@@ -85,6 +110,7 @@ export default function NetWorthChart({ height = 320 }) {
     return snapshots.filter(s => new Date(s.date) >= cutoff);
   })();
 
+  const dateFormatter = makeDateFormatter(filtered);
   const yAxisTickFormatter = incognito ? () => '•••' : formatYAxis;
 
   if (loading) return (
@@ -106,11 +132,10 @@ export default function NetWorthChart({ height = 320 }) {
           <button
             key={p.label}
             onClick={() => setPeriod(p.label)}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
-              period === p.label
-                ? 'bg-surface text-[var(--text-h)] border border-[var(--border-strong)]'
-                : 'bg-surface border border-[var(--border)] text-[var(--text)] hover:text-[var(--text-h)]'
-            }`}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${period === p.label
+              ? 'bg-surface text-[var(--text-h)] border border-[var(--border-strong)]'
+              : 'bg-surface border border-[var(--border)] text-[var(--text)] hover:text-[var(--text-h)]'
+              }`}
           >
             {p.label}
           </button>
@@ -130,10 +155,11 @@ export default function NetWorthChart({ height = 320 }) {
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis
             dataKey="date"
-            tickFormatter={formatDate}
+            tickFormatter={dateFormatter}
             tick={{ fontSize: 11, fill: 'var(--text)' }}
             axisLine={{ stroke: 'var(--border)' }}
             tickLine={false}
+            minTickGap={30}
           />
           <YAxis
             tickFormatter={yAxisTickFormatter}
