@@ -78,3 +78,4 @@ export function useHistoriquePatrimoine() {
     }, [fetchHistorique]);
 
     return { historique, loading, periode, setPeriode, refetch: fetchHistorique };
+}
