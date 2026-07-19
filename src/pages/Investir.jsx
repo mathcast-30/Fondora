@@ -11,7 +11,6 @@ import BienImmobilierCard from '../components/BienImmobilierCard'
 import FormBienImmobilier from '../components/FormBienImmobilier'
 import CryptoPortfolioChart from '../components/CryptoPortfolioChart'
 import DiversificationScore from '../components/DiversificationScore'
-import TransactionForm from '../components/TransactionForm'
 import CryptoTransactionForm from '../components/CryptoTransactionForm'
 import { PnLLatentDisplay } from '../components/PnLLatentToggle'
 import FormulaireAchatVente from '../components/bourse/FormulaireAchatVente'
@@ -50,7 +49,6 @@ function Investir() {
         positions,
         transactions,
         loading: loadingPositions,
-        ajouterPosition,
         supprimerPosition,
         ajouterTransaction,
         displayMode,
@@ -60,41 +58,10 @@ function Investir() {
 
     const symboles = positions.map((p) => p.symbole)
     const { cours, loading: loadingCours } = useCoursBourse(symboles)
-    const [modalOuvert, setModalOuvert] = useState(false)
-    const [modalTransactionOuvert, setModalTransactionOuvert] = useState(false)
     const [modalAchatVenteOuvert, setModalAchatVenteOuvert] = useState(false)
-    const [transactionType, setTransactionType] = useState('buy')
-    const [form, setForm] = useState({
-        symbole: '', quantite: '', prix_achat_moyen: '', devise: 'EUR', type_compte: 'PEA',
-    })
 
     const formatMontant = (m, devise = 'EUR') =>
         new Intl.NumberFormat('fr-FR', { style: 'currency', currency: devise }).format(m)
-
-    const handleSubmitPosition = async (e) => {
-        e.preventDefault()
-        if (!form.symbole || !form.quantite || !form.prix_achat_moyen) return
-
-        const { error } = await ajouterPosition({
-            ...form,
-            symbole: form.symbole.toUpperCase(),
-            quantite: parseFloat(form.quantite),
-            prix_achat_moyen: parseFloat(form.prix_achat_moyen),
-        })
-        if (!error) {
-            setForm({ symbole: '', quantite: '', prix_achat_moyen: '', devise: 'EUR', type_compte: 'PEA' })
-            setModalOuvert(false)
-        }
-    }
-
-    const handleSubmitTransaction = async (transactionData) => {
-        if (!transactionData.symbole || !transactionData.quantite || !transactionData.prix) return
-
-        const { error } = await ajouterTransaction(transactionData)
-        if (!error) {
-            setModalTransactionOuvert(false)
-        }
-    }
 
     // Calculate portfolio metrics for Actions/ETF
     const valorisationTotale = positions.reduce((acc, p) => {
@@ -239,11 +206,6 @@ function Investir() {
                     <p className="text-gray-500">Tes investissements en actions, ETF, crypto et immobilier.</p>
                 </div>
                 <div className="flex gap-2">
-                    {ongletActif === 'actions' && (
-                        <>
-                            {/* Les boutons Achat/Vente sont maintenant dans le header de l'onglet */}
-                        </>
-                    )}
                     {ongletActif === 'crypto' && (
                         <>
                             <button
@@ -639,63 +601,7 @@ function Investir() {
                  MODALS
                  ============================================ */}
 
-            {/* Modal ajout position actions */}
-            <Modal isOpen={modalOuvert} onClose={() => setModalOuvert(false)} title="Nouvelle position">
-                <form onSubmit={handleSubmitPosition} className="space-y-4">
-                    <div>
-                        <label className="text-sm text-gray-600 mb-1 block">Symbole boursier</label>
-                        <input type="text" required value={form.symbole}
-                            onChange={(e) => setForm({ ...form, symbole: e.target.value })}
-                            placeholder="Ex: AAPL, MC.PA, VWCE.DE" className="w-full border rounded-lg px-3 py-2" />
-                        <p className="text-xs text-gray-400 mt-1">Trouve le bon symbole sur Yahoo Finance ou Google Finance</p>
-                    </div>
-                    <div className="flex gap-3">
-                        <div className="flex-1">
-                            <label className="text-sm text-gray-600 mb-1 block">Quantité</label>
-                            <input type="number" step="0.0001" required value={form.quantite}
-                                onChange={(e) => setForm({ ...form, quantite: e.target.value })} className="w-full border rounded-lg px-3 py-2" />
-                        </div>
-                        <div className="flex-1">
-                            <label className="text-sm text-gray-600 mb-1 block">Prix d'achat moyen</label>
-                            <input type="number" step="0.01" required value={form.prix_achat_moyen}
-                                onChange={(e) => setForm({ ...form, prix_achat_moyen: e.target.value })} className="w-full border rounded-lg px-3 py-2" />
-                        </div>
-                    </div>
-                    <div className="flex gap-3">
-                        <div className="flex-1">
-                            <label className="text-sm text-gray-600 mb-1 block">Devise</label>
-                            <select value={form.devise} onChange={(e) => setForm({ ...form, devise: e.target.value })} className="w-full border rounded-lg px-3 py-2">
-                                <option value="EUR">EUR</option>
-                                <option value="USD">USD</option>
-                            </select>
-                        </div>
-                        <div className="flex-1">
-                            <label className="text-sm text-gray-600 mb-1 block">Type de compte</label>
-                            <select value={form.type_compte} onChange={(e) => setForm({ ...form, type_compte: e.target.value })} className="w-full border rounded-lg px-3 py-2">
-                                <option value="PEA">PEA</option>
-                                <option value="CTO">CTO</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button type="submit" className="w-full bg-emerald hover:bg-emerald-light text-white font-semibold py-2 rounded-lg transition">
-                        Ajouter la position
-                    </button>
-                </form>
-            </Modal>
 
-            {/* Modal ajout transaction actions */}
-            <Modal
-                isOpen={modalTransactionOuvert}
-                onClose={() => setModalTransactionOuvert(false)}
-                title={`${transactionType === 'buy' ? 'Achat' : 'Vente'} d'actions/ETF`}
-            >
-                <TransactionForm
-                    type={transactionType}
-                    positions={positions}
-                    onSubmit={handleSubmitTransaction}
-                    onCancel={() => setModalTransactionOuvert(false)}
-                />
-            </Modal>
 
             {/* Modal FormulaireAchatVente */}
             <Modal isOpen={modalAchatVenteOuvert} onClose={() => setModalAchatVenteOuvert(false)} title="Passer un ordre">
