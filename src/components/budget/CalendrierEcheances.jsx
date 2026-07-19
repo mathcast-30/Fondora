@@ -3,25 +3,68 @@ import { useIncognito } from '../../context/IncognitoContext';
 
 const JOURS_SEMAINE = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
-export default function CalendrierEcheances({ mois, annee, transactions = [] }) {
+const BADGE_COLOR = {
+    transaction: 'bg-emerald',
+    abonnement: 'bg-indigo-400',
+    credit: 'bg-amber-400',
+};
+
+export default function CalendrierEcheances({ mois, annee, transactions = [], abonnements = [], dettes = [] }) {
     const { incognito } = useIncognito();
     const [jourSurvole, setJourSurvole] = useState(null);
 
     const formatMontant = (m) =>
         new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(m);
 
-    // Regroupe les transactions récurrentes par jour du mois
+    // Fusionne les 3 sources d'échéances récurrentes du mois
     const echeancesParJour = useMemo(() => {
         const map = {};
+        const ajouter = (jour, item) => {
+            if (!jour || jour < 1 || jour > 31) return;
+            if (!map[jour]) map[jour] = [];
+            map[jour].push(item);
+        };
+
+        // 1. Transactions marquées récurrentes (saisie manuelle ou import CSV)
         transactions
             .filter((t) => t.recurrente)
             .forEach((t) => {
-                const jour = new Date(t.date).getDate();
-                if (!map[jour]) map[jour] = [];
-                map[jour].push(t);
+                const jour = t.jour_recurrence || new Date(t.date).getDate();
+                ajouter(jour, {
+                    type: 'transaction',
+                    nom: t.description || t.categories?.nom || 'Transaction',
+                    montant: Number(t.montant),
+                    sens: t.type === 'revenu' ? 'revenu' : 'depense',
+                });
             });
+
+        // 2. Abonnements suivis (Netflix, etc.)
+        abonnements.forEach((ab) => {
+            if (!ab.date_prochain_prelevement) return;
+            const jour = new Date(ab.date_prochain_prelevement).getDate();
+            ajouter(jour, {
+                type: 'abonnement',
+                nom: ab.nom_abonnement,
+                montant: Number(ab.montant),
+                sens: 'depense',
+                resiliation: ab.resiliation_planifiee,
+            });
+        });
+
+        // 3. Crédits actifs (mensualité)
+        dettes.forEach((d) => {
+            if (d.estRembourse || !d.date_debut) return;
+            const jour = new Date(d.date_debut).getDate();
+            ajouter(jour, {
+                type: 'credit',
+                nom: d.nom,
+                montant: Number(d.mensualite),
+                sens: 'depense',
+            });
+        });
+
         return map;
-    }, [transactions]);
+    }, [transactions, abonnements, dettes]);
 
     // Grille du mois alignée sur Lundi
     const grille = useMemo(() => {
@@ -41,18 +84,25 @@ export default function CalendrierEcheances({ mois, annee, transactions = [] }) 
 
     const totalMensuelEcheances = Object.values(echeancesParJour)
         .flat()
-        .reduce((s, t) => s + Number(t.montant), 0);
+        .reduce((s, item) => s + (item.sens === 'revenu' ? item.montant : -item.montant), 0);
 
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <div className="flex justify-between items-center mb-4">
                 <h3 className="text-navy font-semibold">📅 Échéances récurrentes du mois</h3>
                 <span className="text-xs text-slate-400">
-                    Total :{' '}
-                    <span className="font-semibold text-slate-600">
+                    Impact net :{' '}
+                    <span className={`font-semibold ${totalMensuelEcheances >= 0 ? 'text-emerald' : 'text-red-500'}`}>
                         {incognito ? '••••' : formatMontant(totalMensuelEcheances)}
                     </span>
                 </span>
+            </div>
+
+            {/* Légende */}
+            <div className="flex gap-4 mb-3 text-[11px] text-slate-400">
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald inline-block" /> Transaction</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-indigo-400 inline-block" /> Abonnement</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> Crédit</span>
             </div>
 
             <div className="grid grid-cols-7 gap-1 mb-1">
@@ -84,10 +134,10 @@ export default function CalendrierEcheances({ mois, annee, transactions = [] }) 
                             <span>{jour}</span>
                             {aDesEcheances && (
                                 <div className="flex gap-0.5 mt-0.5">
-                                    {echeances.slice(0, 3).map((_, i) => (
+                                    {echeances.slice(0, 3).map((item, i) => (
                                         <span
                                             key={i}
-                                            className={`w-1.5 h-1.5 rounded-full ${estAujourdHui ? 'bg-white' : 'bg-emerald'
+                                            className={`w-1.5 h-1.5 rounded-full ${estAujourdHui ? 'bg-white' : BADGE_COLOR[item.type]
                                                 }`}
                                         />
                                     ))}
@@ -95,22 +145,26 @@ export default function CalendrierEcheances({ mois, annee, transactions = [] }) 
                             )}
 
                             {jourSurvole === jour && aDesEcheances && (
-                                <div className="absolute z-20 bottom-full mb-2 left-1/2 -translate-x-1/2 bg-navy text-white text-xs rounded-lg shadow-lg p-3 w-56 text-left">
+                                <div className="absolute z-20 bottom-full mb-2 left-1/2 -translate-x-1/2 bg-navy text-white text-xs rounded-lg shadow-lg p-3 w-60 text-left">
                                     <p className="font-semibold mb-1.5">Le {jour} du mois</p>
-                                    {echeances.map((t, i) => (
+                                    {echeances.map((item, i) => (
                                         <div key={i} className="flex justify-between gap-2 py-0.5">
-                                            <span className="truncate text-gray-300">
-                                                {t.description || t.categories?.nom || 'Sans nom'}
+                                            <span className="truncate text-gray-300 flex items-center gap-1.5">
+                                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${BADGE_COLOR[item.type]}`} />
+                                                {item.nom}
+                                                {item.resiliation && (
+                                                    <span className="text-red-300 text-[10px]">(résilié)</span>
+                                                )}
                                             </span>
                                             <span
                                                 className={
-                                                    t.type === 'revenu'
-                                                        ? 'text-emerald-light font-medium'
-                                                        : 'text-red-300 font-medium'
+                                                    item.sens === 'revenu'
+                                                        ? 'text-emerald-light font-medium shrink-0'
+                                                        : 'text-red-300 font-medium shrink-0'
                                                 }
                                             >
-                                                {t.type === 'revenu' ? '+' : '-'}
-                                                {incognito ? '••••' : formatMontant(t.montant)}
+                                                {item.sens === 'revenu' ? '+' : '-'}
+                                                {incognito ? '••••' : formatMontant(item.montant)}
                                             </span>
                                         </div>
                                     ))}
@@ -123,8 +177,8 @@ export default function CalendrierEcheances({ mois, annee, transactions = [] }) 
 
             {Object.keys(echeancesParJour).length === 0 && (
                 <p className="text-center text-slate-400 text-xs mt-4">
-                    Aucune échéance récurrente ce mois-ci. Coche « récurrente » en ajoutant une
-                    transaction, ou lors d'un import CSV.
+                    Aucune échéance récurrente ce mois-ci. Coche « récurrente » sur une
+                    transaction, ajoute un abonnement, ou renseigne un crédit.
                 </p>
             )}
         </div>

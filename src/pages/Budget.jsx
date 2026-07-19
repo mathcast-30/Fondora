@@ -11,6 +11,7 @@ import { useCategories } from '../hooks/useCategories'
 import { useComptes } from '../hooks/useComptes'
 import { useBudgets } from '../hooks/useBudgets'
 import { useAbonnements } from '../hooks/useAbonnements'
+import { useDettes } from '../hooks/useDettes'
 import { Plus, Trash2, ChevronLeft, ChevronRight, Settings2, Upload, Download } from 'lucide-react'
 import BudgetGraphiqueSelector from '../components/budget/BudgetGraphiqueSelector'
 import BudgetVsReelChart from '../components/budget/BudgetVsReelChart'
@@ -45,6 +46,7 @@ function Budget() {
         abonnements, loading: loadingAb,
         ajouterAbonnement, planifierResiliation, supprimerAbonnement,
     } = useAbonnements()
+    const { dettes } = useDettes()
 
     const [modalOuvert, setModalOuvert] = useState(false)
     const [modalBudgetOuvert, setModalBudgetOuvert] = useState(false)
@@ -305,7 +307,15 @@ function Budget() {
                     {graphiquesVisibles.includes('evolution_temps') && <EvolutionTempsChart />}
                     {graphiquesVisibles.includes('objectif_epargne') && <JaugeEpargneChart epargneRealisee={Math.max(0, solde)} objectifMensuel={objectifEpargneMois} />}
                     {graphiquesVisibles.includes('top5_depenses') && <Top5DepensesChart transactions={transactions} categories={categories} />}
-                    {graphiquesVisibles.includes('calendrier_echeances') && <CalendrierEcheances mois={mois} annee={annee} transactions={transactions} />}
+                    {graphiquesVisibles.includes('calendrier_echeances') && (
+                        <CalendrierEcheances
+                            mois={mois}
+                            annee={annee}
+                            transactions={transactions}
+                            abonnements={abonnements}
+                            dettes={dettes}
+                        />
+                    )}
                 </div>
 
                 {graphiquesVisibles.length === 0 && (
