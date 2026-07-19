@@ -145,7 +145,7 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
       return;
     }
 
-    setLoadingSubmit(true);
+    console.log('Payload envoyé à Supabase :', transactionPayload, 'dateTransaction brut :', dateTransaction)  setLoadingSubmit(true);
 
     // Construit le payload compatible avec transactions_investissement
     const transactionPayload = {
