@@ -26,8 +26,7 @@ import { genererBilanBudget } from '../utils/exportBilanBudget'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useObjectifEpargne } from '../hooks/useObjectifEpargne'
-import { exportBudgetToExcel } from '../utils/exportToExcel'
-import ExportButton from '../components/ExportButton'
+
 
 const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
@@ -180,15 +179,7 @@ function Budget() {
         })
     }
 
-    const handleExportToExcel = () => {
-        const budgetData = {
-            totalRevenus,
-            totalDepenses,
-            monthlyBudget: budgets.reduce((sum, b) => sum + Number(b.montant_max || 0), 0),
-            monthlyActual: totalDepenses,
-        };
-        exportBudgetToExcel(budgetData, transactions, comptes);
-    };
+
 
     const handleSupprimerTransaction = async (transaction) => {
         const supprimerSerie = transaction.recurrente && window.confirm('OK : supprimer toute la série récurrente. Annuler : supprimer uniquement cette occurrence.')
@@ -223,7 +214,7 @@ function Budget() {
                     <button onClick={handleExportBilan} className="bg-card border border-[var(--border)] text-[var(--text-h)] font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition hover:bg-[var(--bg-card-hover)]">
                         <Download size={18} /> Générer mon bilan
                     </button>
-                    <ExportButton onClick={handleExportToExcel} />
+
                     <button onClick={() => setModalImportOuvert(true)} className="bg-card border border-[var(--border)] text-[var(--text-h)] font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition hover:bg-[var(--bg-card-hover)]">
                         <Upload size={18} /> Importer un CSV
                     </button>

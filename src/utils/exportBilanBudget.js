@@ -1,22 +1,13 @@
-import ExcelJS from 'exceljs';
+import * as XLSX from 'xlsx'
 
-const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+const MOIS_NOMS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
 
-export function genererBilanBudget({
-    transactions = [],
-    budgets = [],
-    categories = [],
-    mois,
-    annee,
-    totalRevenus = 0,
-    totalDepenses = 0,
-    solde = 0,
-}) {
+export function genererBilanBudget({ transactions = [], budgets = [], categories = [], mois, annee, totalRevenus = 0, totalDepenses = 0, solde = 0 }) {
     const workbook = XLSX.utils.book_new()
     const periodeLabel = `${MOIS_NOMS[mois - 1]} ${annee}`
 
-    // ─── Feuille 1 : Transactions ───
-    const feuilleTransactions = transactions.map((t) => ({
+    // Feuille 1 : Transactions
+    const feuilleTransactions = transactions.map(t => ({
         Date: new Date(t.date).toLocaleDateString('fr-FR'),
         Description: t.description || t.categories?.nom || '',
         Catégorie: t.categories?.nom || 'Non catégorisé',
@@ -26,63 +17,40 @@ export function genererBilanBudget({
         Récurrente: t.recurrente ? 'Oui' : 'Non',
     }))
     const wsTransactions = XLSX.utils.json_to_sheet(feuilleTransactions)
-    wsTransactions['!cols'] = [
-        { wch: 12 }, { wch: 30 }, { wch: 20 }, { wch: 18 }, { wch: 10 }, { wch: 14 }, { wch: 12 },
-    ]
+    wsTransactions['!cols'] = [{ wch: 12 },{ wch: 30 },{ wch: 20 },{ wch: 18 },{ wch: 10 },{ wch: 14 },{ wch: 12 }]
     XLSX.utils.book_append_sheet(workbook, wsTransactions, 'Transactions')
 
-    // ─── Feuille 2 : Rapport Budget ───
-    const categoriesDepense = categories.filter(c => c.type === 'depense')
-    const feuilleBudget = categoriesDepense.map((c) => {
-        const budget = budgets.find(b => b.categorie_id === c.id)
-        const montantAlloue = budget ? Number(budget.montant_max) : 0
+    // Feuille 2 : Rapport Budget par catégorie
+    const depensesParCategorie = categories.map(cat => {
+        const budget = budgets.find(b => b.categorie_id === cat.id)
         const depense = transactions
-            .filter(t => t.categorie_id === c.id && t.type === 'depense')
+            .filter(t => t.type === 'depense' && t.categorie_id === cat.id)
             .reduce((s, t) => s + Number(t.montant), 0)
-        const pctUtilise = montantAlloue > 0 ? Math.round((depense / montantAlloue) * 1000) / 10 : null
-
+        const alloue = budget ? Number(budget.montant_max) : 0
         return {
-            Catégorie: c.nom,
-            'Budget alloué (€)': montantAlloue || '—',
+            Catégorie: cat.nom,
+            'Alloué (€)': alloue,
             'Dépensé (€)': depense,
-            'Restant (€)': montantAlloue ? Math.round((montantAlloue - depense) * 100) / 100 : '—',
-            '% utilisé': pctUtilise !== null ? `${pctUtilise}%` : '—',
-            Statut: montantAlloue === 0 ? 'Sans budget' : depense > montantAlloue ? 'Dépassé' : 'Dans les clous',
+            'Restant (€)': alloue - depense,
+            '% Utilisé': alloue > 0 ? Math.round((depense / alloue) * 100) + '%' : 'N/A',
         }
-    }).filter(row => row['Dépensé (€)'] > 0 || row['Budget alloué (€)'] !== '—')
+    }).filter(r => r['Dépensé (€)'] > 0 || r['Alloué (€)'] > 0)
 
-    const wsBudget = XLSX.utils.json_to_sheet(feuilleBudget)
-    wsBudget['!cols'] = [
-        { wch: 22 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 15 },
-    ]
-    XLSX.utils.book_append_sheet(workbook, wsBudget, 'Rapport Budget')
+    const wsBudget = XLSX.utils.json_to_sheet(depensesParCategorie)
+    wsBudget['!cols'] = [{ wch: 22 },{ wch: 14 },{ wch: 14 },{ wch: 14 },{ wch: 12 }]
+    XLSX.utils.book_append_sheet(workbook, wsBudget, 'Budget par catégorie')
 
-    // ─── Feuille 3 : Snapshot du mois ───
-    const nbTransactions = transactions.length
-    const depensesParCategorie = categoriesDepense
-        .map(c => ({
-            nom: c.nom,
-            montant: transactions.filter(t => t.categorie_id === c.id && t.type === 'depense').reduce((s, t) => s + Number(t.montant), 0),
-        }))
-        .filter(c => c.montant > 0)
-        .sort((a, b) => b.montant - a.montant)
-
-    const feuilleSnapshot = [
+    // Feuille 3 : Synthèse
+    const synthese = [
         { Indicateur: 'Période', Valeur: periodeLabel },
-        { Indicateur: 'Revenus totaux (€)', Valeur: totalRevenus },
-        { Indicateur: 'Dépenses totales (€)', Valeur: totalDepenses },
-        { Indicateur: 'Solde (€)', Valeur: solde },
-        { Indicateur: "Taux d'épargne (%)", Valeur: totalRevenus > 0 ? Math.round((solde / totalRevenus) * 1000) / 10 : 0 },
-        { Indicateur: 'Nombre de transactions', Valeur: nbTransactions },
-        { Indicateur: '', Valeur: '' },
-        { Indicateur: '--- Top catégories de dépense ---', Valeur: '' },
-        ...depensesParCategorie.slice(0, 10).map(c => ({ Indicateur: c.nom, Valeur: c.montant })),
+        { Indicateur: 'Total Revenus', Valeur: totalRevenus },
+        { Indicateur: 'Total Dépenses', Valeur: totalDepenses },
+        { Indicateur: 'Solde', Valeur: solde },
+        { Indicateur: 'Nb transactions', Valeur: transactions.length },
     ]
-    const wsSnapshot = XLSX.utils.json_to_sheet(feuilleSnapshot, { skipHeader: true })
-    wsSnapshot['!cols'] = [{ wch: 30 }, { wch: 18 }]
-    XLSX.utils.book_append_sheet(workbook, wsSnapshot, 'Snapshot')
+    const wsSynthese = XLSX.utils.json_to_sheet(synthese)
+    wsSynthese['!cols'] = [{ wch: 22 },{ wch: 20 }]
+    XLSX.utils.book_append_sheet(workbook, wsSynthese, 'Synthèse')
 
-    // ─── Téléchargement ───
-    const nomFichier = `Fondora_Bilan_${MOIS_NOMS[mois - 1]}_${annee}.xlsx`
-    XLSX.writeFile(workbook, nomFichier)
+    XLSX.writeFile(workbook, `Fondora_Budget_${periodeLabel.replace(' ', '_')}.xlsx`)
 }
