@@ -330,8 +330,9 @@ function Budget() {
 
             {/* ─── Budgets par catégorie ─── */}
             {graphiquesVisibles.includes('budgets') && budgets.length > 0 && (
-                <div className="bg-card rounded-xl p-5 border border-[var(--border)] mb-6">
-                    <h3 className="text-[var(--text-h)] font-semibold mb-4">Suivi des budgets</h3>
+                        <div className="bg-card rounded-xl p-5 border border-[var(--border)] mb-6">
+                            <h3 className="text-[var(--text-h)] font-semibold mb-4">Suivi des budgets</h3>
+                            <p className="text-xs text-[var(--text-muted)] -mt-2 mb-4">Les enveloppes sont reprises automatiquement chaque mois. Une modification s’applique à partir de ce mois.</p>
                     {budgets.map((b) => {
                         const depense = transactions
                             .filter(t => t.categorie_id === b.categorie_id && t.type === 'depense')
