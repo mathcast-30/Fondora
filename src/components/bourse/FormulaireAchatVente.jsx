@@ -33,13 +33,13 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
   // Recherche par nom ET ticker (uniquement pour ACHAT)
   useEffect(() => {
     if (type === 'VENTE') {
-        setResultats([]);
-        return;
+      setResultats([]);
+      return;
     }
-    
-    if (recherche.length < 2) { 
-        setResultats([]); 
-        return; 
+
+    if (recherche.length < 2) {
+      setResultats([]);
+      return;
     }
 
     const chercherLocalement = async () => {
@@ -59,7 +59,7 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
 
     const fetchPrix = async () => {
       setLoadingPrix(true);
-      
+
       try {
         const { data: histData } = await supabase
           .from('historique_prix_actifs')
@@ -69,7 +69,7 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
           .order('date', { ascending: false })
           .limit(1)
           .maybeSingle();
-          
+
         if (histData?.prix_cloture) {
           setPrix(histData.prix_cloture.toString());
         } else {
@@ -80,7 +80,7 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
               .select('prix')
               .eq('ticker', actifSelectionne.ticker)
               .maybeSingle();
-              
+
             if (cacheData?.prix) {
               setPrix(cacheData.prix.toString());
             } else if (type === 'VENTE' && actifSelectionne.prix_achat_moyen) {
@@ -147,9 +147,8 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
     const transactionPayload = {
       symbole: actifSelectionne.ticker,
       type: type === 'ACHAT' ? 'buy' : 'sell',
-      quantity: parseFloat(quantite),
-      price: parseFloat(prix),
-      date: dateTransaction,
+      quantite: parseFloat(quantite),
+      prix: parseFloat(prix),
       // Champs supplémentaires pour enrichissement
       actif_id: actifSelectionne.id,
       compte_id: compteIdSelectionne,
@@ -431,9 +430,8 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
           <button
             type="submit"
             disabled={loadingSubmit}
-            className={`w-full py-3 rounded-xl font-bold mt-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-              type === 'ACHAT' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-red-600 hover:bg-red-500'
-            }`}
+            className={`w-full py-3 rounded-xl font-bold mt-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${type === 'ACHAT' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-red-600 hover:bg-red-500'
+              }`}
           >
             {loadingSubmit
               ? 'Enregistrement...'
