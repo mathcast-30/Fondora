@@ -32,14 +32,29 @@ export function useComptes() {
             return
         }
 
+        const { data: positionsData } = await supabase
+            .from('positions_financieres')
+            .select('compte_id, symbole, quantite, prix_achat_moyen')
+        const { data: prixData } = await supabase
+            .from('asset_prices_cache')
+            .select('symbole, prix_actuel')
+        const prixParSymbole = new Map((prixData || []).map(p => [p.symbole, Number(p.prix_actuel)]))
+
         const comptesEnrichis = comptesData.map(compte => {
             const txCompte = txData.filter(t => t.compte_id === compte.id)
             const totalRevenus = txCompte.filter(t => t.type === 'revenu').reduce((s, t) => s + Number(t.montant), 0)
             const totalDepenses = txCompte.filter(t => t.type === 'depense').reduce((s, t) => s + Number(t.montant), 0)
+            const estInvestissement = ['pea', 'cto'].includes((compte.type || '').toLowerCase())
+            const valeurPositions = estInvestissement
+                ? (positionsData || []).filter(p => p.compte_id === compte.id).reduce((s, p) =>
+                    s + Number(p.quantite) * (prixParSymbole.get(p.symbole) || Number(p.prix_achat_moyen)), 0)
+                : 0
             
             return {
                 ...compte,
-                soldeReel: Number(compte.solde) + totalRevenus - totalDepenses,
+                soldeReel: Number(compte.solde) + totalRevenus - totalDepenses + valeurPositions,
+                liquidites: Number(compte.solde) + totalRevenus - totalDepenses,
+                valeurPositions,
                 totalRevenus,
                 totalDepenses
             }

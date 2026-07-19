@@ -15,13 +15,14 @@ export function useTransactions(mois, annee) {
             .from('transactions')
             .select('*')
             .eq('recurrente', true)
+            .neq('recurrence_active', false)
 
         if (!recurrentes) return
 
         const groupesTraites = new Set()
 
         for (const modele of recurrentes) {
-            const groupeId = modele.recurrence_groupe_id
+            const groupeId = modele.recurrence_groupe_id || modele.id
             if (groupesTraites.has(groupeId)) continue
             groupesTraites.add(groupeId)
 
@@ -46,6 +47,8 @@ export function useTransactions(mois, annee) {
                     type: modele.type,
                     date: dateOccurrence,
                     recurrente: true,
+                    recurrence_modele: false,
+                    recurrence_active: true,
                     jour_recurrence: modele.jour_recurrence,
                     recurrence_groupe_id: groupeId,
                 })
@@ -78,13 +81,20 @@ export function useTransactions(mois, annee) {
             ...transaction,
             user_id: user.id,
             recurrence_groupe_id: groupeId,
+            recurrence_modele: Boolean(transaction.recurrente),
+            recurrence_active: true,
         })
         if (!error) await charger()
         return { error }
     }
 
-    const supprimerTransaction = async (id) => {
-        const { error } = await supabase.from('transactions').delete().eq('id', id)
+    const supprimerTransaction = async (id, supprimerSerie = false) => {
+        const { data: transaction } = await supabase.from('transactions').select('recurrence_groupe_id').eq('id', id).maybeSingle()
+        let query = supabase.from('transactions').delete().eq('id', id)
+        if (supprimerSerie && transaction?.recurrence_groupe_id) {
+            query = supabase.from('transactions').delete().eq('recurrence_groupe_id', transaction.recurrence_groupe_id)
+        }
+        const { error } = await query
         if (!error) await charger()
         return { error }
     }

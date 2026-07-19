@@ -99,6 +99,7 @@ export function usePositions() {
                 .eq('user_id', user.id)
                 .eq('symbole', symbolUpper)
                 .eq('type_compte', typeCompte)
+                .eq('compte_id', transaction.compte_id)
 
             if (findError) throw findError
 
@@ -146,6 +147,7 @@ export function usePositions() {
                         prix_achat_moyen: prixTx,
                         devise: transaction.devise || 'EUR',
                         type_compte: typeCompte,
+                        compte_id: transaction.compte_id,
                         secteur: transaction.secteur || null,
                         date_achat: transaction.date
                     })
@@ -167,6 +169,8 @@ export function usePositions() {
                     quantite: quantiteTx,
                     prix_unitaire: prixTx,
                     date: transaction.date
+                    ,compte_id: transaction.compte_id,
+                    actif_id: transaction.actif_id || null,
                 })
 
             if (txError) throw txError

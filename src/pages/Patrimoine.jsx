@@ -14,7 +14,7 @@ import { useBiensImmobiliers } from '../hooks/useBiensImmobiliers'
 import { useDettes } from '../hooks/useDettes'
 import { Plus } from 'lucide-react'
 
-const TYPES_COMPTES = ['Compte courant', 'Épargne', 'Crédit', 'PEA', 'Assurance vie', 'Crypto', 'Immobilier', 'Autre']
+const TYPES_COMPTES = ['Compte courant', 'Épargne', 'Crédit', 'PEA', 'CTO', 'Assurance vie', 'Crypto', 'Immobilier', 'Autre']
 const COULEURS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
 
 function Patrimoine() {
@@ -39,7 +39,9 @@ function Patrimoine() {
     const { kpis: kpisDettes } = useDettes()
     const totalDettes = kpisDettes.totalDettes || 0
 
-    const totalComptes = comptes.reduce((acc, c) => acc + Number(c.soldeReel ?? c.solde), 0)
+    const totalComptes = comptes
+        .filter(c => !['pea', 'cto'].includes((c.type || '').toLowerCase()))
+        .reduce((acc, c) => acc + Number(c.soldeReel ?? c.solde), 0)
     const totalActions = positions.reduce((acc, p) => acc + (cours[p.symbole]?.coursActuel || p.prix_achat_moyen) * p.quantite, 0)
     const totalCrypto = positionsCrypto.reduce((acc, p) => acc + (coursCrypto[p.coin_id]?.eur || p.prix_achat_moyen) * p.quantite, 0)
     const patrimoineTotal = totalComptes + totalActions + totalCrypto + valeurTotaleImmo
@@ -152,14 +154,13 @@ function Patrimoine() {
                     <div className="flex gap-3">
                         <div className="flex-1">
                             <label className="text-sm text-[var(--text)] mb-1 block">Solde actuel</label>
-                            <input type="number" step="0.01" required value={form.solde}
+                            <input type="number" step="0.01" min="0" value={form.solde}
                                 onChange={(e) => setForm({ ...form, solde: e.target.value })} placeholder="0.00" className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2" />
                         </div>
                         <div className="w-28">
                             <label className="text-sm text-[var(--text)] mb-1 block">Devise</label>
                             <select value={form.devise} onChange={(e) => setForm({ ...form, devise: e.target.value })} className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2">
-                                <option value="EUR">EUR</option>
-                                <option value="USD">USD</option>
+                                {['EUR', 'USD', 'GBP', 'CHF', 'JPY', 'CAD', 'AUD', 'SEK', 'NOK', 'DKK'].map(devise => <option key={devise} value={devise}>{devise}</option>)}
                             </select>
                         </div>
                     </div>

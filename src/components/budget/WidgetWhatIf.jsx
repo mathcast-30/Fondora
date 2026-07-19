@@ -9,15 +9,19 @@ const fmtK = (v) => {
     return `${v}`
 }
 
-export default function WidgetWhatIf() {
+export default function WidgetWhatIf({ objectifMensuel = 0, restantAVivre = null }) {
     const { incognito } = useIncognito()
-    const [economie, setEconomie] = useState(100)
+    const [economie, setEconomie] = useState(objectifMensuel || 100)
     const [taux, setTaux] = useState(7)
     const [impacts, setImpacts] = useState({})
 
     useEffect(() => {
         setImpacts(calculerImpactWhatIf(economie, taux / 100))
     }, [economie, taux])
+
+    useEffect(() => {
+        if (objectifMensuel > 0) setEconomie(objectifMensuel)
+    }, [objectifMensuel])
 
     const mask = (v) => (incognito ? '•••• €' : `+${fmtK(v)} €`)
 
@@ -35,6 +39,7 @@ export default function WidgetWhatIf() {
                     <span className="text-[var(--text)]">Économie mensuelle</span>
                     <span className="font-bold text-emerald-400">{economie} €/mois</span>
                 </div>
+                {objectifMensuel > 0 && <p className="text-[10px] text-[var(--text-muted)] mb-2">Objectif du mois : {objectifMensuel} €</p>}
                 <input
                     type="range" min="10" max="1000" step="10"
                     value={economie}
@@ -42,6 +47,12 @@ export default function WidgetWhatIf() {
                     className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-emerald-400"
                 />
             </div>
+
+            {restantAVivre !== null && (
+                <p className={`text-[10px] mb-3 ${restantAVivre - economie >= 0 ? 'text-[var(--text-muted)]' : 'text-red-400'}`}>
+                    Après cette épargne : {Math.max(0, restantAVivre - economie).toFixed(0)} € disponibles ce mois.
+                </p>
+            )}
 
             <div className="mb-4">
                 <div className="flex justify-between text-xs mb-1.5">

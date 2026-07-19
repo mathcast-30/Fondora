@@ -35,14 +35,40 @@ export function useDividendes() {
             typeCompte = pos?.type_compte || 'CTO'
         }
 
-        const { error } = await supabase
+        let compteId = dividende.compte_id || null
+        let position = null
+        if (dividende.position_id) {
+            const { data } = await supabase.from('positions_financieres').select('*').eq('id', dividende.position_id).single()
+            position = data
+            compteId = compteId || data?.compte_id || null
+        }
+
+        const { data: created, error } = await supabase
             .from('dividendes')
             .insert({
                 ...dividende,
                 type_compte: typeCompte || 'CTO',
                 reinvesti: dividende.reinvesti || false,
+                compte_id: compteId,
                 user_id: user.id,
             })
+            .select()
+            .single()
+        if (!error && dividende.reinvesti && position) {
+            const { data: asset } = await supabase.from('catalogue_actifs').select('id, ticker').eq('ticker', position.symbole).maybeSingle()
+            const { data: prix } = asset
+                ? await supabase.from('historique_prix_actifs').select('prix_cloture').eq('actif_id', asset.id).lte('date', dividende.date).order('date', { ascending: false }).limit(1).maybeSingle()
+                : { data: null }
+            const prixUnitaire = Number(prix?.prix_cloture || 0)
+            if (prixUnitaire > 0) {
+                const { data: ordre, error: ordreError } = await supabase.from('transactions_investissement').insert({
+                    user_id: user.id, position_id: position.id, compte_id: compteId, actif_id: asset?.id || null,
+                    type: 'buy', symbole: position.symbole, quantite: Number(dividende.montant) / prixUnitaire,
+                    prix_unitaire: prixUnitaire, date: dividende.date, origine: 'reinvestissement_dividende',
+                }).select().single()
+                if (!ordreError) await supabase.from('dividendes').update({ transaction_reinvestissement_id: ordre.id }).eq('id', created.id)
+            }
+        }
         if (!error) await charger()
         return { error }
     }

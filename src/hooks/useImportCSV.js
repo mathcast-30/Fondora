@@ -143,9 +143,13 @@ export function useImportCSV() {
       const enrichedTxs = mappedTxs.map(tx => {
         const isDup = existingHashes.has(tx.import_hash);
         if (isDup) dupCount++;
+        const candidatRecurrent = !isDup && tx.type === 'depense'
+          ? { statut: 'a_verifier' }
+          : null;
         return {
           ...tx,
           doublon: isDup,
+          rapprochement: isDup ? 'doublon_ignore' : candidatRecurrent?.statut || 'importe',
           selectionne: !isDup // Sélectionné par défaut si ce n'est pas un doublon
         };
       });
@@ -304,7 +308,8 @@ export function useImportCSV() {
         date: t.date,
         recurrente: false,
         source: 'import_csv',
-        import_hash: t.import_hash
+        import_hash: t.import_hash,
+        rapprochement_statut: t.rapprochement === 'a_verifier' ? 'a_verifier' : 'importe'
       }));
 
       const { error } = await supabase.from('transactions').insert(toInsert);
@@ -447,4 +452,3 @@ export function useImportCSV() {
     parseFichier
   };
 }
-

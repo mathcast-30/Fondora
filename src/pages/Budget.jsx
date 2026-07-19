@@ -23,10 +23,13 @@ import CalendrierEcheances from '../components/budget/CalendrierEcheances'
 import SubscriptionCleaner from '../components/budget/SubscriptionCleaner'
 import { calculerRestantAVivre } from '../utils/budgetCalculator'
 import { genererBilanBudget } from '../utils/exportBilanBudget'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 
 const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
 function Budget() {
+    const { user, profile } = useAuth()
     const aujourdHui = new Date()
     const [mois, setMois] = useState(aujourdHui.getMonth() + 1)
     const [annee, setAnnee] = useState(aujourdHui.getFullYear())
@@ -72,8 +75,18 @@ function Budget() {
         if (saved) {
             try { return JSON.parse(saved) } catch { /* noop */ }
         }
-        return ['budget_vs_reel', 'evolution_temps', 'objectif_epargne', 'top5_depenses']
+        return ['restant_a_vivre', 'what_if', 'echeances', 'abonnements', 'budget_vs_reel', 'evolution_temps', 'objectif_epargne', 'top5_depenses', 'flux_financier', 'repartition_depenses', 'budgets']
     })
+
+    useEffect(() => {
+        if (Array.isArray(profile?.budget_widgets)) setGraphiquesVisibles(profile.budget_widgets)
+    }, [profile?.budget_widgets])
+
+    const sauvegarderWidgets = async (widgets) => {
+        setGraphiquesVisibles(widgets)
+        localStorage.setItem('fondora_budget_graphiques', JSON.stringify(widgets))
+        if (user) await supabase.from('profiles').update({ budget_widgets: widgets }).eq('id', user.id)
+    }
 
     const changerMois = (delta) => {
         let m = mois + delta, a = annee
@@ -106,13 +119,17 @@ function Budget() {
         [comptes]
     )
 
+    const depensesRecurrentes = useMemo(() => transactions
+        .filter(t => t.type === 'depense' && t.recurrente && t.recurrence_active !== false)
+        .map(t => ({ montant: t.montant, jour_prelevement: t.jour_recurrence || new Date(t.date).getDate() })), [transactions])
+    const objectifEpargneMois = Number(profile?.objectif_epargne_mensuel || 0)
     const restantAVivre = useMemo(() =>
         calculerRestantAVivre({
             soldeComptesCourants: soldeTotalCourants,
-            depensesRecurrentes: abonnements,
-            objectifsEpargneMois: 0,
+            depensesRecurrentes: [...abonnements, ...depensesRecurrentes],
+            objectifsEpargneMois: objectifEpargneMois,
         }),
-        [soldeTotalCourants, abonnements]
+        [soldeTotalCourants, abonnements, depensesRecurrentes, objectifEpargneMois]
     )
 
     const handleSubmit = async (e) => {
@@ -158,6 +175,12 @@ function Budget() {
             transactions, budgets, categories, mois, annee,
             totalRevenus, totalDepenses, solde,
         })
+    }
+
+    const handleSupprimerTransaction = async (transaction) => {
+        const supprimerSerie = transaction.recurrente && window.confirm('OK : supprimer toute la série récurrente. Annuler : supprimer uniquement cette occurrence.')
+        if (!transaction.recurrente && !window.confirm('Supprimer cette transaction ?')) return
+        await supprimerTransaction(transaction.id, supprimerSerie)
     }
 
     const formatMontant = (m) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(m)
@@ -224,23 +247,23 @@ function Budget() {
             {/* ─── BENTO GRID — Widgets enrichis ─── */}
             <section className="mb-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                    <WidgetRestantAVivre {...restantAVivre} />
-                    <WidgetWhatIf />
+                    {graphiquesVisibles.includes('restant_a_vivre') && <WidgetRestantAVivre {...restantAVivre} />}
+                    {graphiquesVisibles.includes('what_if') && <WidgetWhatIf objectifMensuel={objectifEpargneMois} restantAVivre={restantAVivre.restantAVivreReel} />}
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <CalendrierEcheances
+                    {graphiquesVisibles.includes('echeances') && <CalendrierEcheances
                         abonnements={abonnements}
                         mois={mois}
                         annee={annee}
-                    />
-                    <SubscriptionCleaner
+                    />}
+                    {graphiquesVisibles.includes('abonnements') && <SubscriptionCleaner
                         abonnements={abonnements}
                         loading={loadingAb}
                         onAjouter={ajouterAbonnement}
                         onPlanifierResiliation={planifierResiliation}
                         onSupprimer={supprimerAbonnement}
-                    />
+                    />}
                 </div>
             </section>
 
@@ -265,13 +288,13 @@ function Budget() {
             <section className="mb-6">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-lg font-bold text-[var(--text-h)]">Analyses visuelles</h2>
-                    <BudgetGraphiqueSelector graphiquesVisibles={graphiquesVisibles} setGraphiquesVisibles={setGraphiquesVisibles} />
+                    <BudgetGraphiqueSelector graphiquesVisibles={graphiquesVisibles} setGraphiquesVisibles={sauvegarderWidgets} />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {graphiquesVisibles.includes('budget_vs_reel') && <BudgetVsReelChart transactions={transactions} budgets={budgets} categories={categories} />}
                     {graphiquesVisibles.includes('evolution_temps') && <EvolutionTempsChart />}
-                    {graphiquesVisibles.includes('objectif_epargne') && <JaugeEpargneChart epargneRealisee={solde} />}
+                    {graphiquesVisibles.includes('objectif_epargne') && <JaugeEpargneChart epargneRealisee={Math.max(0, solde)} />}
                     {graphiquesVisibles.includes('top5_depenses') && <Top5DepensesChart transactions={transactions} categories={categories} />}
                 </div>
 
@@ -283,8 +306,8 @@ function Budget() {
             </section>
 
             {/* ─── Flux financier + Donut ─── */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
+            {(graphiquesVisibles.includes('flux_financier') || graphiquesVisibles.includes('repartition_depenses')) && <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                {graphiquesVisibles.includes('flux_financier') && <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
                     <h3 className="text-[var(--text-h)] font-semibold mb-2">Flux financier</h3>
                     <SankeyChart
                         totalRevenus={totalRevenus}
@@ -293,15 +316,15 @@ function Budget() {
                         onFiltrerCategorie={setCategorieFiltree}
                         onDemandeRecategorisation={(source, cible) => setDemandeRecategorisation({ source, cible })}
                     />
-                </div>
-                <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
+                </div>}
+                {graphiquesVisibles.includes('repartition_depenses') && <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
                     <h3 className="text-[var(--text-h)] font-semibold mb-2">Répartition des dépenses</h3>
                     <DonutChart data={depensesParCategorie} total={totalDepenses} />
-                </div>
-            </div>
+                </div>}
+            </div>}
 
             {/* ─── Budgets par catégorie ─── */}
-            {budgets.length > 0 && (
+            {graphiquesVisibles.includes('budgets') && budgets.length > 0 && (
                 <div className="bg-card rounded-xl p-5 border border-[var(--border)] mb-6">
                     <h3 className="text-[var(--text-h)] font-semibold mb-4">Suivi des budgets</h3>
                     {budgets.map((b) => {
@@ -355,7 +378,7 @@ function Budget() {
                                 <p className={`font-semibold ${t.type === 'revenu' ? 'text-emerald' : 'text-[var(--negative)]'}`}>
                                     {t.type === 'revenu' ? '+' : '-'}<SecureValue value={t.montant} formatter={formatMontant} />
                                 </p>
-                                <button onClick={() => supprimerTransaction(t.id)} className="text-[var(--text-muted)] hover:text-[var(--negative)] transition">
+                                <button onClick={() => handleSupprimerTransaction(t)} aria-label="Supprimer la transaction" className="text-[var(--text-muted)] hover:text-[var(--negative)] transition">
                                     <Trash2 size={16} />
                                 </button>
                             </div>

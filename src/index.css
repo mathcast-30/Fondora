@@ -58,7 +58,29 @@
 body {
   font-family: var(--sans);
   background: var(--bg-page);
+  color: var(--text-h);
 }
+
+/* Les options natives n'héritent pas fiablement du thème sombre selon le navigateur. */
+select, option {
+  background-color: var(--bg-surface);
+  color: var(--text-h);
+}
+
+/* L'ancien écran Investir utilisait le thème clair en dur. */
+.fondora-investir .bg-white,
+.fondora-investir .bg-graylight {
+  background-color: var(--bg-card) !important;
+  border: 1px solid var(--border);
+  box-shadow: none !important;
+}
+.fondora-investir .text-navy { color: var(--text-h) !important; }
+.fondora-investir .text-gray-300,
+.fondora-investir .text-gray-400,
+.fondora-investir .text-gray-500,
+.fondora-investir .text-gray-600 { color: var(--text) !important; }
+.fondora-investir [class~="hover:bg-gray-50"]:hover,
+.fondora-investir .bg-indigo-50 { background-color: var(--bg-card-hover) !important; }
 
 .kpi-value {
     font-size: 2rem;

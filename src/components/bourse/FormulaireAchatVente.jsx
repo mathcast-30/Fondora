@@ -160,6 +160,7 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
       nom: actifSelectionne.nom || actifSelectionne.ticker || actifSelectionne.symbole,
       devise: actifSelectionne.devise || 'EUR',
       secteur: actifSelectionne.secteur || null,
+      compte_id: compteIdSelectionne,
     };
 
     console.log('Payload envoyé à Supabase :', transactionPayload);

@@ -201,6 +201,7 @@ function Investir() {
     // ============================================
     return (
         <Layout>
+            <div className="fondora-investir">
             <div className="flex items-center justify-between mb-4">
                 <div>
                     <h1 className="text-navy text-3xl font-bold mb-1">Investir</h1>
@@ -730,6 +731,7 @@ function Investir() {
                     onClose={() => setModalAVOuvert(false)}
                 />
             )}
+            </div>
         </Layout>
     )
 }
