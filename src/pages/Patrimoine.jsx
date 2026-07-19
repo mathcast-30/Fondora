@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import CompteCard from '../components/CompteCard'
@@ -13,6 +13,7 @@ import { useCoursCrypto } from '../hooks/useCoursCrypto'
 import { useBiensImmobiliers } from '../hooks/useBiensImmobiliers'
 import { useDettes } from '../hooks/useDettes'
 import { Plus } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 
 const TYPES_COMPTES = ['Compte courant', 'Épargne', 'Crédit', 'PEA', 'CTO', 'Assurance vie', 'Crypto', 'Immobilier', 'Autre']
 const COULEURS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
@@ -35,7 +36,7 @@ function Patrimoine() {
     const { cours } = useCoursBourse(positions.map((p) => p.symbole))
     const { positions: positionsCrypto } = usePositionsCrypto()
     const { cours: coursCrypto } = useCoursCrypto(positionsCrypto.map((p) => p.coin_id))
-    const { valeurTotaleImmo } = useBiensImmobiliers()
+    const { biens } = useBiensImmobiliers()
     const { kpis: kpisDettes } = useDettes()
     const totalDettes = kpisDettes.totalDettes || 0
 
@@ -44,8 +45,19 @@ function Patrimoine() {
         .reduce((acc, c) => acc + Number(c.soldeReel ?? c.solde), 0)
     const totalActions = positions.reduce((acc, p) => acc + (cours[p.symbole]?.coursActuel || p.prix_achat_moyen) * p.quantite, 0)
     const totalCrypto = positionsCrypto.reduce((acc, p) => acc + (coursCrypto[p.coin_id]?.eur || p.prix_achat_moyen) * p.quantite, 0)
-    const patrimoineTotal = totalComptes + totalActions + totalCrypto + valeurTotaleImmo
+    const valeurImmobilierBrute = biens.reduce((acc, bien) => acc + Number(bien.valeur_actuelle || 0), 0)
+    const patrimoineTotal = totalComptes + totalActions + totalCrypto + valeurImmobilierBrute
     const patrimoineNet = patrimoineTotal - totalDettes
+    const [prixBourse, setPrixBourse] = useState([])
+    useEffect(() => {
+        const symboles = [...new Set(positions.map(p => p.symbole).filter(Boolean))]
+        if (!symboles.length) { setPrixBourse([]); return }
+        supabase.from('asset_prices_cache').select('symbole, updated_at').in('symbole', symboles).then(({ data }) => setPrixBourse(data || []))
+    }, [positions])
+    const maintenant = Date.now()
+    const bourseAncienne = prixBourse.filter(p => !p.updated_at || maintenant - new Date(p.updated_at).getTime() > 36 * 3600 * 1000)
+    const immoAncien = biens.filter(b => maintenant - new Date(b.updated_at || b.created_at).getTime() > 180 * 24 * 3600 * 1000)
+    const dernierCoursBourse = prixBourse.reduce((latest, p) => !latest || new Date(p.updated_at) > new Date(latest) ? p.updated_at : latest, null)
 
     const formatMontant = (m, devise = 'EUR') =>
         new Intl.NumberFormat('fr-FR', { style: 'currency', currency: devise }).format(m)
@@ -85,6 +97,14 @@ function Patrimoine() {
                 <NetWorthChart />
             </div>
 
+            {(bourseAncienne.length > 0 || immoAncien.length > 0) && (
+                <div className="bg-amber-500/10 border border-amber-500/30 text-amber-200 rounded-xl p-4 mb-6 text-sm">
+                    <strong>Valorisations à actualiser :</strong>{' '}
+                    {bourseAncienne.length > 0 && `${bourseAncienne.length} cours boursier(s) de plus de 36 h. `}
+                    {immoAncien.length > 0 && `${immoAncien.length} estimation(s) immobilière(s) de plus de 6 mois.`}
+                </div>
+            )}
+
             {/* Patrimoine total consolidé */}
             <div className="bg-surface rounded-2xl p-6 mb-6 border border-[var(--border)]">
                 <p className="text-[var(--text)] text-sm mb-1">Patrimoine brut total consolidé</p>
@@ -101,6 +121,7 @@ function Patrimoine() {
                     <div>
                         <p className="text-[var(--text)] text-xs mb-1">Actions & ETF</p>
                         <p className="text-emerald font-semibold"><SecureValue value={totalActions} formatter={formatMontant} /></p>
+                        <p className="text-[10px] text-[var(--text-muted)]">Cours : {dernierCoursBourse ? new Date(dernierCoursBourse).toLocaleString('fr-FR') : 'indisponible'}</p>
                     </div>
                     <div>
                         <p className="text-[var(--text)] text-xs mb-1">Crypto</p>
@@ -108,7 +129,8 @@ function Patrimoine() {
                     </div>
                     <div>
                         <p className="text-[var(--text)] text-xs mb-1">Immobilier</p>
-                        <p className="text-emerald font-semibold"><SecureValue value={valeurTotaleImmo} formatter={formatMontant} /></p>
+                        <p className="text-emerald font-semibold"><SecureValue value={valeurImmobilierBrute} formatter={formatMontant} /></p>
+                        <p className="text-[10px] text-[var(--text-muted)]">Valeur brute ; dettes déduites une seule fois ci-dessous</p>
                     </div>
                     <div>
                         <p className="text-[var(--text)] text-xs mb-1">Dettes (CRD)</p>

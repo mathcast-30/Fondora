@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine
+  AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine
 } from 'recharts';
 import { supabase } from '../lib/supabase';
 import { useIncognito } from '../context/IncognitoContext';
+import { useAuth } from '../context/AuthContext';
 
 const LAYERS = [
   { key: 'total_cash', label: 'Cash', color: '#3b82f6' },
@@ -60,9 +61,7 @@ function formatTooltipDate(dateStr) {
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload || !payload.length) return null;
-  const total = payload.reduce((s, p) => s + (p.value || 0), 0);
-  const dettes = payload.find(p => p.name === 'total_dettes')?.value || 0;
-  const patrimoine = total - dettes;
+  const patrimoine = payload[0]?.payload?.patrimoine_net || 0;
   return (
     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', fontSize: 12 }}>
       <p style={{ color: 'var(--text)', marginBottom: 6 }}>{formatTooltipDate(label)}</p>
@@ -72,11 +71,6 @@ const CustomTooltip = ({ active, payload, label }) => {
           <span>{formatYAxis(p.value)}</span>
         </div>
       ))}
-      {dettes > 0 && (
-        <div className="flex justify-between gap-4" style={{ color: '#f43f5e' }}>
-          <span>Dettes</span><span>-{formatYAxis(dettes)}</span>
-        </div>
-      )}
       <div style={{ borderTop: '1px solid var(--border)', marginTop: 6, paddingTop: 6, color: 'var(--text-h)', fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}>
         <span>Patrimoine net</span><span>{formatYAxis(patrimoine)}</span>
       </div>
@@ -86,21 +80,27 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function NetWorthChart({ height = 320 }) {
   const { incognito } = useIncognito();
+  const { user } = useAuth();
   const [snapshots, setSnapshots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('TOUT');
+  const [visibleLayers, setVisibleLayers] = useState(() => Object.fromEntries(LAYERS.map(l => [l.key, true])));
 
   useEffect(() => {
     const fetchSnapshots = async () => {
       const { data, error } = await supabase
         .from('snapshot_patrimoine')
         .select('date, total_cash, total_bourse, total_crypto, total_assurance_vie, total_immo_net, total_tangible, total_dettes')
+        .eq('user_id', user.id)
         .order('date', { ascending: true });
-      if (!error && data) setSnapshots(data);
+      if (!error && data) setSnapshots(data.map(row => ({
+        ...row,
+        patrimoine_net: Number(row.total_cash || 0) + Number(row.total_bourse || 0) + Number(row.total_crypto || 0) + Number(row.total_assurance_vie || 0) + Number(row.total_immo_net || 0) + Number(row.total_tangible || 0) - Number(row.total_dettes || 0),
+      })));
       setLoading(false);
     };
-    fetchSnapshots();
-  }, []);
+    if (user) fetchSnapshots();
+  }, [user]);
 
   const filtered = (() => {
     const p = PERIODS.find(x => x.label === period);
@@ -112,6 +112,16 @@ export default function NetWorthChart({ height = 320 }) {
 
   const dateFormatter = makeDateFormatter(filtered);
   const yAxisTickFormatter = incognito ? () => '•••' : formatYAxis;
+  const variations = useMemo(() => {
+    const latest = snapshots.at(-1);
+    if (!latest) return [];
+    return [{ label: '1 jour', days: 1 }, { label: '1 mois', days: 30 }, { label: '1 an', days: 365 }].map(({ label, days }) => {
+      const target = new Date(latest.date); target.setDate(target.getDate() - days);
+      const reference = [...snapshots].reverse().find(s => new Date(s.date) <= target);
+      const value = reference ? latest.patrimoine_net - reference.patrimoine_net : null;
+      return { label, value, pct: reference?.patrimoine_net ? (value / reference.patrimoine_net) * 100 : null };
+    });
+  }, [snapshots]);
 
   if (loading) return (
     <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text)' }}>
@@ -127,6 +137,12 @@ export default function NetWorthChart({ height = 320 }) {
 
   return (
     <div>
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        {variations.map(v => <div key={v.label} className="bg-surface border border-[var(--border)] rounded-lg p-2">
+          <p className="text-[10px] uppercase text-[var(--text-muted)]">Évolution {v.label}</p>
+          <p className={`text-sm font-semibold ${v.value >= 0 ? 'text-emerald' : 'text-[var(--negative)]'}`}>{v.value == null ? '—' : `${v.value >= 0 ? '+' : ''}${formatYAxis(v.value)}${v.pct != null ? ` (${v.pct >= 0 ? '+' : ''}${v.pct.toFixed(1)}%)` : ''}`}</p>
+        </div>)}
+      </div>
       <div className="flex gap-2 mb-4">
         {PERIODS.map(p => (
           <button
@@ -140,6 +156,11 @@ export default function NetWorthChart({ height = 320 }) {
             {p.label}
           </button>
         ))}
+      </div>
+      <div className="flex flex-wrap gap-2 mb-3">
+        {LAYERS.map(layer => <label key={layer.key} className="text-xs text-[var(--text)] flex items-center gap-1 cursor-pointer">
+          <input type="checkbox" checked={visibleLayers[layer.key]} onChange={() => setVisibleLayers(v => ({ ...v, [layer.key]: !v[layer.key] }))} /> {layer.label}
+        </label>)}
       </div>
 
       <ResponsiveContainer width="100%" height={height}>
@@ -176,7 +197,7 @@ export default function NetWorthChart({ height = 320 }) {
               return l ? l.label : value;
             }}
           />
-          {LAYERS.map(l => (
+          {LAYERS.filter(l => visibleLayers[l.key]).map(l => (
             <Area
               key={l.key}
               type="monotone"
@@ -187,6 +208,7 @@ export default function NetWorthChart({ height = 320 }) {
               strokeWidth={1.5}
             />
           ))}
+          <Line type="monotone" dataKey="patrimoine_net" name="Patrimoine net" stroke="#f8fafc" strokeWidth={3} dot={false} />
           <ReferenceLine
             y={0}
             stroke="#f43f5e"
