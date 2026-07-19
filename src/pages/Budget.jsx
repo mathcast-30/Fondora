@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import BudgetBar from '../components/BudgetBar'
@@ -10,12 +10,18 @@ import { useTransactions } from '../hooks/useTransactions'
 import { useCategories } from '../hooks/useCategories'
 import { useComptes } from '../hooks/useComptes'
 import { useBudgets } from '../hooks/useBudgets'
+import { useAbonnements } from '../hooks/useAbonnements'
 import { Plus, Trash2, ChevronLeft, ChevronRight, Settings2, Upload } from 'lucide-react'
 import BudgetGraphiqueSelector from '../components/budget/BudgetGraphiqueSelector'
 import BudgetVsReelChart from '../components/budget/BudgetVsReelChart'
 import EvolutionTempsChart from '../components/budget/EvolutionTempsChart'
 import JaugeEpargneChart from '../components/budget/JaugeEpargneChart'
 import Top5DepensesChart from '../components/budget/Top5DepensesChart'
+import WidgetRestantAVivre from '../components/budget/WidgetRestantAVivre'
+import WidgetWhatIf from '../components/budget/WidgetWhatIf'
+import CalendrierEcheances from '../components/budget/CalendrierEcheances'
+import SubscriptionCleaner from '../components/budget/SubscriptionCleaner'
+import { calculerRestantAVivre } from '../utils/budgetCalculator'
 
 const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
@@ -28,20 +34,22 @@ function Budget() {
     const { categories } = useCategories()
     const { comptes } = useComptes()
     const { budgets, definirBudget } = useBudgets(mois, annee)
+    const {
+        abonnements, loading: loadingAb,
+        ajouterAbonnement, planifierResiliation, supprimerAbonnement,
+    } = useAbonnements()
 
     const [modalOuvert, setModalOuvert] = useState(false)
     const [modalBudgetOuvert, setModalBudgetOuvert] = useState(false)
     const [modalImportOuvert, setModalImportOuvert] = useState(false)
     const [compteSelectionne, setCompteSelectionne] = useState('')
 
-    // Initialiser le compte par défaut dès que la liste est chargée
     useEffect(() => {
         if (comptes && comptes.length > 0 && !compteSelectionne) {
             setCompteSelectionne(comptes[0].id)
         }
     }, [comptes, compteSelectionne])
 
-    // Pré-sélectionner automatiquement le compte si l'utilisateur n'en a qu'un
     useEffect(() => {
         if (comptes && comptes.length === 1) {
             setForm(prev => prev.compte_id ? prev : { ...prev, compte_id: comptes[0].id })
@@ -56,16 +64,12 @@ function Budget() {
     const [budgetForm, setBudgetForm] = useState({})
 
     const [graphiquesVisibles, setGraphiquesVisibles] = useState(() => {
-        const saved = localStorage.getItem('fondora_budget_graphiques');
+        const saved = localStorage.getItem('fondora_budget_graphiques')
         if (saved) {
-            try {
-                return JSON.parse(saved);
-            } catch (e) {
-                return ['budget_vs_reel', 'evolution_temps', 'objectif_epargne', 'top5_depenses'];
-            }
+            try { return JSON.parse(saved) } catch { /* noop */ }
         }
-        return ['budget_vs_reel', 'evolution_temps', 'objectif_epargne', 'top5_depenses'];
-    });
+        return ['budget_vs_reel', 'evolution_temps', 'objectif_epargne', 'top5_depenses']
+    })
 
     const changerMois = (delta) => {
         let m = mois + delta, a = annee
@@ -78,7 +82,6 @@ function Budget() {
     const totalDepenses = transactions.filter(t => t.type === 'depense').reduce((s, t) => s + Number(t.montant), 0)
     const solde = totalRevenus - totalDepenses
 
-    // Regroupement des dépenses par catégorie (pour budgets, sankey, donut)
     const depensesParCategorie = categories
         .filter(c => c.type === 'depense')
         .map(c => ({
@@ -90,6 +93,23 @@ function Budget() {
                 .reduce((s, t) => s + Number(t.montant), 0),
         }))
         .filter(c => c.montant > 0)
+
+    // Calcul Restant à Vivre — basé sur les comptes courants (solde réel = solde de base + mouvements)
+    const soldeTotalCourants = useMemo(() =>
+        comptes
+            .filter(c => (c.type || '').toLowerCase().includes('courant'))
+            .reduce((s, c) => s + Number(c.soldeReel ?? c.solde ?? 0), 0),
+        [comptes]
+    )
+
+    const restantAVivre = useMemo(() =>
+        calculerRestantAVivre({
+            soldeComptesCourants: soldeTotalCourants,
+            depensesRecurrentes: abonnements,
+            objectifsEpargneMois: 0,
+        }),
+        [soldeTotalCourants, abonnements]
+    )
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -125,6 +145,7 @@ function Budget() {
 
     return (
         <Layout>
+            {/* ─── En-tête ─── */}
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <h1 className="text-[var(--text-h)] text-3xl font-bold mb-1">Budget</h1>
@@ -143,14 +164,14 @@ function Budget() {
                 </div>
             </div>
 
-            {/* Sélecteur de mois */}
+            {/* ─── Sélecteur de mois ─── */}
             <div className="flex items-center gap-3 mb-6">
                 <button onClick={() => changerMois(-1)} className="p-2 bg-surface rounded-lg border border-[var(--border)] text-[var(--text-h)]"><ChevronLeft size={18} /></button>
                 <span className="font-semibold text-[var(--text-h)]">{MOIS_NOMS[mois - 1]} {annee}</span>
                 <button onClick={() => changerMois(1)} className="p-2 bg-surface rounded-lg border border-[var(--border)] text-[var(--text-h)]"><ChevronRight size={18} /></button>
             </div>
 
-            {/* Résumé */}
+            {/* ─── Résumé Revenus / Dépenses / Solde ─── */}
             <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-card rounded-xl p-4 border border-[var(--border)]">
                     <p className="text-[var(--text)] text-sm mb-1">Revenus</p>
@@ -162,10 +183,36 @@ function Budget() {
                 </div>
                 <div className="bg-card rounded-xl p-4 border border-[var(--border)]">
                     <p className="text-[var(--text)] text-sm mb-1">Solde</p>
-                    <p className={`font-bold text-xl ${solde >= 0 ? 'text-[var(--text-h)]' : 'text-[var(--negative)]'}`}><SecureValue value={solde} formatter={formatMontant} /></p>
+                    <p className={`font-bold text-xl ${solde >= 0 ? 'text-[var(--text-h)]' : 'text-[var(--negative)]'}`}>
+                        <SecureValue value={solde} formatter={formatMontant} />
+                    </p>
                 </div>
             </div>
 
+            {/* ─── BENTO GRID — Widgets enrichis ─── */}
+            <section className="mb-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                    <WidgetRestantAVivre {...restantAVivre} />
+                    <WidgetWhatIf />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <CalendrierEcheances
+                        abonnements={abonnements}
+                        mois={mois}
+                        annee={annee}
+                    />
+                    <SubscriptionCleaner
+                        abonnements={abonnements}
+                        loading={loadingAb}
+                        onAjouter={ajouterAbonnement}
+                        onPlanifierResiliation={planifierResiliation}
+                        onSupprimer={supprimerAbonnement}
+                    />
+                </div>
+            </section>
+
+            {/* ─── Impact comptes ─── */}
             {variationsComptes.length > 0 && (
                 <div className="bg-blue-500/10 text-blue-300 p-4 rounded-xl mb-6 text-sm border border-blue-500/20">
                     <strong>Impact sur vos comptes ce mois-ci :</strong>
@@ -173,14 +220,16 @@ function Budget() {
                         {variationsComptes.map((c, idx) => (
                             <li key={idx} className="flex items-center gap-2">
                                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-                                {c.nom} : <span className={c.diff >= 0 ? 'text-emerald font-semibold' : 'text-[var(--negative)] font-semibold'}>{c.diff >= 0 ? '+' : ''}<SecureValue value={c.diff} formatter={formatMontant} /></span>
+                                {c.nom} : <span className={c.diff >= 0 ? 'text-emerald font-semibold' : 'text-[var(--negative)] font-semibold'}>
+                                    {c.diff >= 0 ? '+' : ''}<SecureValue value={c.diff} formatter={formatMontant} />
+                                </span>
                             </li>
                         ))}
                     </ul>
                 </div>
             )}
 
-            {/* Analyses visuelles */}
+            {/* ─── Analyses visuelles ─── */}
             <section className="mb-6">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-lg font-bold text-[var(--text-h)]">Analyses visuelles</h2>
@@ -201,7 +250,7 @@ function Budget() {
                 )}
             </section>
 
-            {/* Graphiques */}
+            {/* ─── Flux financier + Donut ─── */}
             <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
                     <h3 className="text-[var(--text-h)] font-semibold mb-2">Flux financier</h3>
@@ -213,7 +262,7 @@ function Budget() {
                 </div>
             </div>
 
-            {/* Budgets par catégorie */}
+            {/* ─── Budgets par catégorie ─── */}
             {budgets.length > 0 && (
                 <div className="bg-card rounded-xl p-5 border border-[var(--border)] mb-6">
                     <h3 className="text-[var(--text-h)] font-semibold mb-4">Suivi des budgets</h3>
@@ -234,7 +283,7 @@ function Budget() {
                 </div>
             )}
 
-            {/* Liste des transactions */}
+            {/* ─── Liste des transactions ─── */}
             {loading ? (
                 <p className="text-[var(--text)]">Chargement...</p>
             ) : transactions.length === 0 ? (
@@ -269,7 +318,7 @@ function Budget() {
                 </div>
             )}
 
-            {/* Modal ajout transaction */}
+            {/* ─── Modal ajout transaction ─── */}
             <Modal isOpen={modalOuvert} onClose={() => setModalOuvert(false)} title="Nouvelle transaction">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="flex gap-2">
@@ -331,8 +380,7 @@ function Budget() {
                 </form>
             </Modal>
 
-            {/* Modal définition des budgets */}
-            {/* Modal définition des budgets */}
+            {/* ─── Modal budgets ─── */}
             <Modal isOpen={modalBudgetOuvert} onClose={() => setModalBudgetOuvert(false)} title="Définir les budgets mensuels">
                 <form onSubmit={handleSubmitBudgets} className="flex flex-col gap-3">
                     <div className="overflow-y-auto max-h-[60vh] space-y-3 pr-1">
@@ -343,9 +391,7 @@ function Budget() {
                                     <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.couleur }} />
                                     <span className="flex-1 text-sm text-[var(--text-h)]">{c.nom}</span>
                                     <input
-                                        type="number"
-                                        step="0.01"
-                                        placeholder="Max €"
+                                        type="number" step="0.01" placeholder="Max €"
                                         defaultValue={budgetExistant?.montant_max || ''}
                                         onChange={(e) => setBudgetForm({ ...budgetForm, [c.id]: e.target.value })}
                                         className="w-28 border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-2 py-1.5 text-sm"
@@ -360,12 +406,13 @@ function Budget() {
                 </form>
             </Modal>
 
+            {/* ─── Modal import CSV ─── */}
             {modalImportOuvert && (
                 <ImportCSVModal
                     compteId={compteSelectionne}
                     onFerme={() => {
-                        setModalImportOuvert(false);
-                        charger();
+                        setModalImportOuvert(false)
+                        charger()
                     }}
                 />
             )}
