@@ -1,7 +1,7 @@
 // src/pages/PassifsPage.jsx
 import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useDettes } from '../hooks/useDettes';
@@ -227,10 +227,10 @@ function PassifsPage() {
                         </button>
                     ))}
                 </div>
-                
+
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 13, color: '#6B7280', fontWeight: 500 }}>Trier par :</span>
-                    <select 
+                    <select
                         value={triActif}
                         onChange={(e) => setTriActif(e.target.value)}
                         style={{
