@@ -27,11 +27,12 @@ import { genererBilanBudget } from '../utils/exportBilanBudget'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useObjectifEpargne } from '../hooks/useObjectifEpargne'
+import { BudgetProvider, useBudget } from '../contexts/BudgetContext';
 
 
 const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
-function Budget() {
+function BudgetContent() {
     const { user, profile } = useAuth()
     const aujourdHui = new Date()
     const [mois, setMois] = useState(aujourdHui.getMonth() + 1)
@@ -52,7 +53,20 @@ function Budget() {
     const [modalBudgetOuvert, setModalBudgetOuvert] = useState(false)
     const [modalImportOuvert, setModalImportOuvert] = useState(false)
     const [compteSelectionne, setCompteSelectionne] = useState('')
-    const [categorieFiltree, setCategorieFiltree] = useState(null)
+    // Utiliser l'état global du contexte
+    const { selectedCategory, setSelectedCategory } = useBudget();
+    // Synchroniser avec l'état local existant pour éviter les conflits
+    const [categorieFiltree, setCategorieFiltree] = useState(null);
+
+    // Synchroniser les deux états
+    useEffect(() => {
+        setCategorieFiltree(selectedCategory);
+    }, [selectedCategory]);
+
+    // Mettre à jour l'état global lorsque `categorieFiltree` change localement
+    useEffect(() => {
+        setSelectedCategory(categorieFiltree);
+    }, [categorieFiltree]);
     const [demandeRecategorisation, setDemandeRecategorisation] = useState(null)
     const [recategorisationEnCours, setRecategorisationEnCours] = useState(false)
 
@@ -335,11 +349,12 @@ function Budget() {
                         categorieFiltree={categorieFiltree}
                         onFiltrerCategorie={setCategorieFiltree}
                         onDemandeRecategorisation={(source, cible) => setDemandeRecategorisation({ source, cible })}
+                        selectedCategory={selectedCategory}
                     />
                 </div>}
                 {graphiquesVisibles.includes('repartition_depenses') && <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
                     <h3 className="text-[var(--text-h)] font-semibold mb-2">Répartition des dépenses</h3>
-                    <DonutChart data={depensesParCategorie} total={totalDepenses} />
+                    <DonutChart data={depensesParCategorie} total={totalDepenses} onFiltrerCategorie={setCategorieFiltree} />
                 </div>}
             </div>}
 
@@ -539,6 +554,14 @@ function Budget() {
             )}
         </Layout>
     )
+}
+
+function Budget() {
+    return (
+        <BudgetProvider>
+            <BudgetContent />
+        </BudgetProvider>
+    );
 }
 
 export default Budget
