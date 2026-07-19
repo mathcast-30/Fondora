@@ -26,6 +26,8 @@ import { genererBilanBudget } from '../utils/exportBilanBudget'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useObjectifEpargne } from '../hooks/useObjectifEpargne'
+import { exportBudgetToExcel } from '../utils/exportToExcel'
+import ExportButton from '../components/ExportButton'
 
 const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
@@ -50,7 +52,7 @@ function Budget() {
     const [modalImportOuvert, setModalImportOuvert] = useState(false)
     const [compteSelectionne, setCompteSelectionne] = useState('')
     const [categorieFiltree, setCategorieFiltree] = useState(null)
-    const [demandeRecategorisation, setDemandeRecategorisation] = useState(null) // { source, cible }
+    const [demandeRecategorisation, setDemandeRecategorisation] = useState(null)
     const [recategorisationEnCours, setRecategorisationEnCours] = useState(false)
 
     useEffect(() => {
@@ -113,7 +115,6 @@ function Budget() {
         }))
         .filter(c => c.montant > 0)
 
-    // Calcul Restant à Vivre — basé sur les comptes courants (solde réel = solde de base + mouvements)
     const soldeTotalCourants = useMemo(() =>
         comptes
             .filter(c => (c.type || '').toLowerCase().includes('courant'))
@@ -124,9 +125,6 @@ function Budget() {
     const depensesRecurrentes = useMemo(() => transactions
         .filter(t => t.type === 'depense' && t.recurrente && t.recurrence_active !== false)
         .map(t => ({ montant: t.montant, jour_prelevement: t.jour_recurrence || new Date(t.date).getDate() })), [transactions])
-    // Source unique : l'objectif défini pour le mois dans la Synthèse.
-    // Le champ profile.objectif_epargne_mensuel est conservé pour compatibilité,
-    // mais ne pilote plus les calculs du Budget.
     const objectifEpargneMois = Number(objectifEpargne?.montant_cible || 0)
     const restantAVivre = useMemo(() =>
         calculerRestantAVivre({
@@ -182,6 +180,16 @@ function Budget() {
         })
     }
 
+    const handleExportToExcel = () => {
+        const budgetData = {
+            totalRevenus,
+            totalDepenses,
+            monthlyBudget: budgets.reduce((sum, b) => sum + Number(b.montant_max || 0), 0),
+            monthlyActual: totalDepenses,
+        };
+        exportBudgetToExcel(budgetData, transactions, comptes);
+    };
+
     const handleSupprimerTransaction = async (transaction) => {
         const supprimerSerie = transaction.recurrente && window.confirm('OK : supprimer toute la série récurrente. Annuler : supprimer uniquement cette occurrence.')
         if (!transaction.recurrente && !window.confirm('Supprimer cette transaction ?')) return
@@ -202,7 +210,7 @@ function Budget() {
 
     return (
         <Layout>
-            {/* ─── En-tête ─── */}
+            {/* En-tête */}
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <h1 className="text-[var(--text-h)] text-3xl font-bold mb-1">Budget</h1>
@@ -215,6 +223,7 @@ function Budget() {
                     <button onClick={handleExportBilan} className="bg-card border border-[var(--border)] text-[var(--text-h)] font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition hover:bg-[var(--bg-card-hover)]">
                         <Download size={18} /> Générer mon bilan
                     </button>
+                    <ExportButton onClick={handleExportToExcel} />
                     <button onClick={() => setModalImportOuvert(true)} className="bg-card border border-[var(--border)] text-[var(--text-h)] font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition hover:bg-[var(--bg-card-hover)]">
                         <Upload size={18} /> Importer un CSV
                     </button>
@@ -224,14 +233,14 @@ function Budget() {
                 </div>
             </div>
 
-            {/* ─── Sélecteur de mois ─── */}
+            {/* Sélecteur de mois */}
             <div className="flex items-center gap-3 mb-6">
                 <button onClick={() => changerMois(-1)} className="p-2 bg-surface rounded-lg border border-[var(--border)] text-[var(--text-h)]"><ChevronLeft size={18} /></button>
                 <span className="font-semibold text-[var(--text-h)]">{MOIS_NOMS[mois - 1]} {annee}</span>
                 <button onClick={() => changerMois(1)} className="p-2 bg-surface rounded-lg border border-[var(--border)] text-[var(--text-h)]"><ChevronRight size={18} /></button>
             </div>
 
-            {/* ─── Résumé Revenus / Dépenses / Solde ─── */}
+            {/* Résumé Revenus / Dépenses / Solde */}
             <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-card rounded-xl p-4 border border-[var(--border)]">
                     <p className="text-[var(--text)] text-sm mb-1">Revenus</p>
@@ -249,7 +258,7 @@ function Budget() {
                 </div>
             </div>
 
-            {/* ─── BENTO GRID — Widgets enrichis ─── */}
+            {/* BENTO GRID — Widgets enrichis */}
             <section className="mb-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
                     {graphiquesVisibles.includes('restant_a_vivre') && <WidgetRestantAVivre {...restantAVivre} />}
@@ -272,7 +281,7 @@ function Budget() {
                 </div>
             </section>
 
-            {/* ─── Impact comptes ─── */}
+            {/* Impact comptes */}
             {variationsComptes.length > 0 && (
                 <div className="bg-blue-500/10 text-blue-300 p-4 rounded-xl mb-6 text-sm border border-blue-500/20">
                     <strong>Impact sur vos comptes ce mois-ci :</strong>
@@ -289,7 +298,7 @@ function Budget() {
                 </div>
             )}
 
-            {/* ─── Analyses visuelles ─── */}
+            {/* Analyses visuelles */}
             <section className="mb-6">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-lg font-bold text-[var(--text-h)]">Analyses visuelles</h2>
@@ -310,7 +319,7 @@ function Budget() {
                 )}
             </section>
 
-            {/* ─── Flux financier + Donut ─── */}
+            {/* Flux financier + Donut */}
             {(graphiquesVisibles.includes('flux_financier') || graphiquesVisibles.includes('repartition_depenses')) && <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
                 {graphiquesVisibles.includes('flux_financier') && <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
                     <h3 className="text-[var(--text-h)] font-semibold mb-2">Flux financier</h3>
@@ -328,7 +337,7 @@ function Budget() {
                 </div>}
             </div>}
 
-            {/* ─── Budgets par catégorie ─── */}
+            {/* Budgets par catégorie */}
             {graphiquesVisibles.includes('budgets') && budgets.length > 0 && (
                         <div className="bg-card rounded-xl p-5 border border-[var(--border)] mb-6">
                             <h3 className="text-[var(--text-h)] font-semibold mb-4">Suivi des budgets</h3>
@@ -350,7 +359,7 @@ function Budget() {
                 </div>
             )}
 
-            {/* ─── Liste des transactions ─── */}
+            {/* Liste des transactions */}
             {categorieFiltree && (
                 <div className="flex items-center justify-between bg-blue-500/10 border border-blue-500/20 text-blue-300 text-sm px-4 py-2.5 rounded-xl mb-3">
                     <span>Filtré sur la catégorie <strong>{categorieFiltree}</strong> ({transactionsAffichees.length} transaction{transactionsAffichees.length > 1 ? 's' : ''})</span>
@@ -393,7 +402,7 @@ function Budget() {
                 </div>
             )}
 
-            {/* ─── Modal ajout transaction ─── */}
+            {/* Modal ajout transaction */}
             <Modal isOpen={modalOuvert} onClose={() => setModalOuvert(false)} title="Nouvelle transaction">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="flex gap-2">
@@ -455,7 +464,7 @@ function Budget() {
                 </form>
             </Modal>
 
-            {/* ─── Modal budgets ─── */}
+            {/* Modal budgets */}
             <Modal isOpen={modalBudgetOuvert} onClose={() => setModalBudgetOuvert(false)} title="Définir les budgets mensuels">
                 <form onSubmit={handleSubmitBudgets} className="flex flex-col gap-3">
                     <div className="overflow-y-auto max-h-[60vh] space-y-3 pr-1">
@@ -481,7 +490,7 @@ function Budget() {
                 </form>
             </Modal>
 
-            {/* ─── Modal confirmation recatégorisation (Sankey) ─── */}
+            {/* Modal confirmation recatégorisation (Sankey) */}
             <Modal isOpen={!!demandeRecategorisation} onClose={() => setDemandeRecategorisation(null)} title="Recatégoriser des transactions">
                 {demandeRecategorisation && (
                     <div className="space-y-4">
@@ -512,7 +521,7 @@ function Budget() {
                 )}
             </Modal>
 
-            {/* ─── Modal import CSV ─── */}
+            {/* Modal import CSV */}
             {modalImportOuvert && (
                 <ImportCSVModal
                     compteId={compteSelectionne}
