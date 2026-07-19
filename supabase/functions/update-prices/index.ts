@@ -88,4 +88,4 @@ serve(async () => {
     JSON.stringify({ success: true, mis_a_jour: totalMisAJour, date: today }),
     { headers: { "Content-Type": "application/json" } }
   );
-});
+}); 

@@ -9,8 +9,8 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - name: Appeler la Edge Function Supabase
+      - name: Appeler la fonction Supabase update-prices
         run: |
-          curl -X POST https://ptcdwzozambankspjwes.supabase.co/functions/v1/update-prices \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Content-Type: application/json"
+          curl -i --location --request POST "https://${{ secrets.SUPABASE_PROJECT_REF }}.supabase.co/functions/v1/update-prices" \
+            --header "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            --header "Content-Type: application/json"
