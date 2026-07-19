@@ -13,9 +13,9 @@ export function usePositionsCrypto() {
 
     const charger = useCallback(async () => {
         if (!user) return
-        
+
         setLoading(true)
-        
+
         try {
             // Load crypto positions
             const { data: positionsData, error: positionsError } = await supabase
@@ -23,28 +23,28 @@ export function usePositionsCrypto() {
                 .select('*')
                 .eq('user_id', user.id)
                 .order('created_at', { ascending: true })
-            
+
             // Load crypto transactions
             const { data: transactionsData, error: transactionsError } = await supabase
                 .from('transactions_crypto')
                 .select('*')
                 .eq('user_id', user.id)
                 .order('date', { ascending: true })
-            
+
             // Load historical portfolio values
             const { data: historicalData, error: historicalError } = await supabase
                 .from('historique_valeur_crypto')
                 .select('*')
                 .eq('user_id', user.id)
                 .order('date', { ascending: true })
-            
+
             if (!positionsError) setPositions(positionsData || [])
             if (!transactionsError) setTransactions(transactionsData || [])
             if (!historicalError) setHistoricalData(historicalData || [])
         } catch (error) {
             console.error('Error loading crypto positions:', error)
         }
-        
+
         setLoading(false)
     }, [user])
 
@@ -54,7 +54,7 @@ export function usePositionsCrypto() {
 
     const ajouterPosition = async (position) => {
         if (!user) return { error: new Error('User not authenticated') }
-        
+
         const { error } = await supabase
             .from('positions_crypto')
             .insert({ ...position, user_id: user.id })
@@ -64,7 +64,7 @@ export function usePositionsCrypto() {
 
     const supprimerPosition = async (id) => {
         if (!user) return { error: new Error('User not authenticated') }
-        
+
         const { error } = await supabase
             .from('positions_crypto')
             .delete()
@@ -81,11 +81,11 @@ export function usePositionsCrypto() {
      */
     const ajouterTransaction = async (transaction) => {
         if (!user) return { error: new Error('User not authenticated') }
-        
+
         const { error } = await supabase
             .from('transactions_crypto')
-            .insert({ 
-                ...transaction, 
+            .insert({
+                ...transaction,
                 user_id: user.id,
                 coin_id: transaction.coin_id,
                 symbole: transaction.symbole,
@@ -102,7 +102,7 @@ export function usePositionsCrypto() {
      */
     const supprimerTransaction = async (id) => {
         if (!user) return { error: new Error('User not authenticated') }
-        
+
         const { error } = await supabase
             .from('transactions_crypto')
             .delete()
@@ -134,10 +134,10 @@ export function usePositionsCrypto() {
      */
     const getHistoricalDataFiltered = useCallback(() => {
         const now = new Date()
-        
+
         return historicalData.filter(h => {
             const date = new Date(h.date)
-            
+
             switch (timeFilter) {
                 case '7j':
                     return date >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
@@ -166,15 +166,17 @@ export function usePositionsCrypto() {
      */
     const sauvegarderValeurHistorique = async (value) => {
         if (!user) return { error: new Error('User not authenticated') }
-        
+
+        const today = new Date().toISOString().split('T')[0]
+
         const { error } = await supabase
             .from('historique_valeur_crypto')
-            .insert({
+            .upsert({
                 user_id: user.id,
-                valeur: value,
-                date: new Date().toISOString()
-            })
-        
+                valeur_totale: value,
+                date: today
+            }, { onConflict: 'user_id,date' })
+
         if (!error) await charger()
         return { error }
     }

@@ -11,11 +11,13 @@ import BienImmobilierCard from '../components/BienImmobilierCard'
 import FormBienImmobilier from '../components/FormBienImmobilier'
 import CryptoPortfolioChart from '../components/CryptoPortfolioChart'
 import DiversificationScore from '../components/DiversificationScore'
-import TransactionForm from '../components/TransactionForm'
 import CryptoTransactionForm from '../components/CryptoTransactionForm'
 import { PnLLatentDisplay } from '../components/PnLLatentToggle'
 import FormulaireAchatVente from '../components/bourse/FormulaireAchatVente'
 import GraphiqueActif from '../components/bourse/GraphiqueActif'
+import AssuranceVieCard from '../components/assurance-vie/AssuranceVieCard'
+import FormAssuranceVie from '../components/assurance-vie/FormAssuranceVie'
+import SecureValue from '../components/SecureValue'
 import { useComptes } from '../hooks/useComptes'
 import { usePositions } from '../hooks/usePositions'
 import { useCoursBourse } from '../hooks/useCoursBourse'
@@ -25,18 +27,21 @@ import { usePositionsCrypto } from '../hooks/usePositionsCrypto'
 import { useCoursCrypto } from '../hooks/useCoursCrypto'
 import { useTopCrypto } from '../hooks/useTopCrypto'
 import { useBiensImmobiliers } from '../hooks/useBiensImmobiliers'
+import { useAssurancesVie } from '../hooks/useAssurancesVie'
 import { useAuth } from '../context/AuthContext'
+import { useIncognito } from '../context/IncognitoContext'
 import { calculerRentabilite } from '../lib/calculImmo'
 import { calculateXIRR, calculateCryptoRealizedPL, calculatePRU } from '../lib/financialCalculations'
 import { calculateDiversificationScore } from '../lib/diversificationScore'
-import { Plus, Trash2, TrendingUp, Calculator, History, PlusCircle, MinusCircle } from 'lucide-react'
+import { Plus, Trash2, TrendingUp, Calculator, History, PlusCircle, MinusCircle, ShieldCheck } from 'lucide-react'
 
 function Investir() {
     const [ongletActif, setOngletActif] = useState('actions')
-    const { user } = useAuth()
+    const { user, profile } = useAuth()
+    const { incognito } = useIncognito()
     const { comptes } = useComptes()
     const [selectedActifId, setSelectedActifId] = useState(null)
-
+    const [typeOrdre, setTypeOrdre] = useState('ACHAT')
     // ============================================
     // ACTIONS & ETF STATE
     // ============================================
@@ -44,50 +49,20 @@ function Investir() {
         positions,
         transactions,
         loading: loadingPositions,
-        ajouterPosition,
         supprimerPosition,
         ajouterTransaction,
         displayMode,
         toggleDisplayMode,
-        calculerPnLRealise
+        calculerPnLRealise,
+        charger: chargerPositions
     } = usePositions()
 
     const symboles = positions.map((p) => p.symbole)
     const { cours, loading: loadingCours } = useCoursBourse(symboles)
-    const [modalOuvert, setModalOuvert] = useState(false)
-    const [modalTransactionOuvert, setModalTransactionOuvert] = useState(false)
-    const [transactionType, setTransactionType] = useState('buy')
-    const [form, setForm] = useState({
-        symbole: '', quantite: '', prix_achat_moyen: '', devise: 'EUR', type_compte: 'PEA',
-    })
+    const [modalAchatVenteOuvert, setModalAchatVenteOuvert] = useState(false)
 
     const formatMontant = (m, devise = 'EUR') =>
         new Intl.NumberFormat('fr-FR', { style: 'currency', currency: devise }).format(m)
-
-    const handleSubmitPosition = async (e) => {
-        e.preventDefault()
-        if (!form.symbole || !form.quantite || !form.prix_achat_moyen) return
-
-        const { error } = await ajouterPosition({
-            ...form,
-            symbole: form.symbole.toUpperCase(),
-            quantite: parseFloat(form.quantite),
-            prix_achat_moyen: parseFloat(form.prix_achat_moyen),
-        })
-        if (!error) {
-            setForm({ symbole: '', quantite: '', prix_achat_moyen: '', devise: 'EUR', type_compte: 'PEA' })
-            setModalOuvert(false)
-        }
-    }
-
-    const handleSubmitTransaction = async (transactionData) => {
-        if (!transactionData.symbole || !transactionData.quantite || !transactionData.prix) return
-
-        const { error } = await ajouterTransaction(transactionData)
-        if (!error) {
-            setModalTransactionOuvert(false)
-        }
-    }
 
     // Calculate portfolio metrics for Actions/ETF
     const valorisationTotale = positions.reduce((acc, p) => {
@@ -164,7 +139,8 @@ function Investir() {
         if (valorisationCrypto > 0 && user) {
             sauvegarderValeurHistorique(valorisationCrypto)
         }
-    }, [valorisationCrypto, sauvegarderValeurHistorique, user])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [valorisationCrypto])
 
     // ============================================
     // IMMOBILIER STATE
@@ -174,14 +150,41 @@ function Investir() {
     const [modalCryptoTransactionOuvert, setModalCryptoTransactionOuvert] = useState(false)
     const [cryptoTransactionType, setCryptoTransactionType] = useState('buy')
 
+    // ============================================
+    // ASSURANCE VIE STATE
+    // ============================================
+    const {
+        contrats: contratsAV,
+        loading: loadingAV,
+        metriquesContrat,
+        valeurTotaleAV,
+        ajouterContrat: ajouterContratAV,
+        supprimerContrat: supprimerContratAV,
+        ajouterVersement: ajouterVersementAV,
+        upsertValorisation: upsertValorisationAV,
+        upsertPositionUC: upsertPositionUCAV,
+    } = useAssurancesVie()
+
+    // Contrat sélectionné pour le formulaire (null = création)
+    const [contratAVSelectionne, setContratAVSelectionne] = useState(null)
+    const [modalAVOuvert, setModalAVOuvert] = useState(false)
+
+    const ouvrirFormAV = (contrat = null) => {
+        setContratAVSelectionne(contrat)
+        setModalAVOuvert(true)
+    }
+
     const cashFlowTotal = biens.reduce((acc, b) => {
         const { cashFlowMensuel } = calculerRentabilite(b)
         return acc + cashFlowMensuel
     }, 0)
 
     const handleAjouterBien = async (donnees) => {
-        const { error } = await ajouterBien(donnees)
-        if (!error) setModalImmoOuvert(false)
+        const { data, error } = await ajouterBien(donnees)
+        if (!error) {
+            setModalImmoOuvert(false)
+            return data
+        }
     }
 
     const handleSubmitCryptoTransaction = async (transactionData) => {
@@ -198,44 +201,13 @@ function Investir() {
     // ============================================
     return (
         <Layout>
+            <div className="fondora-investir">
             <div className="flex items-center justify-between mb-4">
                 <div>
                     <h1 className="text-navy text-3xl font-bold mb-1">Investir</h1>
                     <p className="text-gray-500">Tes investissements en actions, ETF, crypto et immobilier.</p>
                 </div>
                 <div className="flex gap-2">
-                    {ongletActif === 'actions' && (
-                        <>
-                            <button
-                                onClick={() => setModalOuvert(true)}
-                                className="bg-emerald hover:bg-emerald-light text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition"
-                            >
-                                <Plus size={18} /> Position
-                            </button>
-                            {positions.length > 0 && (
-                                <>
-                                    <button
-                                        onClick={() => {
-                                            setTransactionType('buy')
-                                            setModalTransactionOuvert(true)
-                                        }}
-                                        className="bg-navy hover:bg-navy-light text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition"
-                                    >
-                                        <PlusCircle size={18} /> Achat
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setTransactionType('sell')
-                                            setModalTransactionOuvert(true)
-                                        }}
-                                        className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition"
-                                    >
-                                        <MinusCircle size={18} /> Vente
-                                    </button>
-                                </>
-                            )}
-                        </>
-                    )}
                     {ongletActif === 'crypto' && (
                         <>
                             <button
@@ -265,12 +237,20 @@ function Investir() {
                             <Plus size={18} /> Ajouter un bien
                         </button>
                     )}
+                    {ongletActif === 'assurance-vie' && (
+                        <button
+                            onClick={() => ouvrirFormAV(null)}
+                            className="bg-emerald hover:bg-emerald-light text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition"
+                        >
+                            <Plus size={18} /> Nouveau contrat AV
+                        </button>
+                    )}
                 </div>
             </div>
 
             {/* Onglets */}
             <div className="flex gap-2 mb-6 bg-white p-1 rounded-lg shadow-sm w-fit">
-                {[['actions', 'Actions & ETF'], ['crypto', 'Crypto'], ['immobilier', 'Immobilier']].map(([val, label]) => (
+                {[['actions', 'Actions & ETF'], ['crypto', 'Crypto'], ['immobilier', 'Immobilier'], ['assurance-vie', 'Assurance Vie']].map(([val, label]) => (
                     <button key={val} onClick={() => setOngletActif(val)}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition ${ongletActif === val ? 'bg-navy text-white' : 'text-gray-500'}`}>
                         {label}
@@ -283,19 +263,28 @@ function Investir() {
                  ============================================ */}
             {ongletActif === 'actions' && (
                 <div className="space-y-6">
-                    {/* Nouveau Module Bourse (Style Finary) */}
-                    <div className="bg-[#0f172a] rounded-3xl p-6 shadow-sm mb-6 border border-slate-800">
-                        <div className="flex items-center gap-2 mb-6">
-                            <TrendingUp size={24} className="text-indigo-500" />
-                            <h2 className="text-white text-2xl font-bold">Trading & Analyse</h2>
+                    {/* Header : total portefeuille + variation + boutons "+ Achat" / "+ Vente" */}
+                    <div className="flex items-center justify-between bg-[#0f172a] rounded-3xl p-6 shadow-sm border border-slate-800">
+                        <div>
+                            <p className="text-gray-400 text-sm mb-1">Total Portefeuille Actions & ETF</p>
+                            <h2 className="text-white text-3xl font-bold"><SecureValue value={valorisationTotale} formatter={formatMontant} /></h2>
+                            <p className={`font-medium ${plusMoinsValueTotale >= 0 ? 'text-emerald' : 'text-red-500'}`}>
+                                {plusMoinsValueTotale >= 0 ? '+' : ''}<SecureValue value={plusMoinsValueTotale} formatter={formatMontant} /> (<SecureValue value={investissementTotal > 0 ? (plusMoinsValueTotale / investissementTotal) * 100 : 0} formatter={v => `${v.toFixed(2)}%`} />)
+                            </p>
                         </div>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <FormulaireAchatVente 
-                                compteId={comptes.find(c => c.type === 'PEA' || c.type === 'CTO')?.id} 
-                                onSelectActif={setSelectedActifId}
-                                onTransactionSuccess={() => alert('Ordre enregistré avec succès !')} 
-                            />
-                            <GraphiqueActif actifId={selectedActifId} />
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => { setTypeOrdre('ACHAT'); setModalAchatVenteOuvert(true); }}
+                                className="bg-emerald hover:bg-emerald-light text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition"
+                            >
+                                <Plus size={18} /> Achat
+                            </button>
+                            <button
+                                onClick={() => { setTypeOrdre('VENTE'); setModalAchatVenteOuvert(true); }}
+                                className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition"
+                            >
+                                <MinusCircle size={18} /> Vente
+                            </button>
                         </div>
                     </div>
 
@@ -308,11 +297,11 @@ function Investir() {
                     <div className="grid grid-cols-4 gap-4">
                         <div className="bg-white rounded-xl p-5 shadow-sm">
                             <p className="text-gray-400 text-sm mb-1">Valorisation totale</p>
-                            <p className="text-navy text-2xl font-bold">{formatMontant(valorisationTotale)}</p>
+                            <p className="text-navy text-2xl font-bold"><SecureValue value={valorisationTotale} formatter={formatMontant} /></p>
                         </div>
                         <div className="bg-white rounded-xl p-5 shadow-sm">
                             <p className="text-gray-400 text-sm mb-1">Investi</p>
-                            <p className="text-navy text-2xl font-bold">{formatMontant(investissementTotal)}</p>
+                            <p className="text-navy text-2xl font-bold"><SecureValue value={investissementTotal} formatter={formatMontant} /></p>
                         </div>
                         <div className="bg-white rounded-xl p-5 shadow-sm">
                             <p className="text-gray-400 text-sm mb-1">Plus/moins-value latent</p>
@@ -328,109 +317,24 @@ function Investir() {
                                 <Calculator size={14} /> TRI (XIRR)
                             </p>
                             <p className="text-navy text-2xl font-bold">
-                                {xirrPortfolio !== null ? (xirrPortfolio * 100).toFixed(2) + '%' : 'N/A'}
+                                {xirrPortfolio !== null ? <SecureValue value={xirrPortfolio * 100} formatter={v => `${v.toFixed(2)}%`} /> : 'N/A'}
                             </p>
                         </div>
                     </div>
 
-                    {/* Diversification Score */}
-                    {positions.length > 0 && !loadingPositions && (
-                        <DiversificationScore positions={dataAllocation} total={valorisationTotale} />
-                    )}
-
-                    {/* Realized P&L Section */}
-                    {pnlRealise && pnlRealise.realizedPL !== 0 && (
-                        <div className="bg-white rounded-xl p-5 shadow-sm">
-                            <div className="flex items-center gap-2 mb-4">
-                                <TrendingUp size={18} className="text-emerald" />
-                                <h3 className="text-navy font-semibold">P&L Réalisé (FIFO/PEPS)</h3>
-                            </div>
-                            <div className="grid grid-cols-3 gap-4">
-                                <div>
-                                    <p className="text-gray-400 text-sm mb-1">Plus-value réalisée</p>
-                                    <p className={`text-xl font-bold ${pnlRealise.realizedPL >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                                        {formatMontant(pnlRealise.realizedPL)}
-                                    </p>
+                    {/* Positions List & Asset Chart */}
+                    <div className="grid grid-cols-5 gap-6">
+                        {/* Gauche 60% : liste des positions */}
+                        <div className="col-span-3">
+                            {loadingPositions ? (
+                                <div className="bg-white rounded-xl p-8 text-center text-gray-400">
+                                    Chargement des positions...
                                 </div>
-                                <div>
-                                    <p className="text-gray-400 text-sm mb-1">Coût total</p>
-                                    <p className="text-navy text-xl font-bold">{formatMontant(pnlRealise.totalCost)}</p>
+                            ) : positions.length === 0 ? (
+                                <div className="bg-white rounded-xl p-8 text-center text-gray-400">
+                                    Aucune position. Clique sur "Achat" pour commencer.
                                 </div>
-                                <div>
-                                    <p className="text-gray-400 text-sm mb-1">Produit des ventes</p>
-                                    <p className="text-navy text-xl font-bold">{formatMontant(pnlRealise.totalProceeds)}</p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Transaction History */}
-                    {transactions.length > 0 && (
-                        <div className="bg-white rounded-xl p-5 shadow-sm">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-2">
-                                    <History size={18} className="text-emerald" />
-                                    <h3 className="text-navy font-semibold">Historique des transactions</h3>
-                                </div>
-                            </div>
-                            <div className="space-y-3 max-h-64 overflow-y-auto">
-                                {transactions
-                                    .sort((a, b) => new Date(b.date) - new Date(a.date))
-                                    .map((t, index) => {
-                                        const isBuy = t.type === 'buy'
-                                        return (
-                                            <div key={t.id || index} className="flex items-center justify-between p-3 bg-graylight rounded-lg">
-                                                <div>
-                                                    <p className="font-medium text-navy">{t.symbole}</p>
-                                                    <p className="text-xs text-gray-500">
-                                                        {new Date(t.date).toLocaleDateString('fr-FR')} • {t.type === 'buy' ? 'Achat' : 'Vente'}
-                                                    </p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className={`font-medium ${isBuy ? 'text-red-500' : 'text-emerald'}`}>
-                                                        {isBuy ? '-' : '+'}{formatMontant(t.quantity * t.price)}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500">{t.quantity} × {formatMontant(t.price)}</p>
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Positions List */}
-                    {loadingPositions ? (
-                        <div className="bg-white rounded-xl p-8 text-center text-gray-400">
-                            Chargement des positions...
-                        </div>
-                    ) : positions.length === 0 ? (
-                        <div className="bg-white rounded-xl p-8 text-center text-gray-400">
-                            Aucune position. Clique sur "Position" ou "Achat" pour commencer.
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-5 gap-6">
-                            <div className="col-span-2 space-y-6">
-                                <div className="bg-white rounded-xl p-5 shadow-sm">
-                                    <h3 className="text-navy font-semibold mb-4">Allocation</h3>
-                                    <DonutChart data={dataAllocation} total={valorisationTotale} libelleCentre="Portefeuille" />
-                                    <div className="mt-4">
-                                        <LegendeAllocation data={dataAllocation} total={valorisationTotale} />
-                                    </div>
-                                </div>
-                                {positions.length > 0 && (
-                                    <DividendesCard
-                                        dividendes={dividendes}
-                                        totalDouzeMois={totalDouzeMois}
-                                        valorisationTotale={valorisationTotale}
-                                        positions={positions}
-                                        onAjouter={ajouterDividende}
-                                        onSupprimer={supprimerDividende}
-                                    />
-                                )}
-                            </div>
-
-                            <div className="col-span-3">
+                            ) : (
                                 <div className="bg-white rounded-xl shadow-sm divide-y">
                                     {positions.map((p) => {
                                         const infosCours = cours[p.symbole]
@@ -440,16 +344,8 @@ function Investir() {
                                         const plusMoinsValue = valeurActuelle - valeurInvestie
                                         const pourcentage = valeurInvestie > 0 ? (plusMoinsValue / valeurInvestie) * 100 : 0
 
-                                        // Calculate XIRR for this position
-                                        const positionTransactions = transactions.filter(t => t.symbole?.toUpperCase() === p.symbole?.toUpperCase())
-                                        const positionCashFlows = positionTransactions.map(t => ({
-                                            date: t.date,
-                                            amount: t.type === 'buy' ? -t.quantity * t.price : t.quantity * t.price
-                                        }))
-                                        const xirr = calculateXIRR(positionCashFlows)
-
                                         return (
-                                            <div key={p.id} className="flex items-center justify-between px-5 py-4">
+                                            <div key={p.id} onClick={() => setSelectedActifId(p.id)} className={`flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 transition ${selectedActifId === p.id ? 'bg-indigo-50 border-l-4 border-indigo-500' : ''}`}>
                                                 <div className="flex items-center gap-3">
                                                     {infosCours?.logo ? (
                                                         <img src={infosCours.logo} alt={p.symbole} className="w-9 h-9 rounded-full object-contain bg-gray-50 p-1" />
@@ -460,39 +356,77 @@ function Investir() {
                                                     )}
                                                     <div>
                                                         <p className="font-semibold text-navy">{infosCours?.nom || p.symbole}</p>
-                                                        <p className="text-xs text-gray-400">{p.symbole} • {p.quantite} parts • {p.type_compte}</p>
+                                                        <p className="text-xs text-gray-400">{p.symbole} • {p.quantite} parts</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-4">
                                                     <div className="text-right">
-                                                        <p className="text-xs text-gray-400">Cours</p>
-                                                        <p className="font-medium text-navy text-sm">{formatMontant(coursActuel, p.devise)}</p>
+                                                        <p className="text-xs text-gray-400">PRU</p>
+                                                        <p className="font-medium text-navy text-sm"><SecureValue value={p.prix_achat_moyen} formatter={v => formatMontant(v, p.devise)} /></p>
                                                     </div>
                                                     <div className="text-right">
                                                         <p className="text-xs text-gray-400">Valeur</p>
-                                                        <p className="font-semibold text-navy text-sm">{formatMontant(valeurActuelle, p.devise)}</p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <p className="text-xs text-gray-400">TRI (XIRR)</p>
-                                                        <p className="text-xs font-medium text-navy">
-                                                            {xirr !== null ? (xirr * 100).toFixed(1) + '%' : 'N/A'}
-                                                        </p>
+                                                        <p className="font-semibold text-navy text-sm"><SecureValue value={valeurActuelle} formatter={v => formatMontant(v, p.devise)} /></p>
                                                     </div>
                                                     <div className="text-right w-16">
                                                         <p className={`font-semibold text-sm ${plusMoinsValue >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                                                            {plusMoinsValue >= 0 ? '+' : ''}{displayMode === 'euro' ? formatMontant(plusMoinsValue) : pourcentage.toFixed(1) + '%'}
+                                                            {plusMoinsValue >= 0 ? '+' : ''}<SecureValue value={displayMode === 'euro' ? plusMoinsValue : pourcentage} formatter={v => displayMode === 'euro' ? formatMontant(v) : `${v.toFixed(1)}%`} />
                                                         </p>
                                                     </div>
-                                                    <button onClick={() => supprimerPosition(p.id)} className="text-gray-300 hover:text-red-500 transition">
-                                                        <Trash2 size={16} />
-                                                    </button>
                                                 </div>
                                             </div>
                                         )
                                     })}
                                 </div>
+                            )}
+                        </div>
+
+                        {/* Droite 40% : graphique de l'actif sélectionné */}
+                        <div className="col-span-2">
+                            <div className="bg-[#0f172a] rounded-3xl p-6 shadow-sm border border-slate-800 sticky top-6">
+                                {selectedActifId ? (
+                                    <GraphiqueActif actifId={selectedActifId} />
+                                ) : (
+                                    <div className="text-center text-slate-400 py-10">
+                                        Clique sur une position pour voir son graphique
+                                    </div>
+                                )}
                             </div>
                         </div>
+                    </div>
+
+                    {/* Diversification Score & Allocation Donut */}
+                    <div className="grid grid-cols-2 gap-6">
+                        {positions.length > 0 && !loadingPositions ? (
+                            <div className="h-full">
+                                <DiversificationScore positions={dataAllocation} total={valorisationTotale} />
+                            </div>
+                        ) : (
+                            <div />
+                        )}
+                        {positions.length > 0 && !loadingPositions ? (
+                            <div className="bg-white rounded-xl p-5 shadow-sm h-full flex flex-col justify-center">
+                                <h3 className="text-navy font-semibold mb-4 text-center">Allocation</h3>
+                                <DonutChart data={dataAllocation} total={valorisationTotale} libelleCentre="Portefeuille" />
+                                <div className="mt-4">
+                                    <LegendeAllocation data={dataAllocation} total={valorisationTotale} />
+                                </div>
+                            </div>
+                        ) : (
+                            <div />
+                        )}
+                    </div>
+
+                    {/* Dividendes */}
+                    {positions.length > 0 && (
+                        <DividendesCard
+                            dividendes={dividendes}
+                            totalDouzeMois={totalDouzeMois}
+                            valorisationTotale={valorisationTotale}
+                            positions={positions}
+                            onAjouter={ajouterDividende}
+                            onSupprimer={supprimerDividende}
+                        />
                     )}
                 </div>
             )}
@@ -513,16 +447,16 @@ function Investir() {
                     <div className="grid grid-cols-3 gap-4">
                         <div className="bg-white rounded-xl p-4 shadow-sm">
                             <p className="text-gray-400 text-xs mb-1">Valorisation</p>
-                            <p className="text-navy font-bold text-lg">{formatMontant(valorisationCrypto)}</p>
+                            <p className="text-navy font-bold text-lg"><SecureValue value={valorisationCrypto} formatter={formatMontant} /></p>
                         </div>
                         <div className="bg-white rounded-xl p-4 shadow-sm">
                             <p className="text-gray-400 text-xs mb-1">Investi</p>
-                            <p className="text-navy font-bold text-lg">{formatMontant(investiCrypto)}</p>
+                            <p className="text-navy font-bold text-lg"><SecureValue value={investiCrypto} formatter={formatMontant} /></p>
                         </div>
                         <div className="bg-white rounded-xl p-4 shadow-sm">
                             <p className="text-gray-400 text-xs mb-1">Plus/moins-value</p>
                             <p className={`font-bold text-lg ${plusMoinsValueCrypto >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                                {formatMontant(plusMoinsValueCrypto)}
+                                <SecureValue value={plusMoinsValueCrypto} formatter={formatMontant} />
                             </p>
                         </div>
                     </div>
@@ -537,17 +471,17 @@ function Investir() {
                             <div className="grid grid-cols-3 gap-4">
                                 <div>
                                     <p className="text-gray-400 text-sm mb-1">PRU Actuel</p>
-                                    <p className="text-navy text-xl font-bold">{formatMontant(currentPRU)}</p>
+                                    <p className="text-navy text-xl font-bold"><SecureValue value={currentPRU} formatter={formatMontant} /></p>
                                 </div>
                                 <div>
                                     <p className="text-gray-400 text-sm mb-1">Plus-value réalisée</p>
                                     <p className={`text-xl font-bold ${cryptoPnL.realizedPL >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                                        {formatMontant(cryptoPnL.realizedPL)}
+                                        <SecureValue value={cryptoPnL.realizedPL} formatter={formatMontant} />
                                     </p>
                                 </div>
                                 <div>
                                     <p className="text-gray-400 text-sm mb-1">Total investi</p>
-                                    <p className="text-navy text-xl font-bold">{formatMontant(cryptoPnL.totalCost)}</p>
+                                    <p className="text-navy text-xl font-bold"><SecureValue value={cryptoPnL.totalCost} formatter={formatMontant} /></p>
                                 </div>
                             </div>
                             <p className="text-xs text-gray-400 mt-3">
@@ -591,18 +525,18 @@ function Investir() {
                                                 <div className="flex items-center gap-4">
                                                     <div className="text-right">
                                                         <p className="text-xs text-gray-400">Cours</p>
-                                                        <p className="font-medium text-navy text-sm">{formatMontant(prixActuel)}</p>
+                                                        <p className="font-medium text-navy text-sm"><SecureValue value={prixActuel} formatter={formatMontant} /></p>
                                                         <p className={`text-xs ${variation24h >= 0 ? 'text-emerald' : 'text-red-500'}`}>
                                                             {variation24h >= 0 ? '+' : ''}{variation24h.toFixed(1)}% (24h)
                                                         </p>
                                                     </div>
                                                     <div className="text-right">
                                                         <p className="text-xs text-gray-400">Valeur</p>
-                                                        <p className="font-semibold text-navy text-sm">{formatMontant(valeurActuelle)}</p>
+                                                        <p className="font-semibold text-navy text-sm"><SecureValue value={valeurActuelle} formatter={formatMontant} /></p>
                                                     </div>
                                                     <div className="text-right w-16">
                                                         <p className={`font-semibold text-sm ${plusMoinsValue >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                                                            {plusMoinsValue >= 0 ? '+' : ''}{pourcentage.toFixed(1)}%
+                                                            {plusMoinsValue >= 0 ? '+' : ''}<SecureValue value={pourcentage} formatter={v => `${v.toFixed(1)}%`} />
                                                         </p>
                                                     </div>
                                                     <button onClick={() => supprimerCrypto(p.id)} className="text-gray-300 hover:text-red-500 transition">
@@ -633,7 +567,7 @@ function Investir() {
                     <div className="grid grid-cols-3 gap-4">
                         <div className="bg-navy rounded-xl p-5">
                             <p className="text-gray-300 text-sm mb-1">Valeur totale patrimoine immo</p>
-                            <p className="text-white text-2xl font-bold">{formatMontant(valeurTotaleImmo)}</p>
+                            <p className="text-white text-2xl font-bold"><SecureValue value={valeurTotaleImmo} formatter={formatMontant} /></p>
                         </div>
                         <div className="bg-white rounded-xl p-5 shadow-sm">
                             <p className="text-gray-400 text-sm mb-1">Nombre de biens</p>
@@ -642,7 +576,7 @@ function Investir() {
                         <div className="bg-white rounded-xl p-5 shadow-sm">
                             <p className="text-gray-400 text-sm mb-1">Cash-flow total mensuel</p>
                             <p className={`text-2xl font-bold ${cashFlowTotal >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                                {formatMontant(cashFlowTotal)}/mois
+                                <SecureValue value={cashFlowTotal} formatter={formatMontant} />/mois
                             </p>
                         </div>
                     </div>
@@ -669,61 +603,22 @@ function Investir() {
                  MODALS
                  ============================================ */}
 
-            {/* Modal ajout position actions */}
-            <Modal isOpen={modalOuvert} onClose={() => setModalOuvert(false)} title="Nouvelle position">
-                <form onSubmit={handleSubmitPosition} className="space-y-4">
-                    <div>
-                        <label className="text-sm text-gray-600 mb-1 block">Symbole boursier</label>
-                        <input type="text" required value={form.symbole}
-                            onChange={(e) => setForm({ ...form, symbole: e.target.value })}
-                            placeholder="Ex: AAPL, MC.PA, VWCE.DE" className="w-full border rounded-lg px-3 py-2" />
-                        <p className="text-xs text-gray-400 mt-1">Trouve le bon symbole sur Yahoo Finance ou Google Finance</p>
-                    </div>
-                    <div className="flex gap-3">
-                        <div className="flex-1">
-                            <label className="text-sm text-gray-600 mb-1 block">Quantité</label>
-                            <input type="number" step="0.0001" required value={form.quantite}
-                                onChange={(e) => setForm({ ...form, quantite: e.target.value })} className="w-full border rounded-lg px-3 py-2" />
-                        </div>
-                        <div className="flex-1">
-                            <label className="text-sm text-gray-600 mb-1 block">Prix d'achat moyen</label>
-                            <input type="number" step="0.01" required value={form.prix_achat_moyen}
-                                onChange={(e) => setForm({ ...form, prix_achat_moyen: e.target.value })} className="w-full border rounded-lg px-3 py-2" />
-                        </div>
-                    </div>
-                    <div className="flex gap-3">
-                        <div className="flex-1">
-                            <label className="text-sm text-gray-600 mb-1 block">Devise</label>
-                            <select value={form.devise} onChange={(e) => setForm({ ...form, devise: e.target.value })} className="w-full border rounded-lg px-3 py-2">
-                                <option value="EUR">EUR</option>
-                                <option value="USD">USD</option>
-                            </select>
-                        </div>
-                        <div className="flex-1">
-                            <label className="text-sm text-gray-600 mb-1 block">Type de compte</label>
-                            <select value={form.type_compte} onChange={(e) => setForm({ ...form, type_compte: e.target.value })} className="w-full border rounded-lg px-3 py-2">
-                                <option value="PEA">PEA</option>
-                                <option value="CTO">CTO</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button type="submit" className="w-full bg-emerald hover:bg-emerald-light text-white font-semibold py-2 rounded-lg transition">
-                        Ajouter la position
-                    </button>
-                </form>
-            </Modal>
 
-            {/* Modal ajout transaction actions */}
-            <Modal
-                isOpen={modalTransactionOuvert}
-                onClose={() => setModalTransactionOuvert(false)}
-                title={`${transactionType === 'buy' ? 'Achat' : 'Vente'} d'actions/ETF`}
-            >
-                <TransactionForm
-                    type={transactionType}
-                    positions={positions}
-                    onSubmit={handleSubmitTransaction}
-                    onCancel={() => setModalTransactionOuvert(false)}
+
+            {/* Modal FormulaireAchatVente */}
+            <Modal isOpen={modalAchatVenteOuvert} onClose={() => setModalAchatVenteOuvert(false)} title="Passer un ordre">
+                <FormulaireAchatVente
+                    key={modalAchatVenteOuvert ? `open-${typeOrdre}` : 'closed'}
+                    typeInitial={typeOrdre}
+                    positionsExistantes={positions}
+                    comptes={comptes}
+                    compteId={comptes.find(c => c.type === 'PEA' || c.type === 'CTO')?.id}
+                    onSelectActif={setSelectedActifId}
+                    onSubmitTransaction={ajouterTransaction}
+                    onTransactionSuccess={() => {
+                        setModalAchatVenteOuvert(false)
+                        chargerPositions()
+                    }}
                 />
             </Modal>
 
@@ -745,6 +640,98 @@ function Investir() {
             <Modal isOpen={modalImmoOuvert} onClose={() => setModalImmoOuvert(false)} title="Ajouter un bien immobilier">
                 <FormBienImmobilier onSubmit={handleAjouterBien} onAnnuler={() => setModalImmoOuvert(false)} />
             </Modal>
+
+            {/* ============================================ */}
+            {/* ONGLET : ASSURANCE VIE                      */}
+            {/* ============================================ */}
+            {ongletActif === 'assurance-vie' && (
+                <div>
+                    {/* KPI global */}
+                    <div
+                        style={{
+                            background: 'linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(139,92,246,0.08) 100%)',
+                            border: '1px solid rgba(99,102,241,0.2)',
+                            borderRadius: '16px',
+                            padding: '20px 24px',
+                            marginBottom: '24px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '16px',
+                        }}
+                    >
+                        <ShieldCheck size={32} color="#6366f1" />
+                        <div>
+                            <p style={{ color: '#64748b', fontSize: '13px', margin: 0 }}>Patrimoine Assurance Vie</p>
+                            <p style={{ color: '#f1f5f9', fontSize: '28px', fontWeight: 800, margin: '4px 0 0', letterSpacing: '-0.5px' }}>
+                                <SecureValue value={valeurTotaleAV} formatter={v => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(v)} />
+                            </p>
+                            <p style={{ color: '#64748b', fontSize: '12px', margin: '2px 0 0' }}>
+                                {contratsAV.length} contrat{contratsAV.length !== 1 ? 's' : ''}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Liste des contrats */}
+                    {loadingAV ? (
+                        <p style={{ color: '#64748b', textAlign: 'center', padding: '40px' }}>Chargement…</p>
+                    ) : contratsAV.length === 0 ? (
+                        <div
+                            style={{
+                                textAlign: 'center',
+                                padding: '60px 20px',
+                                color: '#475569',
+                                border: '2px dashed rgba(255,255,255,0.08)',
+                                borderRadius: '16px',
+                            }}
+                        >
+                            <ShieldCheck size={48} color="#334155" style={{ marginBottom: '16px' }} />
+                            <p style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>Aucun contrat AV</p>
+                            <p style={{ fontSize: '13px', marginBottom: '20px' }}>
+                                Ajoutez votre premier contrat d'assurance vie pour commencer le suivi.
+                            </p>
+                            <button
+                                onClick={() => ouvrirFormAV(null)}
+                                style={{
+                                    padding: '10px 24px',
+                                    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                                    border: 'none', borderRadius: '10px',
+                                    color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer',
+                                }}
+                            >
+                                + Ajouter un contrat
+                            </button>
+                        </div>
+                    ) : (
+                        contratsAV.map((contrat) => {
+                            const metriques = metriquesContrat(contrat.id)
+                            if (!metriques) return null
+                            return (
+                                <AssuranceVieCard
+                                    key={contrat.id}
+                                    metriques={metriques}
+                                    isIncognito={incognito}
+                                    situationFamiliale={profile?.situation_familiale || 'celibataire'}
+                                    onOuvrirForm={ouvrirFormAV}
+                                    onSupprimer={supprimerContratAV}
+                                />
+                            )
+                        })
+                    )}
+                </div>
+            )}
+
+            {/* Modal Assurance Vie (création + gestion) */}
+            {modalAVOuvert && (
+                <FormAssuranceVie
+                    contrat={contratAVSelectionne}
+                    onAjouterContrat={ajouterContratAV}
+                    onAjouterVersement={ajouterVersementAV}
+                    onUpsertValorisation={upsertValorisationAV}
+                    onUpsertPositionUC={upsertPositionUCAV}
+                    onClose={() => setModalAVOuvert(false)}
+                />
+            )}
+            </div>
         </Layout>
     )
 }

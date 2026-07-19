@@ -1,63 +1,81 @@
-import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
-import { useAuth } from '../context/AuthContext'
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
 
-const PERIODES_JOURS = {
-    '7j': 7,
-    '30j': 30,
-    '1an': 365,
-    'tout': null, // null = pas de limite
-}
+export function useHistoriquePatrimoine() {
+    const [historique, setHistorique] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [periode, setPeriode] = useState('TOUT');
 
-export function useHistoriquePatrimoine(valeurActuelle) {
-    const { user } = useAuth()
-    const [historique, setHistorique] = useState([])
-    const [periode, setPeriode] = useState('30j')
-    const [loading, setLoading] = useState(true)
+    const fetchHistorique = useCallback(async () => {
+        setLoading(true);
 
-    // Enregistre (ou met à jour) l'instantané du jour avec la valeur actuelle
-    const enregistrerInstantane = useCallback(async () => {
-        if (valeurActuelle === undefined || valeurActuelle === null) return
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setLoading(false); return; }
 
-        const aujourdHui = new Date().toISOString().split('T')[0]
+        const maintenant = new Date();
+        let dateDebut = null;
 
-        await supabase
-            .from('historique_patrimoine')
-            .upsert(
-                { user_id: user.id, date: aujourdHui, valeur_positions: valeurActuelle },
-                { onConflict: 'user_id,date' }
-            )
-    }, [valeurActuelle, user])
+        if (periode === '1M') {
+            dateDebut = new Date(maintenant);
+            dateDebut.setMonth(dateDebut.getMonth() - 1);
+        } else if (periode === '3M') {
+            dateDebut = new Date(maintenant);
+            dateDebut.setMonth(dateDebut.getMonth() - 3);
+        } else if (periode === '6M') {
+            dateDebut = new Date(maintenant);
+            dateDebut.setMonth(dateDebut.getMonth() - 6);
+        } else if (periode === '1A') {
+            dateDebut = new Date(maintenant);
+            dateDebut.setFullYear(dateDebut.getFullYear() - 1);
+        }
 
-    const charger = useCallback(async () => {
-        setLoading(true)
+        let query = supabase
+            .from('snapshot_patrimoine')
+            .select('date, total_cash, total_bourse, total_crypto, total_assurance_vie, total_immo_net, total_tangible, total_dettes')
+            .eq('user_id', user.id)
+            .order('date', { ascending: true });
 
-        const { data, error } = await supabase
-            .from('historique_patrimoine')
-            .select('*')
-            .order('date', { ascending: true })
+        if (dateDebut) {
+            query = query.gte('date', dateDebut.toISOString().split('T')[0]);
+        }
 
-        if (!error) setHistorique(data)
-        setLoading(false)
-    }, [])
+        const { data, error } = await query;
+
+        if (error) {
+            console.error('Erreur historique patrimoine:', error);
+            setLoading(false);
+            return;
+        }
+
+        const formatted = (data || []).map(row => {
+            const cash = parseFloat(row.total_cash || 0);
+            const bourse = parseFloat(row.total_bourse || 0);
+            const crypto = parseFloat(row.total_crypto || 0);
+            const av = parseFloat(row.total_assurance_vie || 0);
+            const immo = parseFloat(row.total_immo_net || 0);
+            const tangible = parseFloat(row.total_tangible || 0);
+            const dettes = parseFloat(row.total_dettes || 0);
+
+            return {
+                date: row.date,
+                Cash: cash,
+                Bourse: bourse,
+                Crypto: crypto,
+                'Assurance-vie': av,
+                'Immobilier net': immo,
+                'Actifs tangibles': tangible,
+                _dettes: dettes,
+                _patrimoineNet: cash + bourse + crypto + av + immo + tangible - dettes,
+            };
+        });
+
+        setHistorique(formatted);
+        setLoading(false);
+    }, [periode]);
 
     useEffect(() => {
-        if (user && valeurActuelle !== undefined && valeurActuelle !== null) {
-            enregistrerInstantane().then(() => charger())
-        }
-    }, [user, valeurActuelle, enregistrerInstantane, charger])
+        fetchHistorique();
+    }, [fetchHistorique]);
 
-    // Filtre l'historique selon la période sélectionnée
-    const historiqueFiltre = (() => {
-        const nbJours = PERIODES_JOURS[periode]
-        if (nbJours === null) return historique
-
-        const dateLimit = new Date()
-        dateLimit.setDate(dateLimit.getDate() - nbJours)
-        const dateLimitStr = dateLimit.toISOString().split('T')[0]
-
-        return historique.filter((h) => h.date >= dateLimitStr)
-    })()
-
-    return { historique: historiqueFiltre, periode, setPeriode, loading }
+    return { historique, loading, periode, setPeriode, refetch: fetchHistorique };
 }

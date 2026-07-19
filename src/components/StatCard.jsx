@@ -1,9 +1,9 @@
-function StatCard({ label, valeur, sousTexte, couleur = '#0a1f33' }) {
+function StatCard({ label, valeur, sousTexte, couleur }) {
     return (
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-            <p className="text-gray-400 text-sm mb-1">{label}</p>
-            <p className="font-bold text-xl" style={{ color: couleur }}>{valeur}</p>
-            {sousTexte && <p className="text-xs text-gray-400 mt-1">{sousTexte}</p>}
+        <div className="bg-card rounded-xl p-5 border" style={{ borderColor: 'var(--border)' }}>
+            <p className="kpi-label mb-2">{label}</p>
+            <p className="kpi-value" style={couleur ? { color: couleur } : undefined}>{valeur}</p>
+            {sousTexte && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{sousTexte}</p>}
         </div>
     )
 }

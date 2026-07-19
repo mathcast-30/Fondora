@@ -9,15 +9,33 @@ export function useBudgets(mois, annee) {
 
     const charger = useCallback(async () => {
         setLoading(true)
+        // Un budget est une enveloppe mensuelle persistante : pour le mois affiché,
+        // on prend la dernière valeur définie pour chaque catégorie jusqu'à ce mois.
+        // Une modification crée une exception à partir du mois courant, qui sera
+        // elle-même reprise automatiquement les mois suivants.
         const { data, error } = await supabase
             .from('budgets')
             .select('*, categories(nom, couleur, type)')
-            .eq('mois', mois)
-            .eq('annee', annee)
+            .eq('user_id', user.id)
+            .order('annee', { ascending: false })
+            .order('mois', { ascending: false })
 
-        if (!error) setBudgets(data)
+        if (!error) {
+            const dejaChoisi = new Set()
+            const budgetsApplicables = (data || []).filter(b =>
+                b.annee < annee || (b.annee === annee && b.mois <= mois)
+            ).filter(b => {
+                if (dejaChoisi.has(b.categorie_id)) return false
+                dejaChoisi.add(b.categorie_id)
+                return true
+            }).map(b => ({
+                ...b,
+                herite: b.annee !== annee || b.mois !== mois,
+            }))
+            setBudgets(budgetsApplicables)
+        }
         setLoading(false)
-    }, [mois, annee])
+    }, [mois, annee, user])
 
     useEffect(() => {
         if (user) charger()

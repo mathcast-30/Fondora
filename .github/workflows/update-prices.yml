@@ -1,10 +1,9 @@
-name: Update Prices
+name: Mise à jour des prix
 
 on:
   schedule:
-    # Tous les jours à minuit UTC
-    - cron: '0 0 * * *'
-  workflow_dispatch: # Permet de lancer le script manuellement depuis l'interface GitHub
+    - cron: "0 18 * * 1-5" # 18h UTC = 20h Paris, du lundi au vendredi
+  workflow_dispatch: # Permet de lancer manuellement depuis GitHub
 
 jobs:
   update:

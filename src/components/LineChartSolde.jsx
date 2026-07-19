@@ -1,6 +1,8 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { useIncognito } from '../context/IncognitoContext'
 
 function LineChartSolde({ data }) {
+    const { incognito } = useIncognito()
     const formatMontant = (m) =>
         new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(m)
 
@@ -9,8 +11,8 @@ function LineChartSolde({ data }) {
             <LineChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="label" tick={{ fill: '#64748b', fontSize: 12 }} />
-                <YAxis tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={formatMontant} />
-                <Tooltip formatter={(value) => formatMontant(value)} />
+                <YAxis tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(v) => incognito ? '••••' : formatMontant(v)} />
+                <Tooltip formatter={(value) => incognito ? ['••••'] : [formatMontant(value)]} />
                 <Line
                     type="monotone"
                     dataKey="solde"

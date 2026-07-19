@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { useIncognito } from '../../context/IncognitoContext';
 
 export default function BudgetVsReelChart({ transactions = [], budgets = [], categories = [] }) {
+    const { incognito } = useIncognito();
     const [periode, setPeriode] = useState('actuel'); // 'actuel' ou 'precedent'
 
     const hasData = transactions && transactions.length > 0;
@@ -39,12 +41,12 @@ export default function BudgetVsReelChart({ transactions = [], budgets = [], cat
             const reel = payload.find(p => p.dataKey === 'reel')?.value || 0;
             const ecart = budget - reel;
             return (
-                <div className="bg-white p-3 border border-gray-100 shadow-lg rounded-xl">
-                    <p className="font-semibold text-navy mb-2">{label}</p>
-                    <p className="text-sm text-slate-600">Budget : {formatMontant(budget)}</p>
-                    <p className="text-sm text-slate-600">Réel : {formatMontant(reel)}</p>
-                    <p className={`text-sm font-medium mt-1 ${ecart >= 0 ? 'text-emerald' : 'text-red-500'}`}>
-                        Écart : {ecart >= 0 ? '+' : ''}{formatMontant(ecart)}
+                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', fontSize: 12 }}>
+                    <p className="font-semibold text-[var(--text-h)] mb-2">{label}</p>
+                    <p className="text-sm text-[var(--text)]">Budget : {incognito ? '••••' : formatMontant(budget)}</p>
+                    <p className="text-sm text-[var(--text)]">Réel : {incognito ? '••••' : formatMontant(reel)}</p>
+                    <p className={`text-sm font-medium mt-1 ${ecart >= 0 ? 'text-emerald' : 'text-[var(--negative)]'}`}>
+                        Écart : {ecart >= 0 ? '+' : ''}{incognito ? '••••' : formatMontant(ecart)}
                     </p>
                 </div>
             );
@@ -53,19 +55,19 @@ export default function BudgetVsReelChart({ transactions = [], budgets = [], cat
     };
 
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-card rounded-2xl border border-[var(--border)] p-6">
             <div className="flex justify-between items-center mb-6">
-                <h3 className="text-navy font-semibold">Budget vs Réel</h3>
+                <h3 className="text-[var(--text-h)] font-semibold">Budget vs Réel</h3>
                 <div className="flex gap-2">
                     <button 
                         onClick={() => setPeriode('actuel')}
-                        className={`text-xs px-3 py-1 rounded-full font-medium transition ${periode === 'actuel' ? 'bg-navy text-white' : 'bg-gray-100 text-slate-600 hover:bg-gray-200'}`}
+                        className={`text-xs px-3 py-1 rounded-full font-medium transition ${periode === 'actuel' ? 'bg-surface text-[var(--text-h)] border border-[var(--border-strong)]' : 'bg-surface text-[var(--text)] hover:text-[var(--text-h)]'}`}
                     >
                         Mois actuel
                     </button>
                     <button 
                         onClick={() => setPeriode('precedent')}
-                        className={`text-xs px-3 py-1 rounded-full font-medium transition ${periode === 'precedent' ? 'bg-navy text-white' : 'bg-gray-100 text-slate-600 hover:bg-gray-200'}`}
+                        className={`text-xs px-3 py-1 rounded-full font-medium transition ${periode === 'precedent' ? 'bg-surface text-[var(--text-h)] border border-[var(--border-strong)]' : 'bg-surface text-[var(--text)] hover:text-[var(--text-h)]'}`}
                     >
                         Mois précédent
                     </button>
@@ -75,11 +77,11 @@ export default function BudgetVsReelChart({ transactions = [], budgets = [], cat
             <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(val) => `€${val}`} />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text)' }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text)' }} tickFormatter={(val) => incognito ? '••••' : `€${val}`} />
                         <Tooltip content={<CustomTooltip />} />
-                        <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                        <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', color: 'var(--text)' }} />
                         <Bar dataKey="budget" name="Budget" fill="#1e3a5f" radius={[4, 4, 0, 0]} barSize={20} />
                         <Bar dataKey="reel" name="Réel" radius={[4, 4, 0, 0]} barSize={20}>
                             {data.map((entry, index) => (

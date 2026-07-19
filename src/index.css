@@ -1,9 +1,230 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 @import "tailwindcss";
 
+:root {
+  /* Fonds — 3 niveaux, jamais de blanc pur */
+  --bg-page: #0a0f1d;
+  --bg-surface: #111a2c;
+  --bg-card: #1a2537;
+  --bg-card-hover: #1e2b40;
+  --border: rgba(148, 163, 184, 0.08);
+  --border-strong: #334155;
+
+  /* Texte */
+  --text-h: #f8fafc;
+  --text: #94a3b8;
+  --text-muted: #64748b;
+
+  /* Sémantique */
+  --positive: #34d399;
+  --negative: #f87171;
+  --accent: #10b981;
+  --accent-light: #34d399;
+  --accent-bg: rgba(16, 185, 129, 0.08);
+  --accent-border: rgba(16, 185, 129, 0.3);
+  --accent-2: #6366f1;
+  --accent-3: #f59e0b;
+
+  /* Compat noms déjà utilisés dans les .css existants */
+  --card-bg: var(--bg-card);
+  --code-bg: var(--bg-surface);
+  --social-bg: var(--bg-card);
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --sans: 'Inter', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+  --bg-primary: var(--bg-page);
+  --text-primary: var(--text-h);
+  --bg-secondary: var(--bg-surface);
+  --border-color: var(--border);
+}
+
 @theme {
+    /* Rétrocompatibilité temporaire pour ne pas casser les pages non migrées */
     --color-navy: #0a1f33;
     --color-navy-light: #122a44;
+    --color-graylight: #f1f5f9;
+
+    /* Nouveaux tokens de thème sombre */
+    --color-page: #0a0f1d;
+    --color-surface: #111a2c;
+    --color-card: #1a2537;
+    --color-card-hover: #1e2b40;
     --color-emerald: #10b981;
     --color-emerald-light: #34d399;
-    --color-graylight: #f1f5f9;
+    --color-indigo: #6366f1;
+    --color-amber: #f59e0b;
+}
+
+body {
+  font-family: var(--sans);
+  background: var(--bg-page);
+  color: var(--text-h);
+}
+
+/* Les options natives n'héritent pas fiablement du thème sombre selon le navigateur. */
+select, option {
+  background-color: var(--bg-surface);
+  color: var(--text-h);
+}
+
+/* L'ancien écran Investir utilisait le thème clair en dur. */
+.fondora-investir .bg-white,
+.fondora-investir .bg-graylight {
+  background-color: var(--bg-card) !important;
+  border: 1px solid var(--border);
+  box-shadow: none !important;
+}
+.fondora-investir .text-navy { color: var(--text-h) !important; }
+.fondora-investir .text-gray-300,
+.fondora-investir .text-gray-400,
+.fondora-investir .text-gray-500,
+.fondora-investir .text-gray-600 { color: var(--text) !important; }
+.fondora-investir [class~="hover:bg-gray-50"]:hover,
+.fondora-investir .bg-indigo-50 { background-color: var(--bg-card-hover) !important; }
+
+.kpi-value {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-h);
+    line-height: 1.2;
+}
+
+.kpi-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.analyseur-fiscal {
+  padding: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.bandeau-recap {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kpi {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kpi span {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.kpi strong {
+  font-size: 20px;
+  color: var(--text-h);
+}
+
+.profil-fiscal-note {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--accent-bg);
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 24px;
+  border: 1px solid var(--accent-border);
+  color: var(--text-h);
+}
+
+.grille-deux-colonnes {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.score-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.carte-enveloppe {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.carte-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.carte-lignes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ligne {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.recommandations-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recommandation {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.recommandation.warning {
+  background: rgba(245, 158, 11, 0.1);
+  border-left: 3px solid #f59e0b;
+}
+
+.recommandation.info {
+  background: rgba(99, 102, 241, 0.1);
+  border-left: 3px solid #6366f1;
+}
+
+.recommandation.success {
+  background: rgba(16, 185, 129, 0.1);
+  border-left: 3px solid #10b981;
+}
+
+.recommandation p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+}
+
+@media (max-width: 1024px) {
+  .bandeau-recap {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grille-deux-colonnes {
+    grid-template-columns: 1fr;
+  }
 }

@@ -23,11 +23,13 @@ export function useBiensImmobiliers() {
     }, [user, charger])
 
     const ajouterBien = async (bien) => {
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('biens_immobiliers')
             .insert({ ...bien, user_id: user.id })
+            .select()
+            .single()
         if (!error) await charger()
-        return { error }
+        return { data, error }
     }
 
     const modifierBien = async (id, updates) => {

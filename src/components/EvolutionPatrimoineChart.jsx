@@ -1,4 +1,6 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import SecureValue from './SecureValue'
+import { useIncognito } from '../context/IncognitoContext'
 
 const PERIODES = [
     { label: '7 jours', valeur: '7j' },
@@ -8,6 +10,7 @@ const PERIODES = [
 ]
 
 function EvolutionPatrimoineChart({ historique, periode, setPeriode }) {
+    const { incognito } = useIncognito()
     const formatMontant = (m) =>
         new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(m)
 
@@ -30,10 +33,10 @@ function EvolutionPatrimoineChart({ historique, periode, setPeriode }) {
                 <div>
                     <p className="text-gray-300 text-sm mb-1">Valorisation du portefeuille</p>
                     <div className="flex items-baseline gap-3">
-                        <p className="text-white text-3xl font-bold">{formatMontant(derniereValeur)}</p>
+                        <p className="text-white text-3xl font-bold"><SecureValue value={derniereValeur} formatter={formatMontant} /></p>
                         {data.length > 1 && (
                             <p className={`text-sm font-medium ${variation >= 0 ? 'text-emerald' : 'text-red-400'}`}>
-                                {variation >= 0 ? '+' : ''}{formatMontant(variation)} ({variationPourcent >= 0 ? '+' : ''}{variationPourcent.toFixed(2)}%)
+                                {variation >= 0 ? '+' : ''}<SecureValue value={variation} formatter={formatMontant} /> (<SecureValue value={variationPourcent} formatter={v => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`} />)
                             </p>
                         )}
                     </div>
@@ -72,9 +75,9 @@ function EvolutionPatrimoineChart({ historique, periode, setPeriode }) {
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#1e3a5f" vertical={false} />
                         <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={formatMontant} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={(val) => incognito ? '••••' : formatMontant(val)} axisLine={false} tickLine={false} />
                         <Tooltip
-                            formatter={(value) => formatMontant(value)}
+                            formatter={(value) => incognito ? '••••' : formatMontant(value)}
                             contentStyle={{ backgroundColor: '#122a44', border: 'none', borderRadius: '8px', color: '#fff' }}
                         />
                         <Area type="monotone" dataKey="valeur" stroke="#10b981" strokeWidth={2} fill="url(#couleurValeur)" />

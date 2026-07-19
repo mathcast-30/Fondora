@@ -1,0 +1,98 @@
+.affichage-taux-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.affichage-taux-titre {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-h);
+    margin: 0;
+    font-family: var(--sans);
+}
+
+.taux-grille {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.taux-carte {
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--code-bg);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.taux-paire {
+    font-size: 13px;
+    color: var(--text);
+    font-family: var(--mono);
+    letter-spacing: 0.02em;
+}
+
+.taux-valeur {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-h);
+    font-family: var(--mono);
+}
+
+.taux-sous-titre {
+    font-size: 12px;
+    color: var(--text);
+    font-family: var(--sans);
+}
+
+.taux-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--text);
+    font-family: var(--sans);
+}
+
+.taux-btn-actualiser {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--accent-border);
+    color: var(--accent);
+    background: var(--accent-bg);
+    cursor: pointer;
+    font-size: 13px;
+    font-family: var(--sans);
+    transition: opacity 0.15s;
+}
+
+.taux-btn-actualiser:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.taux-error {
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: rgba(251, 146, 60, 0.1);
+    border: 1px solid rgba(251, 146, 60, 0.3);
+    color: #f97316;
+    font-size: 13px;
+    font-family: var(--sans);
+}
+
+.taux-skeleton {
+    animation: pulse 1.5s ease-in-out infinite;
+    background: var(--border);
+    border-radius: 4px;
+    height: 20px;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.4; }
+    50% { opacity: 1; }
+    100% { opacity: 0.4; }
+}

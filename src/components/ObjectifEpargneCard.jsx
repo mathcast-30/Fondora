@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Target, Pencil } from 'lucide-react'
+import SecureValue from './SecureValue'
 
 function ObjectifEpargneCard({ objectif, soldeActuel, onDefinirObjectif }) {
     const [editionOuverte, setEditionOuverte] = useState(false)
@@ -20,8 +21,8 @@ function ObjectifEpargneCard({ objectif, soldeActuel, onDefinirObjectif }) {
 
     if (editionOuverte || !objectif) {
         return (
-            <div className="bg-white rounded-xl p-5 shadow-sm">
-                <h3 className="text-navy font-semibold mb-3 flex items-center gap-2">
+            <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
+                <h3 className="text-[var(--text-h)] font-semibold mb-3 flex items-center gap-2">
                     <Target size={18} className="text-emerald" />
                     Objectif d'épargne du mois
                 </h3>
@@ -32,7 +33,7 @@ function ObjectifEpargneCard({ objectif, soldeActuel, onDefinirObjectif }) {
                         placeholder="Montant à épargner (€)"
                         value={montant}
                         onChange={(e) => setMontant(e.target.value)}
-                        className="flex-1 border rounded-lg px-3 py-2 text-sm"
+                        className="flex-1 border border-[var(--border)] bg-surface rounded-lg px-3 py-2 text-sm text-[var(--text-h)] placeholder-[var(--text-muted)]"
                         required
                     />
                     <button type="submit" className="bg-emerald text-white px-4 rounded-lg text-sm font-medium">
@@ -44,30 +45,30 @@ function ObjectifEpargneCard({ objectif, soldeActuel, onDefinirObjectif }) {
     }
 
     return (
-        <div className="bg-white rounded-xl p-5 shadow-sm">
+        <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
             <div className="flex items-center justify-between mb-3">
-                <h3 className="text-navy font-semibold flex items-center gap-2">
+                <h3 className="text-[var(--text-h)] font-semibold flex items-center gap-2">
                     <Target size={18} className="text-emerald" />
                     Objectif d'épargne du mois
                 </h3>
-                <button onClick={() => setEditionOuverte(true)} className="text-gray-300 hover:text-navy">
+                <button onClick={() => setEditionOuverte(true)} className="text-[var(--text-muted)] hover:text-[var(--text-h)]">
                     <Pencil size={16} />
                 </button>
             </div>
 
             <div className="flex items-end justify-between mb-2">
-                <p className="text-navy font-bold text-2xl">{formatMontant(soldeActuel)}</p>
-                <p className="text-gray-400 text-sm">objectif : {formatMontant(montantCible)}</p>
+                <p className="text-[var(--text-h)] font-bold text-2xl"><SecureValue value={soldeActuel} formatter={formatMontant} /></p>
+                <p className="text-[var(--text)] text-sm">objectif : <SecureValue value={montantCible} formatter={formatMontant} /></p>
             </div>
 
-            <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden mb-2">
+            <div className="w-full bg-surface rounded-full h-3 overflow-hidden mb-2 border border-[var(--border)]">
                 <div
                     className="h-full rounded-full transition-all"
                     style={{ width: `${pourcentage}%`, backgroundColor: atteint ? '#10b981' : '#3b82f6' }}
                 />
             </div>
 
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-[var(--text)]">
                 {atteint
                     ? '🎉 Objectif atteint ! Continue comme ça.'
                     : `${pourcentage.toFixed(0)}% de l'objectif atteint`}

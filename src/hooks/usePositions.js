@@ -53,6 +53,18 @@ export function usePositions() {
         return { error }
     }
 
+    const modifierPosition = async (id, updates) => {
+        if (!user) return { error: new Error('User not authenticated') }
+        
+        const { error } = await supabase
+            .from('positions_financieres')
+            .update(updates)
+            .eq('id', id)
+            .eq('user_id', user.id)
+        if (!error) await charger()
+        return { error }
+    }
+
     const supprimerPosition = async (id) => {
         if (!user) return { error: new Error('User not authenticated') }
         
@@ -73,15 +85,102 @@ export function usePositions() {
     const ajouterTransaction = async (transaction) => {
         if (!user) return { error: new Error('User not authenticated') }
         
-        const { error } = await supabase
-            .from('transactions_investissement')
-            .insert({ 
-                ...transaction, 
-                user_id: user.id,
-                symbole: transaction.symbole?.toUpperCase()
-            })
-        if (!error) await charger()
-        return { error }
+        try {
+            const symbolUpper = transaction.symbole?.toUpperCase()
+            const typeCompte = transaction.type_compte || 'PEA'
+            const isBuy = transaction.type === 'buy'
+            const quantiteTx = parseFloat(transaction.quantite)
+            const prixTx = parseFloat(transaction.prix_unitaire)
+
+            // 1. Find existing position
+            const { data: existingPositions, error: findError } = await supabase
+                .from('positions_financieres')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('symbole', symbolUpper)
+                .eq('type_compte', typeCompte)
+                .eq('compte_id', transaction.compte_id)
+
+            if (findError) throw findError
+
+            let positionId = null
+            const pos = existingPositions && existingPositions[0]
+
+            if (pos) {
+                positionId = pos.id
+                const quantiteExistante = parseFloat(pos.quantite)
+                const pruExistant = parseFloat(pos.prix_achat_moyen)
+                let nouvelleQuantite = quantiteExistante
+                let nouveauPru = pruExistant
+
+                if (isBuy) {
+                    nouvelleQuantite = quantiteExistante + quantiteTx
+                    nouveauPru = ((quantiteExistante * pruExistant) + (quantiteTx * prixTx)) / nouvelleQuantite
+                } else {
+                    nouvelleQuantite = Math.max(0, quantiteExistante - quantiteTx)
+                }
+
+                if (nouvelleQuantite <= 0) {
+                    const { error: deleteError } = await supabase
+                        .from('positions_financieres')
+                        .delete()
+                        .eq('id', pos.id)
+                    if (deleteError) throw deleteError
+                } else {
+                    const { error: updateError } = await supabase
+                        .from('positions_financieres')
+                        .update({
+                            quantite: nouvelleQuantite,
+                            prix_achat_moyen: nouveauPru
+                        })
+                        .eq('id', pos.id)
+                    if (updateError) throw updateError
+                }
+            } else if (isBuy) {
+                const { data: newPos, error: insertPosError } = await supabase
+                    .from('positions_financieres')
+                    .insert({
+                        user_id: user.id,
+                        symbole: symbolUpper,
+                        nom: transaction.nom || symbolUpper,
+                        quantite: quantiteTx,
+                        prix_achat_moyen: prixTx,
+                        devise: transaction.devise || 'EUR',
+                        type_compte: typeCompte,
+                        compte_id: transaction.compte_id,
+                        secteur: transaction.secteur || null,
+                        date_achat: transaction.date
+                    })
+                    .select()
+                    .single()
+
+                if (insertPosError) throw insertPosError
+                positionId = newPos.id
+            }
+
+            // 2. Insert transaction
+            const { error: txError } = await supabase
+                .from('transactions_investissement')
+                .insert({ 
+                    user_id: user.id,
+                    position_id: positionId,
+                    type: transaction.type,
+                    symbole: symbolUpper,
+                    quantite: quantiteTx,
+                    prix_unitaire: prixTx,
+                    date: transaction.date
+                    ,compte_id: transaction.compte_id,
+                    actif_id: transaction.actif_id || null,
+                })
+
+            if (txError) throw txError
+
+            await charger()
+            return { error: null }
+        } catch (err) {
+            console.error('Error in ajouterTransaction:', err)
+            return { error: err }
+        }
     }
 
     /**
@@ -150,6 +249,7 @@ export function usePositions() {
         transactions,
         loading,
         ajouterPosition,
+        modifierPosition,
         supprimerPosition,
         ajouterTransaction,
         supprimerTransaction,
