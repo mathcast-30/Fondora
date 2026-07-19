@@ -153,7 +153,6 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
       price: parseFloat(prix),
       // Champs supplémentaires pour enrichissement
       actif_id: actifSelectionne.id,
-      compte_id: compteIdSelectionne,
     };
 
     // Validation vente : quantité ne peut pas dépasser ce qu'on possède
