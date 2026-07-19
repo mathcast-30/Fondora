@@ -140,6 +140,10 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
       alert("Veuillez renseigner la quantité et le prix.");
       return;
     }
+    if (!dateTransaction) {
+      alert("Veuillez renseigner une date de transaction.");
+      return;
+    }
 
     setLoadingSubmit(true);
 
@@ -151,7 +155,7 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
       prix_unitaire: parseFloat(prix),
       quantity: parseFloat(quantite),
       price: parseFloat(prix),
-      // Champs supplémentaires pour enrichissement
+      date: dateTransaction,
       actif_id: actifSelectionne.id,
     };
 
@@ -166,11 +170,9 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
 
     let error = null;
     if (onSubmitTransaction) {
-      // Délègue l'insertion au parent (usePositions.ajouterTransaction)
       const result = await onSubmitTransaction(transactionPayload);
       error = result?.error;
     } else {
-      // Fallback : insert direct dans transactions_bourse (legacy)
       const { data: userData } = await supabase.auth.getUser();
       const result = await supabase.from('transactions_bourse').insert({
         compte_id: compteIdSelectionne,
