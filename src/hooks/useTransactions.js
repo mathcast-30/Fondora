@@ -11,7 +11,6 @@ export function useTransactions(mois, annee) {
     const finMois = new Date(annee, mois, 0).toISOString().split('T')[0] // dernier jour du mois
 
     const genererRecurrentes = useCallback(async () => {
-        // Récupère tous les "modèles" de transactions récurrentes de l'utilisateur
         const { data: recurrentes } = await supabase
             .from('transactions')
             .select('*')
@@ -19,7 +18,6 @@ export function useTransactions(mois, annee) {
 
         if (!recurrentes) return
 
-        // Pour chaque groupe de récurrence, on vérifie si une occurrence existe déjà ce mois-ci
         const groupesTraites = new Set()
 
         for (const modele of recurrentes) {
@@ -91,5 +89,19 @@ export function useTransactions(mois, annee) {
         return { error }
     }
 
-    return { transactions, loading, ajouterTransaction, supprimerTransaction, charger }
+    /**
+     * Recatégorise en masse une liste de transactions vers une nouvelle catégorie.
+     * Utilisé par le Sankey interactif (mode réaffectation).
+     */
+    const recategoriserTransactions = async (transactionIds, nouvelleCategorieId) => {
+        if (!transactionIds || transactionIds.length === 0) return { error: null }
+        const { error } = await supabase
+            .from('transactions')
+            .update({ categorie_id: nouvelleCategorieId })
+            .in('id', transactionIds)
+        if (!error) await charger()
+        return { error }
+    }
+
+    return { transactions, loading, ajouterTransaction, supprimerTransaction, recategoriserTransactions, charger }
 }

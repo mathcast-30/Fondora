@@ -11,7 +11,7 @@ import { useCategories } from '../hooks/useCategories'
 import { useComptes } from '../hooks/useComptes'
 import { useBudgets } from '../hooks/useBudgets'
 import { useAbonnements } from '../hooks/useAbonnements'
-import { Plus, Trash2, ChevronLeft, ChevronRight, Settings2, Upload } from 'lucide-react'
+import { Plus, Trash2, ChevronLeft, ChevronRight, Settings2, Upload, Download } from 'lucide-react'
 import BudgetGraphiqueSelector from '../components/budget/BudgetGraphiqueSelector'
 import BudgetVsReelChart from '../components/budget/BudgetVsReelChart'
 import EvolutionTempsChart from '../components/budget/EvolutionTempsChart'
@@ -22,6 +22,7 @@ import WidgetWhatIf from '../components/budget/WidgetWhatIf'
 import CalendrierEcheances from '../components/budget/CalendrierEcheances'
 import SubscriptionCleaner from '../components/budget/SubscriptionCleaner'
 import { calculerRestantAVivre } from '../utils/budgetCalculator'
+import { genererBilanBudget } from '../utils/exportBilanBudget'
 
 const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
@@ -30,7 +31,7 @@ function Budget() {
     const [mois, setMois] = useState(aujourdHui.getMonth() + 1)
     const [annee, setAnnee] = useState(aujourdHui.getFullYear())
 
-    const { transactions, loading, ajouterTransaction, supprimerTransaction, charger } = useTransactions(mois, annee)
+    const { transactions, loading, ajouterTransaction, supprimerTransaction, recategoriserTransactions, charger } = useTransactions(mois, annee)
     const { categories } = useCategories()
     const { comptes } = useComptes()
     const { budgets, definirBudget } = useBudgets(mois, annee)
@@ -43,6 +44,9 @@ function Budget() {
     const [modalBudgetOuvert, setModalBudgetOuvert] = useState(false)
     const [modalImportOuvert, setModalImportOuvert] = useState(false)
     const [compteSelectionne, setCompteSelectionne] = useState('')
+    const [categorieFiltree, setCategorieFiltree] = useState(null)
+    const [demandeRecategorisation, setDemandeRecategorisation] = useState(null) // { source, cible }
+    const [recategorisationEnCours, setRecategorisationEnCours] = useState(false)
 
     useEffect(() => {
         if (comptes && comptes.length > 0 && !compteSelectionne) {
@@ -135,6 +139,27 @@ function Budget() {
         setModalBudgetOuvert(false)
     }
 
+    const confirmerRecategorisation = async () => {
+        if (!demandeRecategorisation) return
+        const { source, cible } = demandeRecategorisation
+        const categorieCible = categories.find(c => c.nom === cible)
+        if (!categorieCible) { setDemandeRecategorisation(null); return }
+
+        const idsAModifier = transactions.filter(t => t.categories?.nom === source).map(t => t.id)
+        setRecategorisationEnCours(true)
+        await recategoriserTransactions(idsAModifier, categorieCible.id)
+        setRecategorisationEnCours(false)
+        setDemandeRecategorisation(null)
+        if (categorieFiltree === source) setCategorieFiltree(cible)
+    }
+
+    const handleExportBilan = () => {
+        genererBilanBudget({
+            transactions, budgets, categories, mois, annee,
+            totalRevenus, totalDepenses, solde,
+        })
+    }
+
     const formatMontant = (m) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(m)
 
     const variationsComptes = comptes.map(c => {
@@ -142,6 +167,10 @@ function Budget() {
         const diff = txCompte.reduce((s, t) => s + (t.type === 'revenu' ? Number(t.montant) : -Number(t.montant)), 0)
         return { nom: c.nom, diff }
     }).filter(c => c.diff !== 0)
+
+    const transactionsAffichees = categorieFiltree
+        ? transactions.filter(t => t.categories?.nom === categorieFiltree)
+        : transactions
 
     return (
         <Layout>
@@ -154,6 +183,9 @@ function Budget() {
                 <div className="flex gap-2">
                     <button onClick={() => setModalBudgetOuvert(true)} className="bg-card border border-[var(--border)] text-[var(--text-h)] font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition hover:bg-[var(--bg-card-hover)]">
                         <Settings2 size={18} /> Définir budgets
+                    </button>
+                    <button onClick={handleExportBilan} className="bg-card border border-[var(--border)] text-[var(--text-h)] font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition hover:bg-[var(--bg-card-hover)]">
+                        <Download size={18} /> Générer mon bilan
                     </button>
                     <button onClick={() => setModalImportOuvert(true)} className="bg-card border border-[var(--border)] text-[var(--text-h)] font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition hover:bg-[var(--bg-card-hover)]">
                         <Upload size={18} /> Importer un CSV
@@ -254,7 +286,13 @@ function Budget() {
             <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
                     <h3 className="text-[var(--text-h)] font-semibold mb-2">Flux financier</h3>
-                    <SankeyChart totalRevenus={totalRevenus} depensesParCategorie={depensesParCategorie} />
+                    <SankeyChart
+                        totalRevenus={totalRevenus}
+                        depensesParCategorie={depensesParCategorie}
+                        categorieFiltree={categorieFiltree}
+                        onFiltrerCategorie={setCategorieFiltree}
+                        onDemandeRecategorisation={(source, cible) => setDemandeRecategorisation({ source, cible })}
+                    />
                 </div>
                 <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
                     <h3 className="text-[var(--text-h)] font-semibold mb-2">Répartition des dépenses</h3>
@@ -284,13 +322,21 @@ function Budget() {
             )}
 
             {/* ─── Liste des transactions ─── */}
+            {categorieFiltree && (
+                <div className="flex items-center justify-between bg-blue-500/10 border border-blue-500/20 text-blue-300 text-sm px-4 py-2.5 rounded-xl mb-3">
+                    <span>Filtré sur la catégorie <strong>{categorieFiltree}</strong> ({transactionsAffichees.length} transaction{transactionsAffichees.length > 1 ? 's' : ''})</span>
+                    <button onClick={() => setCategorieFiltree(null)} className="text-blue-300 hover:text-white text-xs underline">
+                        Réinitialiser
+                    </button>
+                </div>
+            )}
             {loading ? (
                 <p className="text-[var(--text)]">Chargement...</p>
-            ) : transactions.length === 0 ? (
+            ) : transactionsAffichees.length === 0 ? (
                 <div className="bg-card rounded-xl p-8 text-center text-[var(--text)] border border-[var(--border)]">Aucune transaction ce mois-ci.</div>
             ) : (
                 <div className="bg-card rounded-xl border border-[var(--border)] divide-y divide-[var(--border)]">
-                    {transactions.map((t) => (
+                    {transactionsAffichees.map((t) => (
                         <div key={t.id} className="flex items-center justify-between px-5 py-3">
                             <div className="flex items-center gap-3">
                                 <div className="w-2.5 h-10 rounded-full" style={{ backgroundColor: t.categories?.couleur || '#ccc' }} />
@@ -404,6 +450,37 @@ function Budget() {
                         Enregistrer les budgets
                     </button>
                 </form>
+            </Modal>
+
+            {/* ─── Modal confirmation recatégorisation (Sankey) ─── */}
+            <Modal isOpen={!!demandeRecategorisation} onClose={() => setDemandeRecategorisation(null)} title="Recatégoriser des transactions">
+                {demandeRecategorisation && (
+                    <div className="space-y-4">
+                        <p className="text-[var(--text)] text-sm">
+                            Voulez-vous recatégoriser les transactions de{' '}
+                            <strong className="text-[var(--text-h)]">{demandeRecategorisation.source}</strong> vers{' '}
+                            <strong className="text-emerald-400">{demandeRecategorisation.cible}</strong> ?
+                        </p>
+                        <p className="text-xs text-[var(--text)]">
+                            {transactions.filter(t => t.categories?.nom === demandeRecategorisation.source).length} transaction(s) concernée(s) ce mois-ci.
+                        </p>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setDemandeRecategorisation(null)}
+                                className="flex-1 bg-surface border border-[var(--border)] text-[var(--text-h)] font-semibold py-2 rounded-lg transition"
+                            >
+                                Annuler
+                            </button>
+                            <button
+                                onClick={confirmerRecategorisation}
+                                disabled={recategorisationEnCours}
+                                className="flex-1 bg-emerald hover:bg-emerald-light disabled:opacity-50 text-white font-semibold py-2 rounded-lg transition"
+                            >
+                                {recategorisationEnCours ? 'Application…' : 'Confirmer'}
+                            </button>
+                        </div>
+                    </div>
+                )}
             </Modal>
 
             {/* ─── Modal import CSV ─── */}
