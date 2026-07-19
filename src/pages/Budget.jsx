@@ -174,8 +174,8 @@ function Budget() {
 
     const handleExportBilan = () => {
         genererBilanBudget({
-            transactions, budgets, categories, mois, annee,
-            totalRevenus, totalDepenses, solde,
+            transactions, budgets, categories, comptes,
+            mois, annee, totalRevenus, totalDepenses, solde,
         })
     }
 
