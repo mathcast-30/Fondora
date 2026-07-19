@@ -82,18 +82,23 @@ export function useBulkImportTransactions() {
       }
 
       // Préparation des objets prêts pour Supabase
-      const payload = txToInsert.map(tx => ({
-        user_id: user.id,
-        compte_id: compteId,
-        categorie_id: tx.categorie_id || null,
-        dette_id: tx.dette_id || null,
-        description: tx.description,
-        montant: Math.abs(tx.montant),
-        type: tx.type,
-        date: tx.date,
-        source: 'import',
-        import_hash: tx.import_hash || null
-      }));
+      const payload = txToInsert.map(tx => {
+        const estRecurrente = !!tx.recurrente;
+        return {
+          user_id: user.id,
+          compte_id: compteId,
+          categorie_id: tx.categorie_id || null,
+          description: tx.description,
+          montant: tx.montant,
+          type: tx.type,
+          date: tx.date,
+          source: 'import',
+          import_hash: tx.import_hash || null,
+          recurrente: estRecurrente,
+          jour_recurrence: estRecurrente ? new Date(tx.date).getDate() : null,
+          recurrence_groupe_id: estRecurrente ? crypto.randomUUID() : null,
+        };
+      });
 
       // Découpage en lots de 500
       const TAILLE_LOT = 500;

@@ -2,17 +2,18 @@ import { useState, useEffect, useRef } from 'react';
 import { Settings } from 'lucide-react';
 
 const GRAPHIQUES_DISPONIBLES = [
-  { id: 'restant_a_vivre', label: 'Restant à vivre' },
-  { id: 'what_if', label: 'Simulateur « Et si j’épargnais… »' },
-  { id: 'echeances', label: 'Échéances à venir' },
-  { id: 'abonnements', label: 'Nettoyeur d’abonnements' },
-  { id: 'budget_vs_reel', label: 'Budget vs Réel (barres empilées)' },
-  { id: 'evolution_temps', label: 'Évolution dépenses/revenus (courbe)' },
-  { id: 'objectif_epargne', label: 'Jauge objectif d\'épargne' },
-  { id: 'top5_depenses', label: 'Top 5 des plus grosses dépenses' },
-  { id: 'flux_financier', label: 'Flux financier' },
-  { id: 'repartition_depenses', label: 'Répartition des dépenses' },
-  { id: 'budgets', label: 'Suivi des budgets par catégorie' },
+    { id: 'restant_a_vivre', label: 'Restant à vivre' },
+    { id: 'what_if', label: 'Simulateur « Et si j’épargnais… »' },
+    { id: 'echeances', label: 'Échéances à venir' },
+    { id: 'abonnements', label: 'Nettoyeur d’abonnements' },
+    { id: 'budget_vs_reel', label: 'Budget vs Réel (barres empilées)' },
+    { id: 'evolution_temps', label: 'Évolution dépenses/revenus (courbe)' },
+    { id: 'objectif_epargne', label: 'Jauge objectif d\'épargne' },
+    { id: 'top5_depenses', label: 'Top 5 des plus grosses dépenses' },
+    { id: 'flux_financier', label: 'Flux financier' },
+    { id: 'repartition_depenses', label: 'Répartition des dépenses' },
+    { id: 'budgets', label: 'Suivi des budgets par catégorie' },
+    { id: 'calendrier_echeances', label: 'Calendrier des échéances récurrentes' },
 ];
 
 export default function BudgetGraphiqueSelector({ graphiquesVisibles, setGraphiquesVisibles }) {
@@ -44,7 +45,7 @@ export default function BudgetGraphiqueSelector({ graphiquesVisibles, setGraphiq
 
     return (
         <div className="relative" ref={dropdownRef}>
-            <button 
+            <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="flex items-center gap-2 text-sm font-medium text-[var(--text)] bg-card border border-[var(--border)] px-3 py-2 rounded-lg hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-h)] transition"
             >
@@ -58,7 +59,7 @@ export default function BudgetGraphiqueSelector({ graphiquesVisibles, setGraphiq
                     <div className="space-y-3">
                         {GRAPHIQUES_DISPONIBLES.map(graph => (
                             <label key={graph.id} className="flex items-center gap-3 cursor-pointer">
-                                <input 
+                                <input
                                     type="checkbox"
                                     className="w-4 h-4 text-emerald rounded border-[var(--border)] focus:ring-emerald accent-emerald"
                                     checked={graphiquesVisibles.includes(graph.id)}

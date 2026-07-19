@@ -74,12 +74,16 @@ function Budget() {
     const [budgetForm, setBudgetForm] = useState({})
 
     const [graphiquesVisibles, setGraphiquesVisibles] = useState(() => {
-        const saved = localStorage.getItem('fondora_budget_graphiques')
+        const saved = localStorage.getItem('fondora_budget_graphiques');
         if (saved) {
-            try { return JSON.parse(saved) } catch { /* noop */ }
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                return ['budget_vs_reel', 'evolution_temps', 'objectif_epargne', 'top5_depenses', 'calendrier_echeances'];
+            }
         }
-        return ['restant_a_vivre', 'what_if', 'echeances', 'abonnements', 'budget_vs_reel', 'evolution_temps', 'objectif_epargne', 'top5_depenses', 'flux_financier', 'repartition_depenses', 'budgets']
-    })
+        return ['budget_vs_reel', 'evolution_temps', 'objectif_epargne', 'top5_depenses', 'calendrier_echeances'];
+    });
 
     useEffect(() => {
         if (Array.isArray(profile?.budget_widgets)) setGraphiquesVisibles(profile.budget_widgets)
@@ -301,6 +305,7 @@ function Budget() {
                     {graphiquesVisibles.includes('evolution_temps') && <EvolutionTempsChart />}
                     {graphiquesVisibles.includes('objectif_epargne') && <JaugeEpargneChart epargneRealisee={Math.max(0, solde)} objectifMensuel={objectifEpargneMois} />}
                     {graphiquesVisibles.includes('top5_depenses') && <Top5DepensesChart transactions={transactions} categories={categories} />}
+                    {graphiquesVisibles.includes('calendrier_echeances') && <CalendrierEcheances mois={mois} annee={annee} transactions={transactions} />}
                 </div>
 
                 {graphiquesVisibles.length === 0 && (
@@ -330,9 +335,9 @@ function Budget() {
 
             {/* Budgets par catégorie */}
             {graphiquesVisibles.includes('budgets') && budgets.length > 0 && (
-                        <div className="bg-card rounded-xl p-5 border border-[var(--border)] mb-6">
-                            <h3 className="text-[var(--text-h)] font-semibold mb-4">Suivi des budgets</h3>
-                            <p className="text-xs text-[var(--text-muted)] -mt-2 mb-4">Les enveloppes sont reprises automatiquement chaque mois. Une modification s’applique à partir de ce mois.</p>
+                <div className="bg-card rounded-xl p-5 border border-[var(--border)] mb-6">
+                    <h3 className="text-[var(--text-h)] font-semibold mb-4">Suivi des budgets</h3>
+                    <p className="text-xs text-[var(--text-muted)] -mt-2 mb-4">Les enveloppes sont reprises automatiquement chaque mois. Une modification s’applique à partir de ce mois.</p>
                     {budgets.map((b) => {
                         const depense = transactions
                             .filter(t => t.categorie_id === b.categorie_id && t.type === 'depense')

@@ -76,6 +76,7 @@ export default function EcranRevueImport({
             doublon: false,
             selectionne: sourceType === 'pdf' && tx.confiance === 'moyenne' ? false : true,
             modificationManuelle: false,
+            recurrente: false,
             dette_suggeree: null,
             dette_id: null,
             doublon_flou: false,
@@ -197,6 +198,20 @@ export default function EcranRevueImport({
         }
         return tx;
       })
+    );
+  };
+
+  const toggleRecurrente = (id) => {
+    setModificationManuelleFaite(true);
+    setTransactionsLocal(prev =>
+      prev.map(tx => tx.id === id ? { ...tx, recurrente: !tx.recurrente } : tx)
+    );
+  };
+
+  const marquerRecurrentLot = (val) => {
+    setModificationManuelleFaite(true);
+    setTransactionsLocal(prev =>
+      prev.map(tx => tx.selectionne ? { ...tx, recurrente: val } : tx)
     );
   };
 
@@ -390,6 +405,7 @@ export default function EcranRevueImport({
               <th className="p-3 text-xs text-slate-400 uppercase font-medium">Description</th>
               <th className="p-3 text-xs text-slate-400 uppercase font-medium">Montant</th>
               <th className="p-3 text-xs text-slate-400 uppercase font-medium">Catégorie</th>
+              <th className="p-3 text-xs text-slate-400 uppercase font-medium text-center">🔁</th>
               <th className="p-3 text-xs text-slate-400 uppercase font-medium w-12"></th>
             </tr>
           </thead>
@@ -530,6 +546,15 @@ export default function EcranRevueImport({
                     </div>
                   </td>
                   <td className="p-3 text-center">
+                    <input
+                      type="checkbox"
+                      checked={tx.recurrente || false}
+                      onChange={() => toggleRecurrente(tx.id)}
+                      title="Cette dépense revient chaque mois au même jour"
+                      className="w-4 h-4 rounded text-indigo-500 border-slate-700 bg-[#161b2c] accent-indigo-500 cursor-pointer"
+                    />
+                  </td>
+                  <td className="p-3 text-center">
                     <button
                       type="button"
                       onClick={() => supprimerDeLImport([tx.id])}
@@ -574,6 +599,14 @@ export default function EcranRevueImport({
                 ))}
               </select>
             </div>
+
+            <button
+              type="button"
+              onClick={() => marquerRecurrentLot(true)}
+              className="flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+            >
+              <span>🔁 Marquer récurrent</span>
+            </button>
 
             <button
               type="button"

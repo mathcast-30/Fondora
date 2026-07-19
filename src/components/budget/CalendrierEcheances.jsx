@@ -1,109 +1,132 @@
-import { CalendarDays } from 'lucide-react'
+import { useMemo, useState } from 'react';
+import { useIncognito } from '../../context/IncognitoContext';
 
-const JOURS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+const JOURS_SEMAINE = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
-/**
- * Mini-calendrier mensuel affichant les jours de prélèvement des abonnements.
- * @param {Array} abonnements - [{nom_abonnement, montant, jour_prelevement, resiliation_planifiee}]
- * @param {number} mois       - 1..12
- * @param {number} annee
- */
-export default function CalendrierEcheances({ abonnements = [], mois, annee }) {
-    const today = new Date()
-    const isCurrentMonth = today.getMonth() + 1 === mois && today.getFullYear() === annee
-    const jourAujourdhui = isCurrentMonth ? today.getDate() : null
+export default function CalendrierEcheances({ mois, annee, transactions = [] }) {
+    const { incognito } = useIncognito();
+    const [jourSurvole, setJourSurvole] = useState(null);
 
-    const premierJour = new Date(annee, mois - 1, 1).getDay()
-    const offsetLundi = (premierJour + 6) % 7
+    const formatMontant = (m) =>
+        new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(m);
 
-    const nbJours = new Date(annee, mois, 0).getDate()
+    // Regroupe les transactions récurrentes par jour du mois
+    const echeancesParJour = useMemo(() => {
+        const map = {};
+        transactions
+            .filter((t) => t.recurrente)
+            .forEach((t) => {
+                const jour = new Date(t.date).getDate();
+                if (!map[jour]) map[jour] = [];
+                map[jour].push(t);
+            });
+        return map;
+    }, [transactions]);
 
-    const echeancesParJour = {}
-    abonnements.forEach(ab => {
-        const j = Number(ab.jour_prelevement)
-        if (j >= 1 && j <= nbJours) {
-            if (!echeancesParJour[j]) echeancesParJour[j] = []
-            echeancesParJour[j].push(ab)
-        }
-    })
+    // Grille du mois alignée sur Lundi
+    const grille = useMemo(() => {
+        const premierJour = new Date(annee, mois - 1, 1);
+        const joursDansMois = new Date(annee, mois, 0).getDate();
+        let decalage = premierJour.getDay() - 1; // getDay(): 0 = dimanche
+        if (decalage < 0) decalage = 6;
 
-    const cases = Array(offsetLundi).fill(null).concat(
-        Array.from({ length: nbJours }, (_, i) => i + 1)
-    )
-    while (cases.length % 7 !== 0) cases.push(null)
+        const cases = [];
+        for (let i = 0; i < decalage; i++) cases.push(null);
+        for (let jour = 1; jour <= joursDansMois; jour++) cases.push(jour);
+        return cases;
+    }, [mois, annee]);
+
+    const aujourdHui = new Date();
+    const estMoisActuel = aujourdHui.getMonth() + 1 === mois && aujourdHui.getFullYear() === annee;
+
+    const totalMensuelEcheances = Object.values(echeancesParJour)
+        .flat()
+        .reduce((s, t) => s + Number(t.montant), 0);
 
     return (
-        <div className="bg-card border border-[var(--border)] rounded-2xl p-5 h-full">
-            <div className="flex items-center gap-2 mb-4">
-                <CalendarDays size={15} className="text-emerald-400" />
-                <span className="text-xs font-semibold uppercase tracking-wide text-[var(--text)]">
-                    Échéances du mois
-                </span>
-                {abonnements.length > 0 && (
-                    <span className="ml-auto text-xs bg-[var(--bg)] border border-[var(--border)] px-2 py-0.5 rounded-full text-[var(--text)]">
-                        {abonnements.length} prélèvement{abonnements.length > 1 ? 's' : ''}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-navy font-semibold">📅 Échéances récurrentes du mois</h3>
+                <span className="text-xs text-slate-400">
+                    Total :{' '}
+                    <span className="font-semibold text-slate-600">
+                        {incognito ? '••••' : formatMontant(totalMensuelEcheances)}
                     </span>
-                )}
+                </span>
             </div>
 
-            <div className="grid grid-cols-7 mb-1">
-                {JOURS.map((j, i) => (
-                    <div key={i} className="text-center text-[10px] text-[var(--text)] font-medium py-1">{j}</div>
+            <div className="grid grid-cols-7 gap-1 mb-1">
+                {JOURS_SEMAINE.map((j) => (
+                    <div key={j} className="text-center text-[11px] font-medium text-slate-400 py-1">
+                        {j}
+                    </div>
                 ))}
             </div>
 
-            <div className="grid grid-cols-7 gap-0.5">
-                {cases.map((jour, i) => {
-                    if (!jour) return <div key={i} />
+            <div className="grid grid-cols-7 gap-1">
+                {grille.map((jour, idx) => {
+                    if (jour === null) return <div key={`vide-${idx}`} className="aspect-square" />;
 
-                    const echeances = echeancesParJour[jour] || []
-                    const estAujourdhui = jour === jourAujourdhui
-                    const estPasse = jourAujourdhui && jour < jourAujourdhui
+                    const echeances = echeancesParJour[jour] || [];
+                    const aDesEcheances = echeances.length > 0;
+                    const estAujourdHui = estMoisActuel && aujourdHui.getDate() === jour;
 
                     return (
                         <div
-                            key={i}
-                            className={`relative flex flex-col items-center py-1 rounded-lg text-xs transition-all
-                                ${estAujourdhui ? 'bg-emerald-500/20 ring-1 ring-emerald-400/50' : ''}
-                                ${echeances.length > 0 ? 'cursor-pointer hover:bg-[var(--bg)]' : ''}
-                            `}
-                            title={echeances.map(e => `${e.nom_abonnement} (${e.montant} €)`).join('\n')}
+                            key={jour}
+                            onMouseEnter={() => aDesEcheances && setJourSurvole(jour)}
+                            onMouseLeave={() => setJourSurvole(null)}
+                            className={`relative aspect-square rounded-lg flex flex-col items-center justify-center text-xs cursor-default transition ${estAujourdHui
+                                    ? 'bg-navy text-white font-bold'
+                                    : 'text-slate-600 hover:bg-gray-50'
+                                } ${aDesEcheances && !estAujourdHui ? 'bg-emerald/5 border border-emerald/20' : ''}`}
                         >
-                            <span className={`font-medium leading-none
-                                ${estAujourdhui ? 'text-emerald-400' : ''}
-                                ${estPasse && !estAujourdhui ? 'text-[var(--text-muted)]' : 'text-[var(--text-h)]'}
-                            `}>
-                                {jour}
-                            </span>
-
-                            {echeances.length > 0 && (
-                                <div className="flex gap-0.5 mt-0.5 flex-wrap justify-center">
-                                    {echeances.slice(0, 3).map((e, idx) => (
-                                        <div
-                                            key={idx}
-                                            className={`w-1.5 h-1.5 rounded-full ${e.resiliation_planifiee ? 'bg-red-400' : 'bg-amber-400'}`}
+                            <span>{jour}</span>
+                            {aDesEcheances && (
+                                <div className="flex gap-0.5 mt-0.5">
+                                    {echeances.slice(0, 3).map((_, i) => (
+                                        <span
+                                            key={i}
+                                            className={`w-1.5 h-1.5 rounded-full ${estAujourdHui ? 'bg-white' : 'bg-emerald'
+                                                }`}
                                         />
                                     ))}
-                                    {echeances.length > 3 && (
-                                        <span className="text-[8px] text-[var(--text)]">+{echeances.length - 3}</span>
-                                    )}
+                                </div>
+                            )}
+
+                            {jourSurvole === jour && aDesEcheances && (
+                                <div className="absolute z-20 bottom-full mb-2 left-1/2 -translate-x-1/2 bg-navy text-white text-xs rounded-lg shadow-lg p-3 w-56 text-left">
+                                    <p className="font-semibold mb-1.5">Le {jour} du mois</p>
+                                    {echeances.map((t, i) => (
+                                        <div key={i} className="flex justify-between gap-2 py-0.5">
+                                            <span className="truncate text-gray-300">
+                                                {t.description || t.categories?.nom || 'Sans nom'}
+                                            </span>
+                                            <span
+                                                className={
+                                                    t.type === 'revenu'
+                                                        ? 'text-emerald-light font-medium'
+                                                        : 'text-red-300 font-medium'
+                                                }
+                                            >
+                                                {t.type === 'revenu' ? '+' : '-'}
+                                                {incognito ? '••••' : formatMontant(t.montant)}
+                                            </span>
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </div>
-                    )
+                    );
                 })}
             </div>
 
-            <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[var(--border)]">
-                <div className="flex items-center gap-1.5 text-[10px] text-[var(--text)]">
-                    <div className="w-2 h-2 rounded-full bg-amber-400" />
-                    Prélèvement actif
-                </div>
-                <div className="flex items-center gap-1.5 text-[10px] text-[var(--text)]">
-                    <div className="w-2 h-2 rounded-full bg-red-400" />
-                    Résiliation prévue
-                </div>
-            </div>
+            {Object.keys(echeancesParJour).length === 0 && (
+                <p className="text-center text-slate-400 text-xs mt-4">
+                    Aucune échéance récurrente ce mois-ci. Coche « récurrente » en ajoutant une
+                    transaction, ou lors d'un import CSV.
+                </p>
+            )}
         </div>
-    )
+    );
 }
