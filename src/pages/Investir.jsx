@@ -53,7 +53,8 @@ function Investir() {
         ajouterTransaction,
         displayMode,
         toggleDisplayMode,
-        calculerPnLRealise
+        calculerPnLRealise,
+        charger: chargerPositions
     } = usePositions()
 
     const symboles = positions.map((p) => p.symbole)
@@ -615,7 +616,7 @@ function Investir() {
                     onSubmitTransaction={ajouterTransaction}
                     onTransactionSuccess={() => {
                         setModalAchatVenteOuvert(false)
-                        charger()
+                        chargerPositions()
                     }}
                 />
             </Modal>

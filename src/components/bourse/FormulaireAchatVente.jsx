@@ -146,8 +146,9 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
     }
 
     // Construit le payload compatible avec transactions_investissement
+    const compte = comptesInvest.find(c => c.id === compteIdSelectionne);
     const transactionPayload = {
-      symbole: actifSelectionne.ticker,
+      symbole: actifSelectionne.ticker || actifSelectionne.symbole,
       type: type === 'ACHAT' ? 'buy' : 'sell',
       quantite: parseFloat(quantite),
       prix_unitaire: parseFloat(prix),
@@ -155,6 +156,10 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
       price: parseFloat(prix),
       date: dateTransaction,
       actif_id: actifSelectionne.id,
+      type_compte: compte ? compte.type : 'PEA',
+      nom: actifSelectionne.nom || actifSelectionne.ticker || actifSelectionne.symbole,
+      devise: actifSelectionne.devise || 'EUR',
+      secteur: actifSelectionne.secteur || null,
     };
 
     console.log('Payload envoyé à Supabase :', transactionPayload);
