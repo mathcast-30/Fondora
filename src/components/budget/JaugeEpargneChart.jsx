@@ -1,36 +1,12 @@
-import { useEffect, useState } from 'react';
 import { RadialBarChart, RadialBar, ResponsiveContainer, PolarAngleAxis } from 'recharts';
-import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../context/AuthContext';
 import SecureValue from '../SecureValue';
 
-export default function JaugeEpargneChart({ epargneRealisee }) {
-    const { user } = useAuth();
-    const [objectif, setObjectif] = useState(500);
+export default function JaugeEpargneChart({ epargneRealisee, objectifMensuel = 0 }) {
 
-    useEffect(() => {
-        async function fetchObjectif() {
-            if (!user) return;
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('objectif_epargne_mensuel')
-                .eq('id', user.id)
-                .maybeSingle();
-            
-            if (data?.objectif_epargne_mensuel) {
-                setObjectif(data.objectif_epargne_mensuel);
-            } else if (!error && !data) {
-                // If the user profile doesn't have it, we fallback to 500
-                setObjectif(500);
-            }
-        }
-        fetchObjectif();
-    }, [user]);
+    const epargne = Number(epargneRealisee || 0);
+    const currentObjectif = Number(objectifMensuel || 0);
 
-    const epargne = (epargneRealisee !== undefined && epargneRealisee !== null) ? epargneRealisee : 1200;
-    const currentObjectif = objectif || 500;
-
-    const pourcentage = Math.max(0, Math.min(100, Math.round((epargne / currentObjectif) * 100)));
+    const pourcentage = currentObjectif > 0 ? Math.max(0, Math.min(100, Math.round((epargne / currentObjectif) * 100))) : 0;
     
     let couleur = '#ef4444'; // Rouge < 50%
     if (pourcentage >= 100) couleur = '#10b981'; // Vert
@@ -48,7 +24,11 @@ export default function JaugeEpargneChart({ epargneRealisee }) {
         <div className="bg-card rounded-2xl border border-[var(--border)] p-6 flex flex-col justify-center items-center">
             <h3 className="text-[var(--text-h)] font-semibold mb-2 self-start w-full">Objectif d'épargne</h3>
             
-            <div className="h-48 w-full relative">
+            {currentObjectif <= 0 ? (
+                <div className="h-48 flex items-center justify-center text-center text-sm text-[var(--text)] px-6">
+                    Définis un objectif d’épargne dans Synthèse pour activer ce graphique et le simulateur.
+                </div>
+            ) : <><div className="h-48 w-full relative">
                 <ResponsiveContainer width="100%" height="100%">
                     <RadialBarChart 
                         cx="50%" 
@@ -82,7 +62,7 @@ export default function JaugeEpargneChart({ epargneRealisee }) {
                     <SecureValue value={currentObjectif} formatter={formatMontant} />
                 </p>
                 <p className="text-xs text-[var(--text-muted)] mt-1">épargne réalisée ce mois</p>
-            </div>
+            </div></>}
         </div>
     );
 }

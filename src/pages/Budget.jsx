@@ -25,6 +25,7 @@ import { calculerRestantAVivre } from '../utils/budgetCalculator'
 import { genererBilanBudget } from '../utils/exportBilanBudget'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { useObjectifEpargne } from '../hooks/useObjectifEpargne'
 
 const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
@@ -33,6 +34,7 @@ function Budget() {
     const aujourdHui = new Date()
     const [mois, setMois] = useState(aujourdHui.getMonth() + 1)
     const [annee, setAnnee] = useState(aujourdHui.getFullYear())
+    const { objectif: objectifEpargne } = useObjectifEpargne(mois, annee)
 
     const { transactions, loading, ajouterTransaction, supprimerTransaction, recategoriserTransactions, charger } = useTransactions(mois, annee)
     const { categories } = useCategories()
@@ -122,7 +124,10 @@ function Budget() {
     const depensesRecurrentes = useMemo(() => transactions
         .filter(t => t.type === 'depense' && t.recurrente && t.recurrence_active !== false)
         .map(t => ({ montant: t.montant, jour_prelevement: t.jour_recurrence || new Date(t.date).getDate() })), [transactions])
-    const objectifEpargneMois = Number(profile?.objectif_epargne_mensuel || 0)
+    // Source unique : l'objectif défini pour le mois dans la Synthèse.
+    // Le champ profile.objectif_epargne_mensuel est conservé pour compatibilité,
+    // mais ne pilote plus les calculs du Budget.
+    const objectifEpargneMois = Number(objectifEpargne?.montant_cible || 0)
     const restantAVivre = useMemo(() =>
         calculerRestantAVivre({
             soldeComptesCourants: soldeTotalCourants,
@@ -294,7 +299,7 @@ function Budget() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {graphiquesVisibles.includes('budget_vs_reel') && <BudgetVsReelChart transactions={transactions} budgets={budgets} categories={categories} />}
                     {graphiquesVisibles.includes('evolution_temps') && <EvolutionTempsChart />}
-                    {graphiquesVisibles.includes('objectif_epargne') && <JaugeEpargneChart epargneRealisee={Math.max(0, solde)} />}
+                    {graphiquesVisibles.includes('objectif_epargne') && <JaugeEpargneChart epargneRealisee={Math.max(0, solde)} objectifMensuel={objectifEpargneMois} />}
                     {graphiquesVisibles.includes('top5_depenses') && <Top5DepensesChart transactions={transactions} categories={categories} />}
                 </div>
 

@@ -11,7 +11,7 @@ const fmtK = (v) => {
 
 export default function WidgetWhatIf({ objectifMensuel = 0, restantAVivre = null }) {
     const { incognito } = useIncognito()
-    const [economie, setEconomie] = useState(objectifMensuel || 100)
+    const [economie, setEconomie] = useState(objectifMensuel || 0)
     const [taux, setTaux] = useState(7)
     const [impacts, setImpacts] = useState({})
 
@@ -24,6 +24,7 @@ export default function WidgetWhatIf({ objectifMensuel = 0, restantAVivre = null
     }, [objectifMensuel])
 
     const mask = (v) => (incognito ? '•••• €' : `+${fmtK(v)} €`)
+    const objectifDefini = objectifMensuel > 0
 
     return (
         <div className="bg-card border border-[var(--border)] rounded-2xl p-5 h-full flex flex-col">
@@ -44,9 +45,14 @@ export default function WidgetWhatIf({ objectifMensuel = 0, restantAVivre = null
                     type="range" min="10" max="1000" step="10"
                     value={economie}
                     onChange={(e) => setEconomie(Number(e.target.value))}
+                    disabled={!objectifDefini}
                     className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-emerald-400"
                 />
             </div>
+
+            {!objectifDefini && (
+                <p className="text-xs text-amber-400 mb-3">Définis d’abord ton objectif d’épargne mensuel dans Synthèse.</p>
+            )}
 
             {restantAVivre !== null && (
                 <p className={`text-[10px] mb-3 ${restantAVivre - economie >= 0 ? 'text-[var(--text-muted)]' : 'text-red-400'}`}>
