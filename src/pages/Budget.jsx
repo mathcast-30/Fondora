@@ -27,7 +27,7 @@ import { genererBilanBudget } from '../utils/exportBilanBudget'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useObjectifEpargne } from '../hooks/useObjectifEpargne'
-import { BudgetProvider, useBudget } from '../contexts/BudgetContext';
+import { BudgetProvider, useBudget } from "../context/BudgetContext";
 
 
 const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
