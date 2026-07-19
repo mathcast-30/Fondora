@@ -148,7 +148,9 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
       symbole: actifSelectionne.ticker,
       type: type === 'ACHAT' ? 'buy' : 'sell',
       quantite: parseFloat(quantite),
-      prix: parseFloat(prix),
+      prix_unitaire: parseFloat(prix),
+      quantity: parseFloat(quantite),
+      price: parseFloat(prix),
       // Champs supplémentaires pour enrichissement
       actif_id: actifSelectionne.id,
       compte_id: compteIdSelectionne,
