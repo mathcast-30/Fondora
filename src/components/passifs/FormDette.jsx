@@ -1,5 +1,6 @@
 // src/components/passifs/FormDette.jsx
 import { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
 
 const TYPES_DETTE = ['Consommation', 'Immobilier', 'Automobile', 'Dette Privée', 'Fiscale', 'Autre'];
 
@@ -14,6 +15,7 @@ const FORM_VIDE = {
     date_debut: new Date().toISOString().split('T')[0],
     rembourse_automatiquement: true,
     notes: '',
+    compte_id: '',
 };
 
 function calculerMensualiteAuto(capital, taux, duree) {
@@ -30,6 +32,14 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
     const [form, setForm] = useState(FORM_VIDE);
     const [erreurs, setErreurs] = useState({});
     const [loading, setLoading] = useState(false);
+    const [comptes, setComptes] = useState([]);
+
+    useEffect(() => {
+        supabase
+            .from('comptes')
+            .select('id, nom, type')
+            .then(({ data }) => setComptes(data || []));
+    }, []);
 
     // Pré-remplissage en mode édition
     useEffect(() => {
@@ -45,6 +55,7 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
                 date_debut: detteInitiale.date_debut || new Date().toISOString().split('T')[0],
                 rembourse_automatiquement: detteInitiale.rembourse_automatiquement ?? true,
                 notes: detteInitiale.notes || '',
+                compte_id: detteInitiale.compte_id || '',
             });
         } else if (ouvert && !detteInitiale) {
             setForm(FORM_VIDE);
@@ -81,6 +92,8 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
             e.mensualite = 'La mensualité doit être > 0.';
         if (!form.date_debut)
             e.date_debut = 'La date de début est obligatoire.';
+        if (form.rembourse_automatiquement && !form.compte_id)
+            e.compte_id = 'Veuillez sélectionner un compte';
         setErreurs(e);
         return Object.keys(e).length === 0;
     };
@@ -100,6 +113,7 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
                 mensualite: parseFloat(form.mensualite),
                 date_debut: form.date_debut,
                 rembourse_automatiquement: form.rembourse_automatiquement,
+                compte_id: form.rembourse_automatiquement ? form.compte_id : null,
                 notes: form.notes || null,
             });
             onClose();
@@ -338,6 +352,26 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
                             </span>
                         </label>
                     </div>
+
+                    {form.rembourse_automatiquement && (
+                        <div>
+                            <label style={labelStyle}>Compte à débiter *</label>
+                            <select
+                                value={form.compte_id}
+                                onChange={(e) => set('compte_id', e.target.value)}
+                                style={inputStyle(!form.compte_id && erreurs.compte_id)}
+                            >
+                                <option value="">— Sélectionner un compte —</option>
+                                {comptes.map(c => (
+                                    <option key={c.id} value={c.id}>{c.nom} ({c.type})</option>
+                                ))}
+                            </select>
+                            {erreurs.compte_id && <p style={errStyle}>{erreurs.compte_id}</p>}
+                            <p style={{ fontSize: 11, color: '#6B7280', marginTop: 4 }}>
+                                La mensualité sera automatiquement enregistrée comme dépense sur ce compte chaque mois.
+                            </p>
+                        </div>
+                    )}
 
                     {/* Notes */}
                     <div>
