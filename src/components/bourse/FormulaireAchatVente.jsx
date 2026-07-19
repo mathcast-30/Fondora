@@ -145,10 +145,6 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
       return;
     }
 
-    console.log('Payload envoyé à Supabase :', transactionPayload, 'dateTransaction brut :', dateTransaction);
-    setLoadingSubmit(true);
-
-
     // Construit le payload compatible avec transactions_investissement
     const transactionPayload = {
       symbole: actifSelectionne.ticker,
@@ -160,6 +156,10 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
       date: dateTransaction,
       actif_id: actifSelectionne.id,
     };
+
+    console.log('Payload envoyé à Supabase :', transactionPayload);
+
+    setLoadingSubmit(true);
 
     // Validation vente : quantité ne peut pas dépasser ce qu'on possède
     if (type === 'VENTE' && actifSelectionne.quantite_disponible) {
