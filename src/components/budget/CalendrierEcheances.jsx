@@ -101,7 +101,11 @@ export default function CalendrierEcheances({ mois, annee, transactions = [], ab
         .reduce((s, item) => s + (item.sens === 'revenu' ? item.montant : -item.montant), 0);
 
     const getBadgeColor = (type) => BADGE_COLOR[type] || 'bg-slate-400';
-
+    console.log('DEBUG calendrier', {
+        nbTransactionsRecurrentes: transactions.filter(t => t.recurrente).length,
+        nbAbonnements: abonnements.length,
+        nbDettesActives: dettes.filter(d => !d.estRembourse).length,
+    });
     return (
         <div className="bg-card rounded-2xl border border-[var(--border)] p-6">
             <div className="flex justify-between items-center mb-4">
