@@ -30,55 +30,63 @@ export default function CalendrierEcheances({ mois, annee, transactions = [], ab
         // 1. Transactions récurrentes (manuelles, dettes auto, loyers auto)
         transactions
             .filter((t) => t.recurrente && t.recurrence_active !== false)
-            .forEach((t) => { ... })
-    // Calculer le jour d'affichage : depuis jour_recurrence ou la date réelle
-    const jour = t.jour_recurrence
-        ? Number(t.jour_recurrence)
-        : new Date(t.date + 'T12:00:00').getDate();
+            .forEach((t) => {
+                const jour = t.jour_recurrence || new Date(t.date).getDate();
+                ajouter(jour, {
+                    type: 'transaction',
+                    nom: t.description || t.categories?.nom || 'Transaction',
+                    montant: Number(t.montant),
+                    sens: t.type === 'revenu' ? 'revenu' : 'depense',
+                });
+            });
+        // Calculer le jour d'affichage : depuis jour_recurrence ou la date réelle
+        const jour = t.jour_recurrence
+            ? Number(t.jour_recurrence)
+            : new Date(t.date + 'T12:00:00').getDate();
 
-    if (!jour || jour < 1 || jour > 31) return;
+        if (!jour || jour < 1 || jour > 31) return;
 
-    // Éviter les doublons : si source = dette_auto, ne pas afficher aussi via la liste dettes ci-dessous
-    const estDetteAuto = t.source === 'dette_auto';
-    const estLoyerAuto = t.source === 'loyer_auto';
+        // Éviter les doublons : si source = dette_auto, ne pas afficher aussi via la liste dettes ci-dessous
+        const estDetteAuto = t.source === 'dette_auto';
+        const estLoyerAuto = t.source === 'loyer_auto';
 
-    ajouter(jour, {
-        type: estDetteAuto ? 'dette_auto' : estLoyerAuto ? 'loyer' : `transaction_${t.type}`,
-        nom: t.description || t.categories?.nom || 'Transaction',
-        montant: Number(t.montant),
-        sens: t.type === 'revenu' ? 'revenu' : 'depense',
-    });
-});
-
-// 2. Abonnements suivis (table abonnements_suivi)
-abonnements.forEach((ab) => {
-    if (!ab.date_prochain_prelevement) return;
-    const jour = new Date(ab.date_prochain_prelevement + 'T12:00:00').getDate();
-    ajouter(jour, {
-        type: 'abonnement',
-        nom: ab.nom_abonnement,
-        montant: Number(ab.montant),
-        sens: 'depense',
-        resiliation: ab.resiliation_planifiee,
-    });
-});
-
-// 3. Dettes sans remboursement_automatique (non générées en transaction)
-//    Les dettes avec rembourse_automatiquement = true sont déjà dans les transactions
-dettes
-    .filter((d) => !d.estRembourse && d.date_debut && !d.rembourse_automatiquement)
-    .forEach((d) => {
-        const jour = new Date(d.date_debut + 'T12:00:00').getDate();
         ajouter(jour, {
-            type: 'credit',
-            nom: d.nom,
-            montant: Number(d.mensualite),
-            sens: 'depense',
+            type: estDetteAuto ? 'dette_auto' : estLoyerAuto ? 'loyer' : `transaction_${t.type}`,
+            nom: t.description || t.categories?.nom || 'Transaction',
+            montant: Number(t.montant),
+            sens: t.type === 'revenu' ? 'revenu' : 'depense',
         });
     });
 
-return map;
-    }, [transactions, abonnements, dettes]);
+    // 2. Abonnements suivis (table abonnements_suivi)
+    abonnements.forEach((ab) => {
+        if (!ab.date_prochain_prelevement) return;
+        const jour = new Date(ab.date_prochain_prelevement + 'T12:00:00').getDate();
+        ajouter(jour, {
+            type: 'abonnement',
+            nom: ab.nom_abonnement,
+            montant: Number(ab.montant),
+            sens: 'depense',
+            resiliation: ab.resiliation_planifiee,
+        });
+    });
+
+    // 3. Dettes sans remboursement_automatique (non générées en transaction)
+    //    Les dettes avec rembourse_automatiquement = true sont déjà dans les transactions
+    dettes
+        .filter((d) => !d.estRembourse && d.date_debut && !d.rembourse_automatiquement)
+        .forEach((d) => {
+            const jour = new Date(d.date_debut + 'T12:00:00').getDate();
+            ajouter(jour, {
+                type: 'credit',
+                nom: d.nom,
+                montant: Number(d.mensualite),
+                sens: 'depense',
+            });
+        });
+
+    return map;
+}, [transactions, abonnements, dettes]);
 
 const grille = useMemo(() => {
     const premierJour = new Date(annee, mois - 1, 1);
