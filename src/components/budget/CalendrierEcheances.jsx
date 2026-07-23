@@ -1,6 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useIncognito } from '../../context/IncognitoContext';
 
+function jourDepuisDateISO(dateStr) {
+    if (!dateStr) return null;
+    const partie = String(dateStr).split('T')[0]; // au cas où il y aurait une heure collée
+    const morceaux = partie.split('-');
+    if (morceaux.length < 3) return null;
+    return parseInt(morceaux[2], 10);
+}
+
 const JOURS_SEMAINE = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
 const BADGE_COLOR = {
@@ -27,7 +35,7 @@ export default function CalendrierEcheances({ mois, annee, transactions = [], ab
         transactions
             .filter((t) => t.recurrente && t.recurrence_active !== false)
             .forEach((t) => {
-                const jour = t.jour_recurrence || new Date(t.date).getDate();
+                const jour = t.jour_recurrence || jourDepuisDateISO(t.date);
                 ajouter(jour, {
                     type: 'transaction',
                     nom: t.description || t.categories?.nom || 'Transaction',
@@ -38,7 +46,7 @@ export default function CalendrierEcheances({ mois, annee, transactions = [], ab
 
         abonnements.forEach((ab) => {
             if (!ab.date_prochain_prelevement) return;
-            const jour = new Date(ab.date_prochain_prelevement).getDate();
+            const jour = jourDepuisDateISO(ab.date_prochain_prelevement);
             ajouter(jour, {
                 type: 'abonnement',
                 nom: ab.nom_abonnement,
@@ -50,7 +58,7 @@ export default function CalendrierEcheances({ mois, annee, transactions = [], ab
 
         dettes.forEach((d) => {
             if (d.estRembourse || !d.date_debut) return;
-            const jour = new Date(d.date_debut).getDate();
+            const jour = jourDepuisDateISO(d.date_debut);
             ajouter(jour, {
                 type: 'credit',
                 nom: d.nom,
@@ -121,8 +129,8 @@ export default function CalendrierEcheances({ mois, annee, transactions = [], ab
                             onMouseEnter={() => aDesEcheances && setJourSurvole(jour)}
                             onMouseLeave={() => setJourSurvole(null)}
                             className={`relative aspect-square rounded-lg flex flex-col items-center justify-center text-xs cursor-default transition ${estAujourdHui
-                                    ? 'bg-navy text-white font-bold'
-                                    : 'text-slate-600 hover:bg-gray-50'
+                                ? 'bg-navy text-white font-bold'
+                                : 'text-slate-600 hover:bg-gray-50'
                                 } ${aDesEcheances && !estAujourdHui ? 'bg-emerald/5 border border-emerald/20' : ''}`}
                         >
                             <span>{jour}</span>
