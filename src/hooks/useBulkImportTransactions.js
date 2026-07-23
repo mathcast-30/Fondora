@@ -95,7 +95,7 @@ export function useBulkImportTransactions() {
           source: 'import',
           import_hash: tx.import_hash || null,
           recurrente: estRecurrente,
-          jour_recurrence: estRecurrente ? new Date(tx.date).getDate() : null,
+          jour_recurrence: estRecurrente ? Number(tx.date.split('-')[2]) : null,
           recurrence_groupe_id: estRecurrente ? crypto.randomUUID() : null,
         };
       });
