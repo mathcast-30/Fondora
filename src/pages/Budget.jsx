@@ -271,12 +271,12 @@ function BudgetContent() {
 
             {/* BENTO GRID — Widgets enrichis */}
             <section className="mb-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                <div className="columns-1 lg:columns-2 gap-4 mb-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
                     {graphiquesVisibles.includes('restant_a_vivre') && <WidgetRestantAVivre {...restantAVivre} />}
                     {graphiquesVisibles.includes('what_if') && <WidgetWhatIf objectifMensuel={objectifEpargneMois} restantAVivre={restantAVivre.restantAVivreReel} />}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="columns-1 lg:columns-2 gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
                     {graphiquesVisibles.includes('abonnements') && <SubscriptionCleaner
                         abonnements={abonnements}
                         loading={loadingAb}
@@ -311,7 +311,7 @@ function BudgetContent() {
                     <BudgetGraphiqueSelector graphiquesVisibles={graphiquesVisibles} setGraphiquesVisibles={sauvegarderWidgets} />
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="columns-1 lg:columns-2 gap-6 [&>*]:mb-6 [&>*]:break-inside-avoid">
                     {graphiquesVisibles.includes('budget_vs_reel') && <BudgetVsReelChart transactions={transactions} budgets={budgets} categories={categories} />}
                     {graphiquesVisibles.includes('evolution_temps') && <EvolutionTempsChart />}
                     {graphiquesVisibles.includes('objectif_epargne') && <JaugeEpargneChart epargneRealisee={Math.max(0, solde)} objectifMensuel={objectifEpargneMois} />}
@@ -335,7 +335,7 @@ function BudgetContent() {
             </section>
 
             {/* Flux financier + Donut */}
-            {(graphiquesVisibles.includes('flux_financier') || graphiquesVisibles.includes('repartition_depenses')) && <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            {(graphiquesVisibles.includes('flux_financier') || graphiquesVisibles.includes('repartition_depenses')) && <div className="columns-1 lg:columns-2 gap-4 mb-6 [&>*]:mb-4 [&>*]:break-inside-avoid">
                 {graphiquesVisibles.includes('flux_financier') && <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
                     <h3 className="text-[var(--text-h)] font-semibold mb-2">Flux financier</h3>
                     <SankeyChart
