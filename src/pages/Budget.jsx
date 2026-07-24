@@ -144,14 +144,25 @@ function BudgetContent() {
     const depensesRecurrentes = useMemo(() => transactions
         .filter(t => t.type === 'depense' && t.recurrente && t.recurrence_active !== false)
         .map(t => ({ montant: t.montant, jour_prelevement: t.jour_recurrence || new Date(t.date).getDate() })), [transactions])
+
+    // Ajout : normaliser les abonnements au même format que depensesRecurrentes
+    const abonnementsFormates = useMemo(() => abonnements
+        .filter(a => !a.resiliation_planifiee) // on ignore ceux déjà planifiés à résilier
+        .map(a => ({
+            montant: a.montant,
+            jour_prelevement: a.date_prochain_prelevement
+                ? Number(a.date_prochain_prelevement.split('-')[2])
+                : null,
+        })), [abonnements])
+
     const objectifEpargneMois = Number(objectifEpargne?.montant_cible || 0)
     const restantAVivre = useMemo(() =>
         calculerRestantAVivre({
             soldeComptesCourants: soldeTotalCourants,
-            depensesRecurrentes: [...abonnements, ...depensesRecurrentes],
+            depensesRecurrentes: [...abonnementsFormates, ...depensesRecurrentes],
             objectifsEpargneMois: objectifEpargneMois,
         }),
-        [soldeTotalCourants, abonnements, depensesRecurrentes, objectifEpargneMois]
+        [soldeTotalCourants, abonnementsFormates, depensesRecurrentes, objectifEpargneMois]
     )
 
     const handleSubmit = async (e) => {
