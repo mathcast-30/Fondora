@@ -269,14 +269,16 @@ function BudgetContent() {
                 </div>
             </div>
 
-            {/* BENTO GRID — Widgets enrichis */}
+            {/* BENTO GRID — Tous les widgets dans un seul flux masonry continu */}
             <section className="mb-6">
-                <div className="columns-1 lg:columns-2 gap-4 mb-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
-                    {graphiquesVisibles.includes('restant_a_vivre') && <WidgetRestantAVivre {...restantAVivre} />}
-                    {graphiquesVisibles.includes('what_if') && <WidgetWhatIf objectifMensuel={objectifEpargneMois} restantAVivre={restantAVivre.restantAVivreReel} />}
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-bold text-[var(--text-h)]">Vue d'ensemble</h2>
+                    <BudgetGraphiqueSelector graphiquesVisibles={graphiquesVisibles} setGraphiquesVisibles={sauvegarderWidgets} />
                 </div>
 
                 <div className="columns-1 lg:columns-2 gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
+                    {graphiquesVisibles.includes('restant_a_vivre') && <WidgetRestantAVivre {...restantAVivre} />}
+                    {graphiquesVisibles.includes('what_if') && <WidgetWhatIf objectifMensuel={objectifEpargneMois} restantAVivre={restantAVivre.restantAVivreReel} />}
                     {graphiquesVisibles.includes('abonnements') && <SubscriptionCleaner
                         abonnements={abonnements}
                         loading={loadingAb}
@@ -284,7 +286,45 @@ function BudgetContent() {
                         onPlanifierResiliation={planifierResiliation}
                         onSupprimer={supprimerAbonnement}
                     />}
+                    {graphiquesVisibles.includes('calendrier_echeances') && (
+                        <CalendrierEcheances
+                            mois={mois}
+                            annee={annee}
+                            transactions={transactions}
+                            abonnements={abonnements}
+                            dettes={dettes}
+                        />
+                    )}
+                    {graphiquesVisibles.includes('budget_vs_reel') && <BudgetVsReelChart transactions={transactions} budgets={budgets} categories={categories} />}
+                    {graphiquesVisibles.includes('evolution_temps') && <EvolutionTempsChart />}
+                    {graphiquesVisibles.includes('objectif_epargne') && <JaugeEpargneChart epargneRealisee={Math.max(0, solde)} objectifMensuel={objectifEpargneMois} />}
+                    {graphiquesVisibles.includes('top5_depenses') && <Top5DepensesChart transactions={transactions} categories={categories} />}
+                    {graphiquesVisibles.includes('flux_financier') && (
+                        <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
+                            <h3 className="text-[var(--text-h)] font-semibold mb-2">Flux financier</h3>
+                            <SankeyChart
+                                totalRevenus={totalRevenus}
+                                depensesParCategorie={depensesParCategorie}
+                                categorieFiltree={categorieFiltree}
+                                onFiltrerCategorie={setCategorieFiltree}
+                                onDemandeRecategorisation={(source, cible) => setDemandeRecategorisation({ source, cible })}
+                                selectedCategory={selectedCategory}
+                            />
+                        </div>
+                    )}
+                    {graphiquesVisibles.includes('repartition_depenses') && (
+                        <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
+                            <h3 className="text-[var(--text-h)] font-semibold mb-2">Répartition des dépenses</h3>
+                            <DonutChart data={depensesParCategorie} total={totalDepenses} onFiltrerCategorie={setCategorieFiltree} />
+                        </div>
+                    )}
                 </div>
+
+                {graphiquesVisibles.length === 0 && (
+                    <div className="text-center py-12 text-[var(--text)] bg-card rounded-xl border border-[var(--border)] mt-4">
+                        Aucun graphique affiché. Cliquez sur ⚙️ pour en ajouter.
+                    </div>
+                )}
             </section>
 
             {/* Impact comptes */}
@@ -303,55 +343,6 @@ function BudgetContent() {
                     </ul>
                 </div>
             )}
-
-            {/* Analyses visuelles */}
-            <section className="mb-6">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-bold text-[var(--text-h)]">Analyses visuelles</h2>
-                    <BudgetGraphiqueSelector graphiquesVisibles={graphiquesVisibles} setGraphiquesVisibles={sauvegarderWidgets} />
-                </div>
-
-                <div className="columns-1 lg:columns-2 gap-6 [&>*]:mb-6 [&>*]:break-inside-avoid">
-                    {graphiquesVisibles.includes('budget_vs_reel') && <BudgetVsReelChart transactions={transactions} budgets={budgets} categories={categories} />}
-                    {graphiquesVisibles.includes('evolution_temps') && <EvolutionTempsChart />}
-                    {graphiquesVisibles.includes('objectif_epargne') && <JaugeEpargneChart epargneRealisee={Math.max(0, solde)} objectifMensuel={objectifEpargneMois} />}
-                    {graphiquesVisibles.includes('top5_depenses') && <Top5DepensesChart transactions={transactions} categories={categories} />}
-                    {graphiquesVisibles.includes('calendrier_echeances') && (
-                        <CalendrierEcheances
-                            mois={mois}
-                            annee={annee}
-                            transactions={transactions}
-                            abonnements={abonnements}
-                            dettes={dettes}
-                        />
-                    )}
-                </div>
-
-                {graphiquesVisibles.length === 0 && (
-                    <div className="text-center py-12 text-[var(--text)] bg-card rounded-xl border border-[var(--border)] mt-4">
-                        Aucun graphique affiché. Cliquez sur ⚙️ pour en ajouter.
-                    </div>
-                )}
-            </section>
-
-            {/* Flux financier + Donut */}
-            {(graphiquesVisibles.includes('flux_financier') || graphiquesVisibles.includes('repartition_depenses')) && <div className="columns-1 lg:columns-2 gap-4 mb-6 [&>*]:mb-4 [&>*]:break-inside-avoid">
-                {graphiquesVisibles.includes('flux_financier') && <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
-                    <h3 className="text-[var(--text-h)] font-semibold mb-2">Flux financier</h3>
-                    <SankeyChart
-                        totalRevenus={totalRevenus}
-                        depensesParCategorie={depensesParCategorie}
-                        categorieFiltree={categorieFiltree}
-                        onFiltrerCategorie={setCategorieFiltree}
-                        onDemandeRecategorisation={(source, cible) => setDemandeRecategorisation({ source, cible })}
-                        selectedCategory={selectedCategory}
-                    />
-                </div>}
-                {graphiquesVisibles.includes('repartition_depenses') && <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
-                    <h3 className="text-[var(--text-h)] font-semibold mb-2">Répartition des dépenses</h3>
-                    <DonutChart data={depensesParCategorie} total={totalDepenses} onFiltrerCategorie={setCategorieFiltree} />
-                </div>}
-            </div>}
 
             {/* Budgets par catégorie */}
             {graphiquesVisibles.includes('budgets') && budgets.length > 0 && (
