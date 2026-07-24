@@ -277,11 +277,6 @@ function BudgetContent() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {graphiquesVisibles.includes('echeances') && <CalendrierEcheances
-                        abonnements={abonnements}
-                        mois={mois}
-                        annee={annee}
-                    />}
                     {graphiquesVisibles.includes('abonnements') && <SubscriptionCleaner
                         abonnements={abonnements}
                         loading={loadingAb}

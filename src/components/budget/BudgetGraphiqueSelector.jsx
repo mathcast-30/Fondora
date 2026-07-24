@@ -4,7 +4,6 @@ import { Settings } from 'lucide-react';
 const GRAPHIQUES_DISPONIBLES = [
     { id: 'restant_a_vivre', label: 'Restant à vivre' },
     { id: 'what_if', label: 'Simulateur « Et si j’épargnais… »' },
-    { id: 'echeances', label: 'Échéances à venir' },
     { id: 'abonnements', label: 'Nettoyeur d’abonnements' },
     { id: 'budget_vs_reel', label: 'Budget vs Réel (barres empilées)' },
     { id: 'evolution_temps', label: 'Évolution dépenses/revenus (courbe)' },

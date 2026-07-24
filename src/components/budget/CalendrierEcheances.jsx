@@ -24,14 +24,6 @@ export default function CalendrierEcheances({ mois, annee, transactions = [], ab
     const formatMontant = (m) =>
         new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(m);
 
-    // ── DIAGNOSTIC ────────────────────────────────────────────────
-    const diagTransactionsRecues = transactions.length;
-    const diagTransactionsRecurrentes = transactions.filter((t) => t.recurrente).length;
-    const diagDetailRecurrentes = transactions
-        .filter((t) => t.recurrente)
-        .map((t) => `${t.description || t.categories?.nom} | date=${t.date} | jour_recurrence=${t.jour_recurrence} | active=${t.recurrence_active}`);
-    // ──────────────────────────────────────────────────────────────
-
     const echeancesParJour = useMemo(() => {
         const map = {};
         const ajouter = (jour, item) => {
@@ -99,21 +91,6 @@ export default function CalendrierEcheances({ mois, annee, transactions = [], ab
 
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-
-            {/* ── BANDEAU DE DIAGNOSTIC TEMPORAIRE — à retirer une fois le bug résolu ── */}
-            <div style={{
-                background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: 8,
-                padding: 10, marginBottom: 16, fontSize: 11, color: '#92400E', fontFamily: 'monospace'
-            }}>
-                <strong>DEBUG</strong> — transactions reçues : {diagTransactionsRecues} |
-                dont récurrentes : {diagTransactionsRecurrentes} |
-                abonnements reçus : {abonnements.length} |
-                dettes reçues : {dettes.length}
-                <br />
-                {diagDetailRecurrentes.length > 0 ? diagDetailRecurrentes.join(' — ') : 'Aucune transaction récurrente dans le tableau reçu !'}
-            </div>
-            {/* ── FIN BANDEAU DEBUG ── */}
-
             <div className="flex justify-between items-center mb-4">
                 <h3 className="text-navy font-semibold">📅 Échéances récurrentes du mois</h3>
                 <span className="text-xs text-slate-400">
