@@ -212,20 +212,19 @@ function PassifsPage() {
             {/* Filtres par type (Sous-onglets) et Tri */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
 
-                {/* Conteneur global des onglets */}
-                <div className="flex flex-wrap space-x-1 bg-[#111a2c] p-1 rounded-lg border border-[rgba(148,163,184,0.08)]">
+                {/* Conteneur principal des sous-onglets */}
+                <div className="inline-flex items-center flex-wrap bg-[#111a2c] p-1.5 rounded-xl border border-[rgba(148,163,184,0.08)] gap-1">
                     {FILTRES.map((filtre) => {
-                        const count = detteCount => detteCount.filter((d) => d.type === filtre).length;
                         const countNb = filtre !== 'Tous' ? dettes.filter((d) => d.type === filtre).length : dettes.length;
 
                         return (
                             <button
                                 key={filtre}
                                 onClick={() => setFiltreActif(filtre)}
-                                className={`px-4 py-2 rounded-md text-sm font-[600] font-inter transition-all flex items-center gap-1.5 ${
+                                className={`px-4 py-2 text-sm font-inter rounded-lg transition-all flex items-center gap-1.5 ${
                                     filtreActif === filtre
-                                        ? "bg-[#1a2537] text-[#f8fafc] shadow-sm border border-[rgba(148,163,184,0.08)]"
-                                        : "bg-transparent text-[#64748b] hover:text-[#94a3b8] hover:bg-[#1a2537]/50 border border-transparent"
+                                        ? "font-[600] bg-[#1a2537] text-[#f8fafc] border border-[rgba(148,163,184,0.12)] shadow-sm"
+                                        : "font-[500] bg-transparent text-[#64748b] hover:text-[#94a3b8] hover:bg-[#1a2537]/50"
                                 }`}
                             >
                                 <span>{filtre}</span>
@@ -236,6 +235,7 @@ function PassifsPage() {
                         );
                     })}
                 </div>
+
 
                 <div className="flex items-center gap-2">
                     <span className="text-xs text-[#64748b] font-medium font-inter">Trier par :</span>
