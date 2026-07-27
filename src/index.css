@@ -216,14 +216,32 @@ select, option {
 
 
 /* ===== BLINDAGE GLOBAL ONGLETS FONDORA ===== */
-/* Force le thème sombre sur tous les onglets Radix/Shadcn */
-[data-state="active"] {
+
+/* 1. Conteneur barre d'onglets */
+div[role="tablist"],
+[data-slot="tabs-list"] {
+  background-color: #111a2c !important;
+  border: 1px solid rgba(148, 163, 184, 0.12) !important;
+}
+
+/* 2. Onglet ACTIF */
+button[role="tab"][data-state="active"],
+[data-slot="tabs-trigger"][data-state="active"] {
   background-color: #1a2537 !important;
   color: #f8fafc !important;
   border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  box-shadow: none !important;
 }
 
-[data-state="inactive"] {
+/* 3. Onglet INACTIF */
+button[role="tab"][data-state="inactive"],
+[data-slot="tabs-trigger"][data-state="inactive"] {
   background-color: transparent !important;
   color: #64748b !important;
+  border: 1px solid transparent !important;
+}
+
+/* 4. Survol inactif */
+button[role="tab"][data-state="inactive"]:hover {
+  color: #94a3b8 !important;
 }
