@@ -139,17 +139,6 @@ function PassifsPage() {
         XLSX.writeFile(workbook, "Fondora_Dettes.csv");
     };
 
-    const pillStyle = (actif) => ({
-        padding: '6px 16px',
-        borderRadius: 9999,
-        fontSize: 13,
-        fontWeight: 600,
-        cursor: 'pointer',
-        border: actif ? '2px solid #111827' : '1px solid #D1D5DB',
-        background: actif ? '#111827' : 'white',
-        color: actif ? 'white' : '#374151',
-        transition: 'all 0.15s',
-    });
 
     return (
         <Layout>
@@ -212,29 +201,31 @@ function PassifsPage() {
             {/* Filtres par type (Sous-onglets) et Tri */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
 
-                {/* Conteneur principal des sous-onglets */}
-                <div className="inline-flex items-center flex-wrap bg-[#111a2c] p-1.5 rounded-xl border border-[rgba(148,163,184,0.08)] gap-1">
+                {/* Conteneur principal des sous-onglets avec forçage '!' anti-fond-blanc */}
+                <div className="inline-flex items-center flex-wrap !bg-[#111a2c] p-1.5 rounded-xl border !border-[rgba(148,163,184,0.08)] gap-1">
                     {FILTRES.map((filtre) => {
                         const countNb = filtre !== 'Tous' ? dettes.filter((d) => d.type === filtre).length : dettes.length;
 
                         return (
                             <button
                                 key={filtre}
+                                type="button"
                                 onClick={() => setFiltreActif(filtre)}
                                 className={`px-4 py-2 text-sm font-inter rounded-lg transition-all flex items-center gap-1.5 ${
                                     filtreActif === filtre
-                                        ? "font-[600] bg-[#1a2537] text-[#f8fafc] border border-[rgba(148,163,184,0.12)] shadow-sm"
-                                        : "font-[500] bg-transparent text-[#64748b] hover:text-[#94a3b8] hover:bg-[#1a2537]/50"
+                                        ? "font-[600] !bg-[#1a2537] !text-[#f8fafc] border !border-[rgba(148,163,184,0.12)] shadow-sm"
+                                        : "font-[500] !bg-transparent !text-[#64748b] hover:!text-[#94a3b8] hover:!bg-[#1a2537]/50 border border-transparent"
                                 }`}
                             >
                                 <span>{filtre}</span>
-                                <span className={`text-xs opacity-75 px-1.5 py-0.5 rounded-full ${filtreActif === filtre ? 'bg-[#111a2c]' : 'bg-[#1a2537]'}`}>
+                                <span className={`text-xs opacity-75 px-1.5 py-0.5 rounded-full ${filtreActif === filtre ? '!bg-[#111a2c]' : '!bg-[#1a2537]'}`}>
                                     {countNb}
                                 </span>
                             </button>
                         );
                     })}
                 </div>
+
 
 
                 <div className="flex items-center gap-2">
