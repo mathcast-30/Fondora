@@ -209,39 +209,40 @@ function PassifsPage() {
             {/* KPIs */}
             <KPIEndettement kpis={kpis} revenusRecurrents={revenusRecurrents} />
 
-            {/* Filtres par type et Tri */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', marginBottom: 24, gap: 16 }}>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {FILTRES.map((filtre) => (
-                        <button
-                            key={filtre}
-                            onClick={() => setFiltreActif(filtre)}
-                            style={pillStyle(filtreActif === filtre)}
-                        >
-                            {filtre}
-                            {filtre !== 'Tous' && (
-                                <span style={{ marginLeft: 4, opacity: 0.7 }}>
-                                    ({dettes.filter((d) => d.type === filtre).length})
+            {/* Filtres par type (Sous-onglets) et Tri */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+
+                {/* Conteneur global des onglets */}
+                <div className="flex flex-wrap space-x-1 bg-[#111a2c] p-1 rounded-lg border border-[rgba(148,163,184,0.08)]">
+                    {FILTRES.map((filtre) => {
+                        const count = detteCount => detteCount.filter((d) => d.type === filtre).length;
+                        const countNb = filtre !== 'Tous' ? dettes.filter((d) => d.type === filtre).length : dettes.length;
+
+                        return (
+                            <button
+                                key={filtre}
+                                onClick={() => setFiltreActif(filtre)}
+                                className={`px-4 py-2 rounded-md text-sm font-[600] font-inter transition-all flex items-center gap-1.5 ${
+                                    filtreActif === filtre
+                                        ? "bg-[#1a2537] text-[#f8fafc] shadow-sm border border-[rgba(148,163,184,0.08)]"
+                                        : "bg-transparent text-[#64748b] hover:text-[#94a3b8] hover:bg-[#1a2537]/50 border border-transparent"
+                                }`}
+                            >
+                                <span>{filtre}</span>
+                                <span className={`text-xs opacity-75 px-1.5 py-0.5 rounded-full ${filtreActif === filtre ? 'bg-[#111a2c]' : 'bg-[#1a2537]'}`}>
+                                    {countNb}
                                 </span>
-                            )}
-                        </button>
-                    ))}
+                            </button>
+                        );
+                    })}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 13, color: '#6B7280', fontWeight: 500 }}>Trier par :</span>
+                <div className="flex items-center gap-2">
+                    <span className="text-xs text-[#64748b] font-medium font-inter">Trier par :</span>
                     <select
                         value={triActif}
                         onChange={(e) => setTriActif(e.target.value)}
-                        style={{
-                            padding: '6px 12px',
-                            borderRadius: 8,
-                            border: '1px solid #D1D5DB',
-                            fontSize: 13,
-                            color: '#374151',
-                            background: 'white',
-                            cursor: 'pointer'
-                        }}
+                        className="px-3 py-1.5 rounded-lg border border-[rgba(148,163,184,0.15)] text-xs text-[#f8fafc] bg-[#1a2537] cursor-pointer font-inter focus:outline-none focus:border-indigo-500"
                     >
                         <option value="crd_desc">Montant CRD (Décroissant)</option>
                         <option value="crd_asc">Montant CRD (Croissant)</option>
@@ -250,6 +251,7 @@ function PassifsPage() {
                     </select>
                 </div>
             </div>
+
 
             {/* Contenu principal */}
             {loading ? (
