@@ -5,7 +5,7 @@ import { useIncognito } from '../../context/IncognitoContext';
 
 export default function GraphiqueActif({ actifId }) {
   const { incognito } = useIncognito();
-  const [periode, setPeriode] = useState('1Y'); // 7D, 30D, 1Y, MAX
+  const [periode, setPeriode] = useState('MAX'); // 7D, 30D, 1Y, MAX
   const [data, setData] = useState([]);
 
   useEffect(() => {
@@ -54,6 +54,13 @@ export default function GraphiqueActif({ actifId }) {
         </div>
       </div>
 
+      {data.length === 0 && (
+        <div className="flex items-center justify-center h-64 text-slate-500 text-sm text-center px-4">
+          Aucun historique de prix disponible pour cet actif.<br/>
+          Les données s'accumulent chaque jour via le cron automatique.
+        </div>
+      )}
+      {data.length > 0 && (
       <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data}>
@@ -75,6 +82,7 @@ export default function GraphiqueActif({ actifId }) {
           </AreaChart>
         </ResponsiveContainer>
       </div>
+      )}
     </div>
   );
 }

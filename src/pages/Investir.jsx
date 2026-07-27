@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import EvolutionPatrimoineChart from '../components/EvolutionPatrimoineChart'
@@ -41,6 +42,7 @@ function Investir() {
     const { incognito } = useIncognito()
     const { comptes } = useComptes()
     const [selectedActifId, setSelectedActifId] = useState(null)
+    const [selectedCatalogueActifId, setSelectedCatalogueActifId] = useState(null)
     const [typeOrdre, setTypeOrdre] = useState('ACHAT')
     // ============================================
     // ACTIONS & ETF STATE
@@ -94,7 +96,7 @@ function Investir() {
     }, [dataAllocation, valorisationTotale])
 
     const { historique, periode, setPeriode } = useHistoriquePatrimoine(valorisationTotale)
-    const { dividendes, totalDouzeMois, ajouterDividende, supprimerDividende } = useDividendes()
+    const { dividendes, totalDouzeMois, syntheseDouzeMois, ajouterDividende, supprimerDividende } = useDividendes()
 
     // ============================================
     // CRYPTO STATE
@@ -178,6 +180,17 @@ function Investir() {
         const { cashFlowMensuel } = calculerRentabilite(b)
         return acc + cashFlowMensuel
     }, 0)
+
+    const handleSelectPosition = async (position) => {
+        setSelectedActifId(position.id)
+        // Résoudre l'actif_id catalogue depuis le symbole
+        const { data } = await supabase
+            .from('catalogue_actifs')
+            .select('id')
+            .eq('ticker', position.symbole.toUpperCase())
+            .maybeSingle()
+        setSelectedCatalogueActifId(data?.id || null)
+    }
 
     const handleAjouterBien = async (donnees) => {
         const { data, error } = await ajouterBien(donnees)
@@ -345,7 +358,7 @@ function Investir() {
                                         const pourcentage = valeurInvestie > 0 ? (plusMoinsValue / valeurInvestie) * 100 : 0
 
                                         return (
-                                            <div key={p.id} onClick={() => setSelectedActifId(p.id)} className={`flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 transition ${selectedActifId === p.id ? 'bg-indigo-50 border-l-4 border-indigo-500' : ''}`}>
+                                            <div key={p.id} onClick={() => handleSelectPosition(p)} className={`flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 transition ${selectedActifId === p.id ? 'bg-indigo-50 border-l-4 border-indigo-500' : ''}`}>
                                                 <div className="flex items-center gap-3">
                                                     {infosCours?.logo ? (
                                                         <img src={infosCours.logo} alt={p.symbole} className="w-9 h-9 rounded-full object-contain bg-gray-50 p-1" />
@@ -385,7 +398,7 @@ function Investir() {
                         <div className="col-span-2">
                             <div className="bg-[#0f172a] rounded-3xl p-6 shadow-sm border border-slate-800 sticky top-6">
                                 {selectedActifId ? (
-                                    <GraphiqueActif actifId={selectedActifId} />
+                                    <GraphiqueActif actifId={selectedCatalogueActifId} />
                                 ) : (
                                     <div className="text-center text-slate-400 py-10">
                                         Clique sur une position pour voir son graphique
@@ -422,6 +435,7 @@ function Investir() {
                         <DividendesCard
                             dividendes={dividendes}
                             totalDouzeMois={totalDouzeMois}
+                            syntheseDouzeMois={syntheseDouzeMois}
                             valorisationTotale={valorisationTotale}
                             positions={positions}
                             onAjouter={ajouterDividende}
