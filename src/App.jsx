@@ -6,6 +6,7 @@ import Signup from './pages/Signup'
 import Synthese from './pages/Synthese'
 import Budget from './pages/Budget'
 import Patrimoine from './pages/Patrimoine'
+import Comptes from './pages/Comptes'
 import Investir from './pages/Investir'
 import Analyse from './pages/Analyse'
 import Parametres from './pages/Parametres'
@@ -52,6 +53,7 @@ function AppRoutes() {
         <Route path="/synthese" element={<ProtectedRoute><Synthese /></ProtectedRoute>} />
         <Route path="/budget" element={<ProtectedRoute><Budget /></ProtectedRoute>} />
         <Route path="/patrimoine" element={<ProtectedRoute><Patrimoine /></ProtectedRoute>} />
+        <Route path="/comptes" element={<ProtectedRoute><Comptes /></ProtectedRoute>} />
         <Route path="/investir" element={<ProtectedRoute><Investir /></ProtectedRoute>} />
         <Route path="/analyse" element={<ProtectedRoute><Analyse /></ProtectedRoute>} />
         <Route path="/parametres" element={<ProtectedRoute><Parametres /></ProtectedRoute>} />
