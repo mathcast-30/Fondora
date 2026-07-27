@@ -1,7 +1,12 @@
+import { useState } from 'react'
 import Layout from '../components/Layout'
+import Modal from '../components/Modal'
 import SecureValue from '../components/SecureValue'
 import { useComptes } from '../hooks/useComptes'
-import { Wallet, TrendingUp, CreditCard, Home } from 'lucide-react'
+import { Wallet, TrendingUp, CreditCard, Home, HelpCircle, Plus, Trash2 } from 'lucide-react'
+
+const TYPES_COMPTES = ['Compte courant', 'Épargne', 'Crédit', 'PEA', 'CTO', 'Assurance vie', 'Crypto', 'Immobilier', 'Autre']
+const COULEURS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
 
 const CATEGORIES = [
     {
@@ -10,7 +15,8 @@ const CATEGORIES = [
         description: "Ton argent disponible au quotidien : dépenses courantes, virements, et l'épargne de précaution (Livret A, LDDS...). C'est ce qui alimente ton \"Restant à vivre\" dans le Budget.",
         icone: Wallet,
         couleur: '#10b981',
-        types: ['Compte courant', 'Épargne'],
+        // comparaison normalisée (minuscules, sans espaces superflus) pour ne jamais rater un compte
+        types: ['compte courant', 'épargne', 'epargne'],
     },
     {
         id: 'investissement',
@@ -18,7 +24,7 @@ const CATEGORIES = [
         description: "PEA, CTO, Assurance-Vie et Crypto : ton argent placé pour faire fructifier ton capital sur le long terme. Le détail des positions se gère dans l'onglet Investir.",
         icone: TrendingUp,
         couleur: '#6366f1',
-        types: ['PEA', 'CTO', 'Assurance vie', 'Crypto'],
+        types: ['pea', 'cto', 'assurance vie', 'crypto'],
     },
     {
         id: 'immobilier',
@@ -26,7 +32,7 @@ const CATEGORIES = [
         description: "Comptes rattachés à un bien immobilier. Le suivi détaillé (loyers, charges, crédit) se fait dans l'onglet Investir > Immobilier.",
         icone: Home,
         couleur: '#f59e0b',
-        types: ['Immobilier'],
+        types: ['immobilier'],
     },
     {
         id: 'credit',
@@ -34,36 +40,88 @@ const CATEGORIES = [
         description: "Comptes de crédit et tout ce qui ne rentre pas dans les autres catégories. Le suivi détaillé des dettes (CRD, tableau d'amortissement) se fait dans l'onglet Passifs & Dettes.",
         icone: CreditCard,
         couleur: '#ef4444',
-        types: ['Crédit', 'Autre'],
+        types: ['crédit', 'credit', 'autre'],
     },
 ]
 
+const normaliser = (str) => (str || '').trim().toLowerCase()
+
 function Comptes() {
-    const { comptes, loading } = useComptes()
+    const { comptes, loading, ajouterCompte, supprimerCompte } = useComptes()
+    const [modalOuvert, setModalOuvert] = useState(false)
+    const [form, setForm] = useState({
+        nom: '', type: 'Compte courant', solde: '', devise: 'EUR', couleur: COULEURS[0],
+        frais_gestion_enveloppe: 0.60, frais_courtage_pourcentage: 0.20
+    })
 
     const formatMontant = (montant, devise = 'EUR') =>
         new Intl.NumberFormat('fr-FR', { style: 'currency', currency: devise }).format(montant)
 
+    // Répartition des comptes par catégorie, en collectant au passage
+    // les IDs déjà classés pour détecter ceux qui n'ont matché aucune catégorie.
+    const idsClasses = new Set()
+    const groupes = CATEGORIES.map((cat) => {
+        const comptesCategorie = comptes.filter((c) => {
+            const match = cat.types.includes(normaliser(c.type))
+            if (match) idsClasses.add(c.id)
+            return match
+        })
+        return { ...cat, comptes: comptesCategorie }
+    })
+    // Filet de sécurité : aucun compte ne doit jamais disparaître silencieusement,
+    // même si son "type" ne correspond à aucune catégorie connue.
+    const comptesNonClasses = comptes.filter((c) => !idsClasses.has(c.id))
+    if (comptesNonClasses.length > 0) {
+        groupes.push({
+            id: 'autres',
+            titre: 'Autres comptes',
+            description: "Comptes dont le type ne correspond à aucune catégorie ci-dessus.",
+            icone: HelpCircle,
+            couleur: '#94a3b8',
+            comptes: comptesNonClasses,
+        })
+    }
+
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        const { error } = await ajouterCompte({
+            ...form,
+            solde: parseFloat(form.solde) || 0,
+            frais_gestion_enveloppe: parseFloat(form.frais_gestion_enveloppe) || 0,
+            frais_courtage_pourcentage: parseFloat(form.frais_courtage_pourcentage) || 0
+        })
+        if (!error) {
+            setForm({ nom: '', type: 'Compte courant', solde: '', devise: 'EUR', couleur: COULEURS[0], frais_gestion_enveloppe: 0.60, frais_courtage_pourcentage: 0.20 })
+            setModalOuvert(false)
+        }
+    }
+
+    const handleSupprimer = async (id) => {
+        if (confirm('Supprimer ce compte ?')) await supprimerCompte(id)
+    }
+
     return (
         <Layout>
-            <h1 className="text-[var(--text-h)] text-3xl font-bold mb-1">Comptes</h1>
-            <p className="text-[var(--text)] mb-6">Tes comptes classés par usage.</p>
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+                <div>
+                    <h1 className="text-[var(--text-h)] text-3xl font-bold mb-1">Comptes</h1>
+                    <p className="text-[var(--text)]">Tes comptes classés par usage.</p>
+                </div>
+                <button onClick={() => setModalOuvert(true)} className="bg-emerald hover:bg-emerald-light text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition">
+                    <Plus size={18} /> Ajouter un compte
+                </button>
+            </div>
 
             {loading ? (
                 <p className="text-[var(--text)]">Chargement...</p>
             ) : comptes.length === 0 ? (
                 <div className="bg-card rounded-xl p-8 text-center text-[var(--text)] border border-[var(--border)]">
-                    Aucun compte pour l'instant. Ajoute-en un depuis l'onglet Patrimoine.
+                    Aucun compte pour l'instant. Clique sur "Ajouter un compte" pour commencer.
                 </div>
             ) : (
                 <div className="space-y-6">
-                    {CATEGORIES.map((cat) => {
-                        const comptesCategorie = comptes.filter((c) => cat.types.includes(c.type))
-                        if (comptesCategorie.length === 0) return null
-
-                        const totalCategorie = comptesCategorie.reduce(
-                            (s, c) => s + Number(c.soldeReel ?? c.solde), 0
-                        )
+                    {groupes.filter((g) => g.comptes.length > 0).map((cat) => {
+                        const totalCategorie = cat.comptes.reduce((s, c) => s + Number(c.soldeReel ?? c.solde), 0)
                         const Icone = cat.icone
 
                         return (
@@ -90,7 +148,7 @@ function Comptes() {
                                 </div>
 
                                 <div className="divide-y divide-[var(--border)]">
-                                    {comptesCategorie.map((compte) => (
+                                    {cat.comptes.map((compte) => (
                                         <div key={compte.id} className="flex items-center justify-between px-5 py-3.5">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: compte.couleur }} />
@@ -99,9 +157,14 @@ function Comptes() {
                                                     <p className="text-xs text-[var(--text)]">{compte.type}</p>
                                                 </div>
                                             </div>
-                                            <p className="font-semibold text-[var(--text-h)]">
-                                                <SecureValue value={compte.soldeReel ?? compte.solde} formatter={(v) => formatMontant(v, compte.devise)} />
-                                            </p>
+                                            <div className="flex items-center gap-4">
+                                                <p className="font-semibold text-[var(--text-h)]">
+                                                    <SecureValue value={compte.soldeReel ?? compte.solde} formatter={(v) => formatMontant(v, compte.devise)} />
+                                                </p>
+                                                <button onClick={() => handleSupprimer(compte.id)} className="text-[var(--text-muted)] hover:text-[var(--negative)] transition">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -110,6 +173,49 @@ function Comptes() {
                     })}
                 </div>
             )}
+
+            {/* Modal ajout compte */}
+            <Modal isOpen={modalOuvert} onClose={() => setModalOuvert(false)} title="Nouveau compte">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="text-sm text-[var(--text)] mb-1 block">Nom du compte</label>
+                        <input type="text" required value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })}
+                            placeholder="Ex: Compte Boursorama" className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2" />
+                    </div>
+                    <div>
+                        <label className="text-sm text-[var(--text)] mb-1 block">Type de compte</label>
+                        <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2">
+                            {TYPES_COMPTES.map((type) => <option key={type} value={type}>{type}</option>)}
+                        </select>
+                    </div>
+                    <div className="flex gap-3">
+                        <div className="flex-1">
+                            <label className="text-sm text-[var(--text)] mb-1 block">Solde actuel</label>
+                            <input type="number" step="0.01" min="0" value={form.solde}
+                                onChange={(e) => setForm({ ...form, solde: e.target.value })} placeholder="0.00" className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2" />
+                        </div>
+                        <div className="w-28">
+                            <label className="text-sm text-[var(--text)] mb-1 block">Devise</label>
+                            <select value={form.devise} onChange={(e) => setForm({ ...form, devise: e.target.value })} className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2">
+                                {['EUR', 'USD', 'GBP', 'CHF', 'JPY', 'CAD', 'AUD', 'SEK', 'NOK', 'DKK'].map(devise => <option key={devise} value={devise}>{devise}</option>)}
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="text-sm text-[var(--text)] mb-1 block">Couleur</label>
+                        <div className="flex gap-2">
+                            {COULEURS.map((couleur) => (
+                                <button key={couleur} type="button" onClick={() => setForm({ ...form, couleur })}
+                                    className={`w-8 h-8 rounded-full border-2 ${form.couleur === couleur ? 'border-emerald' : 'border-transparent'}`}
+                                    style={{ backgroundColor: couleur }} />
+                            ))}
+                        </div>
+                    </div>
+                    <button type="submit" className="w-full bg-emerald hover:bg-emerald-light text-white font-semibold py-2 rounded-lg transition">
+                        Créer le compte
+                    </button>
+                </form>
+            </Modal>
         </Layout>
     )
 }
