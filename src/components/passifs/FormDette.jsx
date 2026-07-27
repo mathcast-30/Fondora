@@ -127,18 +127,19 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
     const inputStyle = (err) => ({
         width: '100%',
         padding: '10px 12px',
-        border: `1px solid ${err ? '#EF4444' : '#D1D5DB'}`,
+        border: `1px solid ${err ? '#EF4444' : 'var(--border)'}`,
         borderRadius: 8,
         fontSize: 14,
         outline: 'none',
-        background: 'white',
+        background: 'var(--bg-surface)',
+        color: 'var(--text-h)',
         boxSizing: 'border-box',
     });
 
     const labelStyle = {
         fontSize: 13,
         fontWeight: 600,
-        color: '#374151',
+        color: 'var(--text)',
         display: 'block',
         marginBottom: 6,
     };
@@ -165,7 +166,7 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
         >
             <div
                 style={{
-                    background: 'white',
+                    background: 'var(--bg-card)',
                     borderRadius: 16,
                     padding: 32,
                     width: '100%',
@@ -178,12 +179,12 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
             >
                 {/* Titre */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                    <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111827' }}>
+                    <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--text-h)' }}>
                         {detteInitiale ? '✏️ Modifier un crédit' : '➕ Ajouter un crédit'}
                     </h2>
                     <button
                         onClick={onClose}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#9CA3AF' }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: 'var(--text-muted)' }}
                     >✕</button>
                 </div>
 
@@ -330,8 +331,8 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
 
                     {/* Injection auto budget */}
                     <div style={{
-                        background: '#F0FDF4',
-                        border: '1px solid #D1FAE5',
+                        background: 'rgba(16,185,129,0.08)',
+                        border: '1px solid rgba(16,185,129,0.2)',
                         borderRadius: 10,
                         padding: '12px 14px',
                         display: 'flex',
@@ -345,9 +346,9 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
                             onChange={(e) => set('rembourse_automatiquement', e.target.checked)}
                             style={{ marginTop: 2, flexShrink: 0, width: 16, height: 16 }}
                         />
-                        <label htmlFor="rembourse_auto" style={{ fontSize: 13, color: '#065F46', cursor: 'pointer' }}>
+                        <label htmlFor="rembourse_auto" style={{ fontSize: 13, color: 'var(--text-h)', cursor: 'pointer' }}>
                             <strong>Injection automatique dans le budget</strong><br />
-                            <span style={{ fontWeight: 400, color: '#6B7280' }}>
+                            <span style={{ fontWeight: 400, color: 'var(--text)' }}>
                                 Crée automatiquement une transaction mensuelle de remboursement dans ton budget le 1er de chaque mois.
                             </span>
                         </label>
@@ -393,12 +394,12 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
                             style={{
                                 flex: 1,
                                 padding: '11px 0',
-                                border: '1px solid #D1D5DB',
+                                border: '1px solid var(--border)',
                                 borderRadius: 10,
-                                background: 'white',
+                                background: 'var(--bg-surface)',
                                 fontSize: 14,
                                 fontWeight: 600,
-                                color: '#374151',
+                                color: 'var(--text-h)',
                                 cursor: 'pointer',
                             }}
                         >
