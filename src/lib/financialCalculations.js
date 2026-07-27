@@ -615,3 +615,32 @@ export function genererDonneesGraphiqueFrais(valeurActuelle, fraisEnveloppe, fra
         ecart: Math.max(0, point.capitalOptimise - point.capitalActuel),
     }));
 }
+
+/**
+ * Calcule le TER moyen pondéré des UC d'un contrat AV.
+ * Pondération sur la valorisation de chaque UC (nb_parts × prix).
+ * Si aucune UC n'a de prix connu, renvoie 0.
+ *
+ * @param {Array<{isin: string, nb_parts: number, frais_ter_produit?: number}>} positionsUC
+ * @param {Object<string, {dernier_prix: number|null}>} prixCache - map isin → { dernier_prix }
+ * @returns {number} TER moyen pondéré en %
+ */
+export function calculerTerMoyenPondere(positionsUC, prixCache) {
+    if (!positionsUC || positionsUC.length === 0) return 0;
+
+    let totalValeur = 0;
+    let totalTerPondere = 0;
+
+    for (const pos of positionsUC) {
+        const prix = prixCache?.[pos.isin]?.dernier_prix;
+        if (prix != null && prix > 0) {
+            const valeurUC = Number(pos.nb_parts) * Number(prix);
+            const ter = Number(pos.frais_ter_produit) || 0;
+            totalValeur += valeurUC;
+            totalTerPondere += valeurUC * ter;
+        }
+    }
+
+    return totalValeur > 0 ? totalTerPondere / totalValeur : 0;
+}
+
