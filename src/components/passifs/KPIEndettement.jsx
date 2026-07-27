@@ -21,81 +21,62 @@ export function KPIEndettement({ kpis, revenusRecurrents }) {
         ? Math.min(100, Math.round((tauxEndettement / 50) * 100))
         : 0;
 
-    const cardStyle = {
-        background: 'var(--color-graylight, #f1f5f9)',
-        border: '1px solid rgba(0,0,0,0.08)',
-        borderRadius: 12,
-        padding: 20,
-    };
-
-    const labelStyle = {
-        fontSize: 13,
-        color: '#6B7280',
-        margin: '0 0 6px',
-        fontWeight: 500,
-        textTransform: 'uppercase',
-        letterSpacing: '0.04em',
-    };
-
-    const valuStyle = (color) => ({
-        fontSize: 28,
-        fontWeight: 700,
-        margin: '0 0 4px',
-        color: color || 'var(--color-navy, #0a1f33)',
-    });
-
-    const subStyle = {
-        fontSize: 13,
-        color: '#6B7280',
-        margin: 0,
-    };
-
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
 
-            {/* KPI 1 — Dette totale (CRD) */}
-            <div style={cardStyle}>
-                <p style={labelStyle}>Dette Totale (CRD)</p>
-                <p style={valuStyle('#EF4444')}>
-                    <SecureValue value={kpis.totalDettes} formatter={v => v.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} />
+            {/* KPI 1 — Dette Totale Restante */}
+            <div className="bg-[#1a2537] border border-[rgba(148,163,184,0.08)] rounded-xl p-5 md:p-6">
+                <h2 className="text-[#64748b] text-[0.8rem] uppercase tracking-[0.05em] mb-1 font-inter">
+                    Dette Totale Restante
+                </h2>
+                <p className="text-[#f87171] text-[2rem] font-[700] tracking-[-0.02em] leading-[1.5] font-inter">
+                    - <SecureValue value={kpis.totalDettes} formatter={v => v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'} />
                 </p>
-                <p style={subStyle}>{kpis.nombreActifs} crédit(s) actif(s)</p>
+                <p className="text-[#64748b] text-sm mt-1 font-inter">
+                    {kpis.nombreActifs} crédit(s) actif(s)
+                </p>
             </div>
 
             {/* KPI 2 — Mensualités */}
-            <div style={cardStyle}>
-                <p style={labelStyle}>Mensualités Totales</p>
-                <p style={valuStyle()}>
-                    <SecureValue value={kpis.totalMensualites} formatter={v => v.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} />
-                    <span style={{ fontSize: 15, fontWeight: 500, color: '#6B7280' }}>/mois</span>
+            <div className="bg-[#1a2537] border border-[rgba(148,163,184,0.08)] rounded-xl p-5 md:p-6">
+                <h2 className="text-[#64748b] text-[0.8rem] uppercase tracking-[0.05em] mb-1 font-inter">
+                    Mensualités Totales
+                </h2>
+                <p className="text-[#f8fafc] text-[2rem] font-[700] tracking-[-0.02em] leading-[1.5] font-inter">
+                    <SecureValue value={kpis.totalMensualites} formatter={v => v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'} />
+                    <span className="text-[#64748b] text-sm font-[400] ml-1">/ mois</span>
                 </p>
-                <p style={subStyle}>Charges de remboursement mensuelles</p>
+                <p className="text-[#64748b] text-sm mt-1 font-inter">
+                    Charges de remboursement mensuelles
+                </p>
             </div>
 
             {/* KPI 3 — Taux d'endettement */}
-            <div style={cardStyle}>
-                <p style={labelStyle}>Taux d'Endettement</p>
-                <p style={{ ...valuStyle(couleurTaux), marginBottom: 2 }}>
+            <div className="bg-[#1a2537] border border-[rgba(148,163,184,0.08)] rounded-xl p-5 md:p-6">
+                <h2 className="text-[#64748b] text-[0.8rem] uppercase tracking-[0.05em] mb-1 font-inter">
+                    Taux d'Endettement
+                </h2>
+                <p style={{ color: couleurTaux }} className="text-[2rem] font-[700] tracking-[-0.02em] leading-[1.5] font-inter">
                     {tauxEndettement !== null ? `${tauxEndettement}%` : 'N/A'}
                 </p>
-                <p style={{ ...subStyle, color: couleurTaux, fontWeight: 600, marginBottom: 10 }}>
+                <p style={{ color: couleurTaux }} className="text-xs font-semibold mb-2 font-inter">
                     {tauxEndettement !== null ? labelTaux : 'Aucun revenu renseigné'}
                 </p>
                 {/* Barre de progression */}
-                <div style={{ background: '#E5E7EB', borderRadius: 9999, height: 6, overflow: 'hidden' }}>
-                    <div style={{
-                        width: `${largeurBarre}%`,
-                        background: couleurTaux,
-                        height: '100%',
-                        borderRadius: 9999,
-                        transition: 'width 0.6s ease',
-                    }} />
+                <div className="bg-[#334155] rounded-full h-1.5 overflow-hidden">
+                    <div
+                        style={{
+                            width: `${largeurBarre}%`,
+                            backgroundColor: couleurTaux,
+                        }}
+                        className="h-full rounded-full transition-all duration-500 ease-out"
+                    />
                 </div>
-                <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>
+                <p className="text-[11px] text-[#64748b] mt-1 font-inter">
                     0% — 50% (max visuel)
                 </p>
             </div>
 
         </div>
     );
-}
+}
