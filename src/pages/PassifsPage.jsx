@@ -1,7 +1,6 @@
 // src/pages/PassifsPage.jsx
 import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
-import ExcelJS from 'exceljs';
 import { Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useDettes } from '../hooks/useDettes';
@@ -201,30 +200,52 @@ function PassifsPage() {
             {/* Filtres par type (Sous-onglets) et Tri */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
 
-                {/* Conteneur principal des sous-onglets avec forçage '!' anti-fond-blanc */}
-                <div className="inline-flex items-center flex-wrap !bg-[#111a2c] p-1.5 rounded-xl border !border-[rgba(148,163,184,0.08)] gap-1">
+                {/* CONTENEUR DES SOUS-ONGLETS - Style forcé aux couleurs Fondora */}
+                <div
+                    style={{
+                        backgroundColor: '#111a2c',
+                        borderColor: 'rgba(148, 163, 184, 0.12)',
+                        borderWidth: '1px',
+                        borderStyle: 'solid'
+                    }}
+                    className="inline-flex items-center p-1.5 rounded-xl gap-1 mb-6 flex-wrap"
+                >
                     {FILTRES.map((filtre) => {
                         const countNb = filtre !== 'Tous' ? dettes.filter((d) => d.type === filtre).length : dettes.length;
+                        const isSelected = filtreActif === filtre;
 
                         return (
                             <button
                                 key={filtre}
                                 type="button"
                                 onClick={() => setFiltreActif(filtre)}
-                                className={`px-4 py-2 text-sm font-inter rounded-lg transition-all flex items-center gap-1.5 ${
-                                    filtreActif === filtre
-                                        ? "font-[600] !bg-[#1a2537] !text-[#f8fafc] border !border-[rgba(148,163,184,0.12)] shadow-sm"
-                                        : "font-[500] !bg-transparent !text-[#64748b] hover:!text-[#94a3b8] hover:!bg-[#1a2537]/50 border border-transparent"
-                                }`}
+                                style={isSelected ? {
+                                    backgroundColor: '#1a2537',
+                                    color: '#f8fafc',
+                                    borderColor: 'rgba(148, 163, 184, 0.2)',
+                                    borderWidth: '1px',
+                                    borderStyle: 'solid'
+                                } : {
+                                    backgroundColor: 'transparent',
+                                    color: '#64748b'
+                                }}
+                                className={`px-4 py-2 text-sm ${isSelected ? 'font-semibold rounded-lg shadow-sm' : 'font-medium rounded-lg hover:text-[#94a3b8]'} transition-all cursor-pointer flex items-center gap-1.5`}
                             >
                                 <span>{filtre}</span>
-                                <span className={`text-xs opacity-75 px-1.5 py-0.5 rounded-full ${filtreActif === filtre ? '!bg-[#111a2c]' : '!bg-[#1a2537]'}`}>
+                                <span
+                                    style={{
+                                        backgroundColor: isSelected ? '#111a2c' : '#1a2537',
+                                        color: isSelected ? '#f8fafc' : '#94a3b8'
+                                    }}
+                                    className="text-xs px-1.5 py-0.5 rounded-full"
+                                >
                                     {countNb}
                                 </span>
                             </button>
                         );
                     })}
                 </div>
+
 
 
 
