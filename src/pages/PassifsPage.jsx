@@ -16,9 +16,9 @@ function EmptyState() {
         <div style={{
             textAlign: 'center',
             padding: '60px 24px',
-            background: 'white',
+            background: 'var(--bg-card)',
             borderRadius: 16,
-            border: '1px dashed #D1D5DB',
+            border: '1px dashed var(--border-strong)',
         }}>
             <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginBottom: 16 }}>
                 <circle cx="40" cy="40" r="40" fill="#F3F4F6" />
@@ -27,10 +27,10 @@ function EmptyState() {
                 <circle cx="56" cy="24" r="8" fill="#10B981" />
                 <path d="M53 24L55.5 26.5L59 22" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 600, color: '#374151' }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 600, color: 'var(--text-h)' }}>
                 Aucune dette enregistrée
             </h3>
-            <p style={{ margin: 0, color: '#6B7280', fontSize: 14 }}>
+            <p style={{ margin: 0, color: 'var(--text)', fontSize: 14 }}>
                 Commencez par ajouter votre premier crédit.
             </p>
         </div>
@@ -158,9 +158,9 @@ function PassifsPage() {
                     <button
                         onClick={exporterCSV}
                         style={{
-                            background: '#1a2537',
-                            color: '#94a3b8',
-                            border: '1px solid rgba(148,163,184,0.15)',
+                            background: 'var(--bg-card)',
+                            color: 'var(--text-h)',
+                            border: '1px solid var(--border)',
                             borderRadius: 10,
                             padding: '10px 16px',
                             fontWeight: 600,
