@@ -144,20 +144,23 @@ function PassifsPage() {
             {/* En-tête */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <div>
-                    <h1 style={{ margin: '0 0 4px', fontSize: 28, fontWeight: 700, color: '#111827' }}>
-                        ⛔ Passifs & Dettes
+                    <div style={{ color: '#64748b', fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '4px' }}>
+                        Patrimoine &bull; Passifs
+                    </div>
+                    <h1 style={{ color: '#f8fafc', fontSize: '1.875rem', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
+                        Passifs & Dettes
                     </h1>
-                    <p style={{ margin: 0, color: '#6B7280', fontSize: 14 }}>
-                        Suivi de vos crédits, emprunts et obligations financières.
+                    <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginTop: '6px', marginBottom: 0 }}>
+                        Suivi complet de vos emprunts, dettes personnelles, fiscales et actifs tangibles.
                     </p>
                 </div>
                 <div style={{ display: 'flex', gap: 12 }}>
                     <button
                         onClick={exporterCSV}
                         style={{
-                            background: 'white',
-                            color: '#111827',
-                            border: '1px solid #D1D5DB',
+                            background: '#1a2537',
+                            color: '#94a3b8',
+                            border: '1px solid rgba(148,163,184,0.15)',
                             borderRadius: 10,
                             padding: '10px 16px',
                             fontWeight: 600,
@@ -168,16 +171,14 @@ function PassifsPage() {
                             gap: 8,
                             transition: 'all 0.15s'
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = '#F9FAFB'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
                     >
                         <Download size={18} /> CSV
                     </button>
                     <button
                         onClick={() => ouvrirModal()}
                         style={{
-                            background: '#111827',
-                            color: 'white',
+                            background: '#10b981',
+                            color: '#f8fafc',
                             border: 'none',
                             borderRadius: 10,
                             padding: '10px 20px',

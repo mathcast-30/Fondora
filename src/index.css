@@ -214,17 +214,16 @@ select, option {
   border-left: 3px solid #10b981;
 }
 
-.recommandation p {
-  margin: 4px 0 0;
-  color: var(--text-muted);
+
+/* ===== BLINDAGE GLOBAL ONGLETS FONDORA ===== */
+/* Force le thème sombre sur tous les onglets Radix/Shadcn */
+[data-state="active"] {
+  background-color: #1a2537 !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
 }
 
-@media (max-width: 1024px) {
-  .bandeau-recap {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .grille-deux-colonnes {
-    grid-template-columns: 1fr;
-  }
+[data-state="inactive"] {
+  background-color: transparent !important;
+  color: #64748b !important;
 }
