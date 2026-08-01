@@ -19,7 +19,7 @@ function EvolutionPatrimoineChart({ historique, periode, setPeriode }) {
 
     const data = historique.map((h) => ({
         date: formatDate(h.date),
-        valeur: Number(h.valeur_positions),
+        valeur: Number(h.Bourse),
     }))
 
     const premiereDateValeur = data[0]?.valeur || 0

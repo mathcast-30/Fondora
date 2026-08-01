@@ -76,13 +76,13 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
           const today = new Date().toISOString().split('T')[0];
           if (dateTransaction === today) {
             const { data: cacheData } = await supabase
-              .from('cache_des_prix_des_actifs')
-              .select('prix')
+              .from('asset_prices_cache')
+              .select('dernier_prix')
               .eq('ticker', actifSelectionne.ticker)
               .maybeSingle();
 
-            if (cacheData?.prix) {
-              setPrix(cacheData.prix.toString());
+            if (cacheData?.dernier_prix) {
+              setPrix(cacheData.dernier_prix.toString());
             } else if (type === 'VENTE' && actifSelectionne.prix_achat_moyen) {
               setPrix(actifSelectionne.prix_achat_moyen.toString());
             } else {
