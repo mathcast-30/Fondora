@@ -166,18 +166,6 @@ export function useTransactions(mois, annee) {
                 dette_id: dette.id,
             })
 
-            // Déduire le solde du compte associé
-            const { data: compte } = await supabase
-                .from('comptes')
-                .select('solde')
-                .eq('id', dette.compte_id)
-                .single()
-            if (compte) {
-                await supabase
-                    .from('comptes')
-                    .update({ solde: Number(compte.solde) - Number(dette.mensualite) })
-                    .eq('id', dette.compte_id)
-            }
         }
     }, [annee, mois, debutMois, finMois, user])
 

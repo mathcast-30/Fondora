@@ -135,19 +135,6 @@ export function useDettes() {
             source: 'dette_auto',
         }]);
 
-        // Déduire le solde du compte
-        const { data: compte } = await supabase
-            .from('comptes')
-            .select('solde')
-            .eq('id', dette.compte_id)
-            .single();
-        
-        if (compte) {
-            await supabase
-                .from('comptes')
-                .update({ solde: Number(compte.solde) - Math.abs(dette.mensualite) })
-                .eq('id', dette.compte_id);
-        }
     };
 
     const ajouterDette = async (formData) => {

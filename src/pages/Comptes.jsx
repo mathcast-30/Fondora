@@ -5,18 +5,18 @@ import SecureValue from '../components/SecureValue'
 import { useComptes } from '../hooks/useComptes'
 import { Wallet, TrendingUp, CreditCard, Home, HelpCircle, Plus, Trash2 } from 'lucide-react'
 
-const TYPES_COMPTES = ['Compte courant', 'Épargne', 'Crédit', 'PEA', 'CTO', 'Assurance vie', 'Crypto', 'Immobilier', 'Autre']
+const TYPES_COMPTES = ['Compte courant', 'Compte chèques', 'Épargne', 'Espèces', 'Crédit', 'PEA', 'CTO', 'Assurance vie', 'Crypto', 'Immobilier', 'Autre']
 const COULEURS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
 
 const CATEGORIES = [
     {
         id: 'liquidites',
         titre: 'Comptes courants & épargne',
-        description: "Ton argent disponible au quotidien : dépenses courantes, virements, et l'épargne de précaution (Livret A, LDDS...). C'est ce qui alimente ton \"Restant à vivre\" dans le Budget.",
+        description: "Ton argent disponible au quotidien : dépenses courantes, virements, espèces, et l'épargne de précaution (Livret A, LDDS...). C'est ce qui alimente ton \"Restant à vivre\" dans le Budget.",
         icone: Wallet,
         couleur: '#10b981',
         // comparaison normalisée (minuscules, sans espaces superflus) pour ne jamais rater un compte
-        types: ['compte courant', 'épargne', 'epargne'],
+        types: ['compte courant', 'compte chèques', 'compte cheques', 'épargne', 'epargne', 'espèces', 'especes', 'cash'],
     },
     {
         id: 'investissement',
