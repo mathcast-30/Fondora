@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { calculerMensualiteCourante } from '../utils/financeCredit'
 
 export function useTransactions(mois, annee) {
     const { user } = useAuth()
@@ -114,7 +115,7 @@ export function useTransactions(mois, annee) {
     const genererMensualitesDettes = useCallback(async () => {
         const { data: dettes } = await supabase
             .from('dettes')
-            .select('id, nom, mensualite, compte_id, date_debut, duree_mois, taux_interet, capital_emprunte')
+            .select('id, nom, mensualite, compte_id, date_debut, duree_mois, taux_interet, capital_emprunte, type_amortissement, duree_differe_mois')
             .eq('user_id', user.id)
             .eq('rembourse_automatiquement', true)
             .not('compte_id', 'is', null)
@@ -150,12 +151,16 @@ export function useTransactions(mois, annee) {
             const jour = Math.min(jourEcheance, maxJour)
             const dateEcheance = `${annee}-${String(mois).padStart(2, '0')}-${String(jour).padStart(2, '0')}`
 
+            // Mensualité réellement due ce mois-là (varie selon la phase : différé, in fine…)
+            const mensualiteCourante = calculerMensualiteCourante(dette, new Date(dateEcheance))
+            if (!mensualiteCourante || mensualiteCourante <= 0) continue // ex: différé total → rien à injecter
+
             await supabase.from('transactions').insert({
                 user_id: user.id,
                 compte_id: dette.compte_id,
                 categorie_id: CATEGORIE_CREDITS,
                 description: `Mensualité — ${dette.nom}`,
-                montant: Number(dette.mensualite),
+                montant: mensualiteCourante,
                 type: 'depense',
                 date: dateEcheance,
                 recurrente: true,
@@ -166,6 +171,18 @@ export function useTransactions(mois, annee) {
                 dette_id: dette.id,
             })
 
+            // Déduire le solde du compte associé
+            const { data: compte } = await supabase
+                .from('comptes')
+                .select('solde')
+                .eq('id', dette.compte_id)
+                .single()
+            if (compte) {
+                await supabase
+                    .from('comptes')
+                    .update({ solde: Number(compte.solde) - mensualiteCourante })
+                    .eq('id', dette.compte_id)
+            }
         }
     }, [annee, mois, debutMois, finMois, user])
 

@@ -1,8 +1,16 @@
 // src/components/passifs/FormDette.jsx
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { genererTableauAmortissement, calculerMensualiteCredit } from '../../utils/financeCredit';
 
 const TYPES_DETTE = ['Consommation', 'Immobilier', 'Automobile', 'Dette Privée', 'Fiscale', 'Autre'];
+
+const TYPES_AMORTISSEMENT = [
+    { value: 'classique', label: 'Amortissable classique', description: 'Capital + intérêts remboursés chaque mois dès le début.' },
+    { value: 'differe_partiel', label: 'Différé partiel', description: "Intérêts seuls pendant une période, puis amortissement classique." },
+    { value: 'differe_total', label: 'Différé total', description: "Rien n'est payé pendant une période (intérêts capitalisés au capital), puis amortissement classique." },
+    { value: 'in_fine', label: 'In fine', description: "Intérêts seuls chaque mois, capital remboursé en une fois à l'échéance finale." },
+];
 
 const FORM_VIDE = {
     nom: '',
@@ -16,16 +24,56 @@ const FORM_VIDE = {
     rembourse_automatiquement: true,
     notes: '',
     compte_id: '',
+    type_amortissement: 'classique',
+    duree_differe_mois: '',
 };
 
-function calculerMensualiteAuto(capital, taux, duree) {
-    if (!capital || !taux || !duree) return null;
-    const c = parseFloat(capital);
-    const t = parseFloat(taux) / 100 / 12;
-    const n = parseInt(duree);
-    if (c <= 0 || t < 0 || n <= 0) return null;
-    if (t === 0) return c / n;
-    return (c * t * Math.pow(1 + t, n)) / (Math.pow(1 + t, n) - 1);
+/**
+ * Calcule un aperçu des mensualités selon le type d'amortissement choisi,
+ * pour affichage en temps réel dans le formulaire.
+ */
+function calculerApercu(form) {
+    const capital = parseFloat(form.capital_emprunte);
+    const taux = parseFloat(form.taux_interet);
+    const duree = parseInt(form.duree_mois);
+    const differe = parseInt(form.duree_differe_mois) || 0;
+
+    if (!capital || capital <= 0 || Number.isNaN(taux) || taux < 0 || !duree || duree <= 0) return null;
+
+    if (form.type_amortissement === 'classique') {
+        return { mensualitePrincipale: calculerMensualiteCredit(capital, taux, duree) };
+    }
+
+    if (form.type_amortissement === 'in_fine') {
+        const tableau = genererTableauAmortissement({
+            capitalEmprunte: capital,
+            tauxInteret: taux,
+            dureeMois: duree,
+            mensualite: 0,
+            dateDebut: form.date_debut || new Date().toISOString(),
+            typeAmortissement: 'in_fine',
+        });
+        return {
+            mensualitePrincipale: tableau[0]?.mensualite || 0,
+            capitalFinal: capital,
+        };
+    }
+
+    // differe_partiel / differe_total
+    if (!differe || differe <= 0 || differe >= duree) return null;
+    const tableau = genererTableauAmortissement({
+        capitalEmprunte: capital,
+        tauxInteret: taux,
+        dureeMois: duree,
+        mensualite: 0,
+        dateDebut: form.date_debut || new Date().toISOString(),
+        typeAmortissement: form.type_amortissement,
+        dureeDiffereMois: differe,
+    });
+    return {
+        mensualiteDiffere: tableau[0]?.mensualite || 0,
+        mensualitePrincipale: tableau[differe]?.mensualite || 0,
+    };
 }
 
 export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmobiliers }) {
@@ -56,6 +104,8 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
                 rembourse_automatiquement: detteInitiale.rembourse_automatiquement ?? true,
                 notes: detteInitiale.notes || '',
                 compte_id: detteInitiale.compte_id || '',
+                type_amortissement: detteInitiale.type_amortissement || 'classique',
+                duree_differe_mois: String(detteInitiale.duree_differe_mois || ''),
             });
         } else if (ouvert && !detteInitiale) {
             setForm(FORM_VIDE);
@@ -75,8 +125,8 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
 
     const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
-    // Mensualité calculée automatiquement
-    const mensualiteCalc = calculerMensualiteAuto(form.capital_emprunte, form.taux_interet, form.duree_mois);
+    const apercu = calculerApercu(form);
+    const aDiffere = form.type_amortissement === 'differe_partiel' || form.type_amortissement === 'differe_total';
 
     // Validation
     const valider = () => {
@@ -94,6 +144,14 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
             e.date_debut = 'La date de début est obligatoire.';
         if (form.rembourse_automatiquement && !form.compte_id)
             e.compte_id = 'Veuillez sélectionner un compte';
+        if (aDiffere) {
+            const differe = parseInt(form.duree_differe_mois);
+            const duree = parseInt(form.duree_mois);
+            if (!differe || differe <= 0)
+                e.duree_differe_mois = 'La durée du différé doit être > 0.';
+            else if (duree && differe >= duree)
+                e.duree_differe_mois = 'Le différé doit être strictement inférieur à la durée totale du crédit.';
+        }
         setErreurs(e);
         return Object.keys(e).length === 0;
     };
@@ -115,6 +173,8 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
                 rembourse_automatiquement: form.rembourse_automatiquement,
                 compte_id: form.rembourse_automatiquement ? form.compte_id : null,
                 notes: form.notes || null,
+                type_amortissement: form.type_amortissement,
+                duree_differe_mois: aDiffere ? parseInt(form.duree_differe_mois) || 0 : 0,
             });
             onClose();
         } catch (err) {
@@ -127,19 +187,18 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
     const inputStyle = (err) => ({
         width: '100%',
         padding: '10px 12px',
-        border: `1px solid ${err ? '#EF4444' : 'var(--border)'}`,
+        border: `1px solid ${err ? '#EF4444' : '#D1D5DB'}`,
         borderRadius: 8,
         fontSize: 14,
         outline: 'none',
-        background: 'var(--bg-surface)',
-        color: 'var(--text-h)',
+        background: 'white',
         boxSizing: 'border-box',
     });
 
     const labelStyle = {
         fontSize: 13,
         fontWeight: 600,
-        color: 'var(--text)',
+        color: '#374151',
         display: 'block',
         marginBottom: 6,
     };
@@ -166,7 +225,7 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
         >
             <div
                 style={{
-                    background: 'var(--bg-card)',
+                    background: 'white',
                     borderRadius: 16,
                     padding: 32,
                     width: '100%',
@@ -179,12 +238,12 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
             >
                 {/* Titre */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                    <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--text-h)' }}>
+                    <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111827' }}>
                         {detteInitiale ? '✏️ Modifier un crédit' : '➕ Ajouter un crédit'}
                     </h2>
                     <button
                         onClick={onClose}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: 'var(--text-muted)' }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#9CA3AF' }}
                     >✕</button>
                 </div>
 
@@ -269,7 +328,7 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
                             {erreurs.taux_interet && <p style={errStyle}>{erreurs.taux_interet}</p>}
                         </div>
                         <div>
-                            <label style={labelStyle}>Durée (mois) *</label>
+                            <label style={labelStyle}>Durée totale (mois) *</label>
                             <input
                                 type="number"
                                 step="1"
@@ -283,9 +342,96 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
                         </div>
                     </div>
 
-                    {/* Mensualité */}
+                    {/* Type d'amortissement */}
+                    <div style={{
+                        background: '#F8FAFC',
+                        border: '1px solid #E2E8F0',
+                        borderRadius: 10,
+                        padding: '14px 16px',
+                    }}>
+                        <label style={labelStyle}>Type d'amortissement</label>
+                        <select
+                            value={form.type_amortissement}
+                            onChange={(e) => set('type_amortissement', e.target.value)}
+                            style={{ ...inputStyle(false), marginBottom: 8 }}
+                        >
+                            {TYPES_AMORTISSEMENT.map((t) => (
+                                <option key={t.value} value={t.value}>{t.label}</option>
+                            ))}
+                        </select>
+                        <p style={{ fontSize: 12, color: '#6B7280', margin: 0 }}>
+                            {TYPES_AMORTISSEMENT.find((t) => t.value === form.type_amortissement)?.description}
+                        </p>
+
+                        {aDiffere && (
+                            <div style={{ marginTop: 12 }}>
+                                <label style={labelStyle}>Durée du différé (mois) *</label>
+                                <input
+                                    type="number"
+                                    step="1"
+                                    min="1"
+                                    value={form.duree_differe_mois}
+                                    onChange={(e) => set('duree_differe_mois', e.target.value)}
+                                    placeholder="12"
+                                    style={inputStyle(erreurs.duree_differe_mois)}
+                                />
+                                {erreurs.duree_differe_mois && <p style={errStyle}>{erreurs.duree_differe_mois}</p>}
+                            </div>
+                        )}
+
+                        {/* Aperçu dynamique */}
+                        {apercu && (
+                            <div style={{
+                                marginTop: 12,
+                                padding: '10px 12px',
+                                background: '#F0FDF4',
+                                border: '1px solid #D1FAE5',
+                                borderRadius: 8,
+                                fontSize: 12,
+                                color: '#065F46',
+                                lineHeight: 1.6,
+                            }}>
+                                {form.type_amortissement === 'classique' && (
+                                    <>💡 Mensualité : <strong>{apercu.mensualitePrincipale.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</strong></>
+                                )}
+                                {form.type_amortissement === 'in_fine' && (
+                                    <>
+                                        💡 Mensualité (intérêts seuls) : <strong>{apercu.mensualitePrincipale.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</strong><br />
+                                        🎯 Capital remboursé en une fois à l'échéance : <strong>{apercu.capitalFinal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</strong>
+                                    </>
+                                )}
+                                {aDiffere && apercu.mensualitePrincipale !== undefined && (
+                                    <>
+                                        ⏸️ Mensualité pendant le différé : <strong>{apercu.mensualiteDiffere.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</strong>
+                                        {form.type_amortissement === 'differe_total' && ' (0 € en réalité — les intérêts sont capitalisés au capital)'}<br />
+                                        ▶️ Mensualité après le différé : <strong>{apercu.mensualitePrincipale.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</strong>
+                                    </>
+                                )}
+                                <div style={{ marginTop: 6 }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => set('mensualite', apercu.mensualitePrincipale.toFixed(2))}
+                                        style={{
+                                            background: 'none', border: '1px solid #10B981',
+                                            borderRadius: 4, padding: '2px 8px', fontSize: 11,
+                                            color: '#10B981', cursor: 'pointer',
+                                        }}
+                                    >
+                                        Utiliser ce montant
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Mensualité (valeur stockée / de référence) */}
                     <div>
-                        <label style={labelStyle}>Mensualité (€) *</label>
+                        <label style={labelStyle}>
+                            Mensualité de référence (€) *
+                            {form.type_amortissement !== 'classique' && (
+                                <span style={{ fontWeight: 400, color: '#6B7280' }}> — utilisée pour l'affichage, la vraie mensualité varie selon la phase</span>
+                            )}
+                        </label>
                         <input
                             type="number"
                             step="0.01"
@@ -296,25 +442,6 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
                             style={inputStyle(erreurs.mensualite)}
                         />
                         {erreurs.mensualite && <p style={errStyle}>{erreurs.mensualite}</p>}
-                        {mensualiteCalc !== null && (
-                            <p style={{ fontSize: 12, color: '#10B981', marginTop: 4 }}>
-                                💡 Mensualité calculée : <strong>
-                                    {mensualiteCalc.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                                </strong> — modifiable
-                                {' '}
-                                <button
-                                    type="button"
-                                    onClick={() => set('mensualite', mensualiteCalc.toFixed(2))}
-                                    style={{
-                                        background: 'none', border: '1px solid #10B981',
-                                        borderRadius: 4, padding: '1px 6px', fontSize: 11,
-                                        color: '#10B981', cursor: 'pointer', marginLeft: 4,
-                                    }}
-                                >
-                                    Utiliser ce montant
-                                </button>
-                            </p>
-                        )}
                     </div>
 
                     {/* Date de début */}
@@ -331,8 +458,8 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
 
                     {/* Injection auto budget */}
                     <div style={{
-                        background: 'rgba(16,185,129,0.08)',
-                        border: '1px solid rgba(16,185,129,0.2)',
+                        background: '#F0FDF4',
+                        border: '1px solid #D1FAE5',
                         borderRadius: 10,
                         padding: '12px 14px',
                         display: 'flex',
@@ -346,10 +473,10 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
                             onChange={(e) => set('rembourse_automatiquement', e.target.checked)}
                             style={{ marginTop: 2, flexShrink: 0, width: 16, height: 16 }}
                         />
-                        <label htmlFor="rembourse_auto" style={{ fontSize: 13, color: 'var(--text-h)', cursor: 'pointer' }}>
+                        <label htmlFor="rembourse_auto" style={{ fontSize: 13, color: '#065F46', cursor: 'pointer' }}>
                             <strong>Injection automatique dans le budget</strong><br />
-                            <span style={{ fontWeight: 400, color: 'var(--text)' }}>
-                                Crée automatiquement une transaction mensuelle de remboursement dans ton budget le 1er de chaque mois.
+                            <span style={{ fontWeight: 400, color: '#6B7280' }}>
+                                Crée automatiquement une transaction mensuelle de remboursement dans ton budget, avec le bon montant selon la phase (différé, in fine, etc.).
                             </span>
                         </label>
                     </div>
@@ -369,7 +496,7 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
                             </select>
                             {erreurs.compte_id && <p style={errStyle}>{erreurs.compte_id}</p>}
                             <p style={{ fontSize: 11, color: '#6B7280', marginTop: 4 }}>
-                                La mensualité sera automatiquement enregistrée comme dépense sur ce compte chaque mois.
+                                La mensualité réelle du mois (0 € pendant un différé total) sera automatiquement enregistrée comme dépense sur ce compte.
                             </p>
                         </div>
                     )}
@@ -394,12 +521,12 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
                             style={{
                                 flex: 1,
                                 padding: '11px 0',
-                                border: '1px solid var(--border)',
+                                border: '1px solid #D1D5DB',
                                 borderRadius: 10,
-                                background: 'var(--bg-surface)',
+                                background: 'white',
                                 fontSize: 14,
                                 fontWeight: 600,
-                                color: 'var(--text-h)',
+                                color: '#374151',
                                 cursor: 'pointer',
                             }}
                         >

@@ -1,17 +1,25 @@
 // src/components/passifs/DetteCard.jsx
 import SecureValue from '../SecureValue';
 
-const BADGE_STYLES = {
-    Immobilier: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    Consommation: 'bg-red-500/10 text-red-400 border-red-500/20',
-    Fiscale: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-    Automobile: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
-    'Dette Privée': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    Autre: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+const CONFIG_TYPE = {
+    Immobilier: { couleur: '#3B82F6', bg: '#EFF6FF', emoji: '🏠' },
+    Consommation: { couleur: '#EF4444', bg: '#FEF2F2', emoji: '🔴' },
+    Automobile: { couleur: '#6B7280', bg: '#F9FAFB', emoji: '🚗' },
+    Fiscale: { couleur: '#F59E0B', bg: '#FFFBEB', emoji: '🟡' },
+    'Dette Privée': { couleur: '#10B981', bg: '#F0FDF4', emoji: '🟢' },
+    Autre: { couleur: '#8B5CF6', bg: '#F5F3FF', emoji: '📋' },
+};
+
+const CONFIG_AMORTISSEMENT = {
+    differe_partiel: { label: 'Différé partiel', couleur: '#D97706', bg: '#FFFBEB', emoji: '⏸️' },
+    differe_total: { label: 'Différé total', couleur: '#DC2626', bg: '#FEF2F2', emoji: '⏸️' },
+    in_fine: { label: 'In fine', couleur: '#7C3AED', bg: '#F5F3FF', emoji: '🎯' },
 };
 
 export function DetteCard({ dette, onEdit, onDelete, onVoirTableau }) {
-    const badgeStyle = BADGE_STYLES[dette.type] || BADGE_STYLES['Autre'];
+    const config = CONFIG_TYPE[dette.type] || CONFIG_TYPE['Autre'];
+    const badgeAmortissement = CONFIG_AMORTISSEMENT[dette.type_amortissement];
+    const mensualiteAffichee = dette.mensualiteCourante ?? dette.mensualite;
 
     // Calcul des mois restants (via dateFin enrichie)
     const maintenant = new Date();
@@ -21,135 +29,193 @@ export function DetteCard({ dette, onEdit, onDelete, onVoirTableau }) {
 
     const finProche = !dette.estRembourse && moisRestants <= 6 && moisRestants > 0;
 
-    // Si crédit soldé : affichage adapté
+    const btnStyle = {
+        background: 'none',
+        border: '1px solid #E5E7EB',
+        borderRadius: 8,
+        padding: '4px 8px',
+        cursor: 'pointer',
+        fontSize: 16,
+        transition: 'background 0.15s',
+    };
+
+    // Si crédit soldé : affichage simplifié
     if (dette.estRembourse) {
         return (
-            <div className="bg-[#1a2537] border border-[rgba(148,163,184,0.08)] rounded-xl p-5 mb-4 flex flex-col md:flex-row justify-between md:items-center gap-4 opacity-75">
-                <div>
-                    <div className="flex items-center gap-3">
-                        <h3 className="text-[#f8fafc] font-[600] text-lg font-inter">
-                            {dette.nom}
-                        </h3>
-                        <span className={`border px-2 py-1 text-xs rounded-md font-inter ${badgeStyle}`}>
-                            {dette.type}
+            <div style={{
+                border: `1px solid #10B98130`,
+                borderRadius: 12,
+                padding: 20,
+                marginBottom: 16,
+                background: '#F0FDF4',
+                opacity: 0.8,
+            }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{
+                            background: '#D1FAE5', color: '#10B981',
+                            padding: '2px 10px', borderRadius: 20, fontSize: 13, fontWeight: 600,
+                        }}>
+                            {config.emoji} {dette.type}
                         </span>
-                        <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-1 text-xs rounded-md font-inter">
+                        <h3 style={{ margin: 0, fontSize: 16, color: '#374151' }}>{dette.nom}</h3>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{
+                            background: '#10B981', color: '#fff',
+                            padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600,
+                        }}>
                             ✅ Crédit soldé
                         </span>
+                        <button onClick={() => onDelete(dette.id)} style={btnStyle} title="Supprimer">🗑️</button>
                     </div>
-                    {dette.biens_immobiliers && (
-                        <p className="text-[#94a3b8] text-sm mt-1 font-inter leading-[1.5]">
-                            Lié au bien : {dette.biens_immobiliers.nom}
-                        </p>
-                    )}
-                </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => onDelete(dette.id)}
-                        className="text-red-400 hover:bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-lg text-sm transition"
-                        title="Supprimer"
-                    >
-                        🗑️ Supprimer
-                    </button>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="bg-[#1a2537] border border-[rgba(148,163,184,0.08)] rounded-xl p-5 mb-4 flex flex-col gap-4">
-            {/* Ligne principale haut : Titre, badge, montants & actions */}
-            <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+        <div style={{
+            border: `1px solid ${config.couleur}30`,
+            borderRadius: 12,
+            padding: 20,
+            marginBottom: 16,
+            background: 'white',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        }}>
 
-                {/* Informations de base */}
+            {/* En-tête */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                    <div className="flex items-center gap-3 flex-wrap">
-                        {/* Titre de la dette */}
-                        <h3 className="text-[#f8fafc] font-[600] text-lg font-inter">
-                            {dette.nom}
-                        </h3>
-
-                        {/* Badge de couleur dynamique */}
-                        <span className={`border px-2 py-1 text-xs rounded-md font-inter ${badgeStyle}`}>
-                            {dette.type}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{
+                            background: config.bg,
+                            color: config.couleur,
+                            padding: '2px 10px',
+                            borderRadius: 20,
+                            fontSize: 13,
+                            fontWeight: 600,
+                        }}>
+                            {config.emoji} {dette.type}
                         </span>
-
+                        {badgeAmortissement && (
+                            <span style={{
+                                background: badgeAmortissement.bg,
+                                color: badgeAmortissement.couleur,
+                                padding: '2px 10px',
+                                borderRadius: 20,
+                                fontSize: 12,
+                                fontWeight: 600,
+                            }}>
+                                {badgeAmortissement.emoji} {badgeAmortissement.label}
+                                {dette.type_amortissement !== 'in_fine' && ` (${dette.duree_differe_mois} mois)`}
+                            </span>
+                        )}
                         {finProche && (
-                            <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-1 text-xs rounded-md font-inter">
+                            <span style={{
+                                background: '#FEF3C7', color: '#D97706',
+                                padding: '2px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+                            }}>
                                 ⏱️ Fin dans {moisRestants} mois
                             </span>
                         )}
                     </div>
+                    <h3 style={{ margin: '8px 0 0', fontSize: 18, color: '#111827' }}>{dette.nom}</h3>
 
-                    {/* Texte courant / Description */}
+                    {/* Lien bien immo */}
                     {dette.biens_immobiliers && (
-                        <p className="text-[#94a3b8] text-sm mt-1 font-inter leading-[1.5]">
-                            Lié au bien : {dette.biens_immobiliers.nom}
+                        <p style={{ fontSize: 13, color: '#6B7280', margin: '4px 0 0' }}>
+                            🏠 Lié au bien : <strong>{dette.biens_immobiliers.nom}</strong>
                         </p>
                     )}
                 </div>
 
-                {/* Montants & Actions */}
-                <div className="flex flex-col md:items-end gap-2">
-                    <div className="md:text-right">
-                        {/* Mensualité impactant le budget */}
-                        <p className="text-[#f87171] font-[700] text-xl font-inter">
-                            - <SecureValue value={dette.mensualite} formatter={v => v.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' €'} /> <span className="text-[#64748b] text-sm font-[400]">/ mois</span>
-                        </p>
-                        {/* Texte secondaire */}
-                        <p className="text-[#64748b] text-sm mt-1 font-inter">
-                            Capital restant : <SecureValue value={dette.crd} formatter={v => v.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' €'} />
-                        </p>
-                    </div>
-
-                    {/* Boutons d'actions rapides */}
-                    <div className="flex gap-2 mt-1">
-                        <button
-                            onClick={() => onVoirTableau(dette)}
-                            className="bg-slate-800/60 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2.5 py-1 text-xs rounded-lg font-inter transition"
-                            title="Tableau d'amortissement"
-                        >
-                            📊 Amortissement
-                        </button>
-                        <button
-                            onClick={() => onEdit(dette)}
-                            className="bg-slate-800/60 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2.5 py-1 text-xs rounded-lg font-inter transition"
-                            title="Modifier"
-                        >
-                            ✏️ Modifier
-                        </button>
-                        <button
-                            onClick={() => {
-                                if (window.confirm(`Supprimer la dette "${dette.nom}" ?`)) {
-                                    onDelete(dette.id);
-                                }
-                            }}
-                            className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-2.5 py-1 text-xs rounded-lg font-inter transition"
-                            title="Supprimer"
-                        >
-                            🗑️
-                        </button>
-                    </div>
+                {/* Boutons actions */}
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    <button
+                        onClick={() => onEdit(dette)}
+                        style={btnStyle}
+                        title="Modifier"
+                    >✏️</button>
+                    <button
+                        onClick={() => onVoirTableau(dette)}
+                        style={btnStyle}
+                        title="Tableau d'amortissement"
+                    >📊</button>
+                    <button
+                        onClick={() => {
+                            if (window.confirm(`Supprimer la dette "${dette.nom}" ?`)) {
+                                onDelete(dette.id);
+                            }
+                        }}
+                        style={{ ...btnStyle, borderColor: '#FECACA', color: '#EF4444' }}
+                        title="Supprimer"
+                    >🗑️</button>
                 </div>
             </div>
 
-            {/* Progression & Détails additionnels */}
-            <div className="pt-3 border-t border-[rgba(148,163,184,0.08)]">
-                <div className="flex justify-between items-center text-xs mb-1.5">
-                    <span className="text-[#64748b]">Progression du remboursement</span>
-                    <span className="text-[#94a3b8] font-semibold">{dette.progression}%</span>
+            {/* Grille 3 colonnes : CRD / Mensualité / Date de fin */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, margin: '16px 0' }}>
+                <div>
+                    <p style={{ fontSize: 12, color: '#6B7280', margin: '0 0 2px', fontWeight: 500 }}>Capital Restant Dû</p>
+                    <p style={{ fontSize: 20, fontWeight: 700, margin: 0, color: config.couleur }}>
+                        <SecureValue value={dette.crd} formatter={v => v.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} />
+                    </p>
                 </div>
-                <div className="bg-[#0a0f1d] rounded-full h-2 overflow-hidden mb-2">
-                    <div
-                        style={{ width: `${dette.progression}%` }}
-                        className="bg-emerald-500 h-full rounded-full transition-all duration-500"
-                    />
+                <div>
+                    <p style={{ fontSize: 12, color: '#6B7280', margin: '0 0 2px', fontWeight: 500 }}>
+                        Mensualité{badgeAmortissement ? ' actuelle' : ''}
+                    </p>
+                    <p style={{ fontSize: 16, fontWeight: 600, margin: 0, color: mensualiteAffichee === 0 ? '#9CA3AF' : '#111827' }}>
+                        <SecureValue value={mensualiteAffichee} formatter={v => v.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} />
+                        {mensualiteAffichee > 0 && <span style={{ fontSize: 13, color: '#6B7280' }}>/mois</span>}
+                        {mensualiteAffichee === 0 && dette.type_amortissement === 'differe_total' && (
+                            <span style={{ fontSize: 11, color: '#DC2626', display: 'block', fontWeight: 500 }}>Aucun paiement (différé)</span>
+                        )}
+                    </p>
                 </div>
-                <div className="flex justify-between items-center text-xs text-[#64748b]">
-                    <span>Fin : {dette.dateFin.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })} ({moisRestants} mois)</span>
-                    <span>Taux : {dette.taux_interet}%</span>
+                <div>
+                    <p style={{ fontSize: 12, color: '#6B7280', margin: '0 0 2px', fontWeight: 500 }}>Fin prévue</p>
+                    <p style={{ fontSize: 14, fontWeight: 600, margin: 0, color: '#111827' }}>
+                        {dette.dateFin.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                    </p>
+                    <p style={{ fontSize: 12, color: '#9CA3AF', margin: '2px 0 0' }}>{moisRestants} mois restants</p>
                 </div>
             </div>
+
+            {/* Barre de progression */}
+            <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, color: '#6B7280' }}>Remboursé</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: config.couleur }}>{dette.progression}%</span>
+                </div>
+                <div style={{ background: '#F3F4F6', borderRadius: 9999, height: 8, overflow: 'hidden' }}>
+                    <div style={{
+                        width: `${dette.progression}%`,
+                        background: `linear-gradient(90deg, ${config.couleur}99, ${config.couleur})`,
+                        borderRadius: 9999,
+                        height: '100%',
+                        transition: 'width 0.5s ease',
+                    }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                    <span style={{ fontSize: 11, color: '#9CA3AF' }}>
+                        0 € · Début {new Date(dette.date_debut).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })}
+                    </span>
+                    <span style={{ fontSize: 11, color: '#9CA3AF' }}>
+                        <SecureValue value={dette.capital_emprunte} formatter={v => v.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} />
+                    </span>
+                </div>
+            </div>
+
+            {/* Pied de carte */}
+            <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: 12, marginBottom: 0, borderTop: '1px solid #F3F4F6', paddingTop: 10 }}>
+                💡 Coût total des intérêts :{' '}
+                <strong style={{ color: '#6B7280' }}>
+                    <SecureValue value={dette.coutTotal} formatter={v => v.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} />
+                </strong>
+                {' '}· Taux : <strong style={{ color: '#6B7280' }}>{dette.taux_interet}%</strong>
+            </p>
         </div>
     );
-}
+}

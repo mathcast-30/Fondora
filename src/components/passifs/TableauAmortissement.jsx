@@ -2,6 +2,13 @@
 import { useEffect } from 'react';
 import { genererTableauAmortissement, calculerCRD, calculerCoutTotalCredit } from '../../utils/financeCredit';
 
+const LABELS_PHASE = {
+    differe_partiel: { label: 'Différé partiel', couleur: '#F59E0B', bg: '#FFFBEB' },
+    differe_total: { label: 'Différé total', couleur: '#EF4444', bg: '#FEF2F2' },
+    interets_seuls: { label: 'Intérêts seuls (in fine)', couleur: '#8B5CF6', bg: '#F5F3FF' },
+    solde_final: { label: 'Solde final', couleur: '#111827', bg: '#F3F4F6' },
+};
+
 export function TableauAmortissement({ dette, ouvert, onClose }) {
     // Fermeture avec Escape
     useEffect(() => {
@@ -15,27 +22,19 @@ export function TableauAmortissement({ dette, ouvert, onClose }) {
 
     if (!ouvert || !dette) return null;
 
-    const tableau = genererTableauAmortissement({
+    const params = {
         capitalEmprunte: dette.capital_emprunte,
         tauxInteret: dette.taux_interet,
         dureeMois: dette.duree_mois,
         mensualite: dette.mensualite,
         dateDebut: dette.date_debut,
-    });
+        typeAmortissement: dette.type_amortissement || 'classique',
+        dureeDiffereMois: dette.duree_differe_mois || 0,
+    };
 
-    const crdActuel = calculerCRD({
-        capitalEmprunte: dette.capital_emprunte,
-        tauxInteret: dette.taux_interet,
-        dureeMois: dette.duree_mois,
-        mensualite: dette.mensualite,
-        dateDebut: dette.date_debut,
-    });
-
-    const coutTotal = calculerCoutTotalCredit({
-        mensualite: dette.mensualite,
-        dureeMois: dette.duree_mois,
-        capitalEmprunte: dette.capital_emprunte,
-    });
+    const tableau = genererTableauAmortissement(params);
+    const crdActuel = calculerCRD(params);
+    const coutTotal = calculerCoutTotalCredit(params);
 
     const aujourd_hui = new Date();
     const debut = new Date(dette.date_debut);
@@ -78,6 +77,8 @@ export function TableauAmortissement({ dette, ouvert, onClose }) {
         fontWeight: 600,
     });
 
+    const estTypeAvance = params.typeAmortissement !== 'classique';
+
     return (
         <div style={overlayStyle} onClick={onClose}>
             <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
@@ -108,6 +109,13 @@ export function TableauAmortissement({ dette, ouvert, onClose }) {
                         <span style={badgeStyle('#065F46', '#D1FAE5')}>
                             📈 Taux : {dette.taux_interet}%
                         </span>
+                        {estTypeAvance && (
+                            <span style={badgeStyle('#7C3AED', '#F5F3FF')}>
+                                {params.typeAmortissement === 'in_fine' ? '🎯 In fine' :
+                                    params.typeAmortissement === 'differe_total' ? `⏸️ Différé total (${params.dureeDiffereMois} mois)` :
+                                        `⏸️ Différé partiel (${params.dureeDiffereMois} mois)`}
+                            </span>
+                        )}
                     </div>
 
                     {/* CRD actuel mis en avant */}
@@ -147,9 +155,10 @@ export function TableauAmortissement({ dette, ouvert, onClose }) {
                             </tr>
                         </thead>
                         <tbody>
-                            {tableau.map((ligne, idx) => {
+                            {tableau.map((ligne) => {
                                 const estPasse = ligne.mois < moisEcoules;
                                 const estCourant = ligne.mois === moisEcoules;
+                                const phaseInfo = LABELS_PHASE[ligne.phase];
 
                                 let rowStyle = {};
                                 if (estPasse) rowStyle = { background: '#F9FAFB' };
@@ -157,6 +166,9 @@ export function TableauAmortissement({ dette, ouvert, onClose }) {
                                     background: '#F0F9FF',
                                     borderLeft: '3px solid #3B82F6',
                                 };
+                                if (phaseInfo && !estCourant) {
+                                    rowStyle = { ...rowStyle, background: phaseInfo.bg };
+                                }
 
                                 return (
                                     <tr key={ligne.mois} style={rowStyle}>
@@ -165,6 +177,11 @@ export function TableauAmortissement({ dette, ouvert, onClose }) {
                                         </td>
                                         <td style={{ padding: '8px 12px', textAlign: 'right', color: estPasse ? '#9CA3AF' : '#374151', fontStyle: estPasse ? 'italic' : 'normal' }}>
                                             {formatDate(ligne.date)}
+                                            {phaseInfo && (
+                                                <div style={{ fontSize: 10, color: phaseInfo.couleur, fontWeight: 600 }}>
+                                                    {phaseInfo.label}
+                                                </div>
+                                            )}
                                         </td>
                                         <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 500 }}>
                                             {formatEur(ligne.mensualite)}
@@ -172,8 +189,8 @@ export function TableauAmortissement({ dette, ouvert, onClose }) {
                                         <td style={{ padding: '8px 12px', textAlign: 'right', color: '#EF4444' }}>
                                             {formatEur(ligne.interets)}
                                         </td>
-                                        <td style={{ padding: '8px 12px', textAlign: 'right', color: '#10B981' }}>
-                                            {formatEur(ligne.amortissement)}
+                                        <td style={{ padding: '8px 12px', textAlign: 'right', color: ligne.amortissement < 0 ? '#EF4444' : '#10B981' }}>
+                                            {ligne.amortissement < 0 ? '+' : ''}{formatEur(ligne.amortissement)}
                                         </td>
                                         <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: estCourant ? 700 : 500, color: estCourant ? '#3B82F6' : '#374151' }}>
                                             {formatEur(ligne.capitalRestant)}
