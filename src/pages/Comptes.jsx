@@ -3,7 +3,7 @@ import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import SecureValue from '../components/SecureValue'
 import { useComptes } from '../hooks/useComptes'
-import { Wallet, TrendingUp, CreditCard, Home, HelpCircle, Plus, Trash2 } from 'lucide-react'
+import { Wallet, TrendingUp, CreditCard, Home, HelpCircle, Plus, Trash2, Pencil, MessageSquare } from 'lucide-react'
 
 const TYPES_COMPTES = ['Compte courant', 'Compte chèques', 'Épargne', 'Espèces', 'Crédit', 'PEA', 'CTO', 'Assurance vie', 'Crypto', 'Immobilier', 'Autre']
 const COULEURS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
@@ -47,12 +47,34 @@ const CATEGORIES = [
 const normaliser = (str) => (str || '').trim().toLowerCase()
 
 function Comptes() {
-    const { comptes, loading, ajouterCompte, supprimerCompte } = useComptes()
+    const { comptes, loading, ajouterCompte, modifierCompte, supprimerCompte } = useComptes()
     const [modalOuvert, setModalOuvert] = useState(false)
     const [form, setForm] = useState({
         nom: '', type: 'Compte courant', solde: '', devise: 'EUR', couleur: COULEURS[0],
         frais_gestion_enveloppe: 0.60, frais_courtage_pourcentage: 0.20
     })
+
+    const [compteEnEdition, setCompteEnEdition] = useState(null)
+    const [formEdition, setFormEdition] = useState({ nom: '', couleur: COULEURS[0], commentaire: '' })
+
+    const ouvrirEdition = (compte) => {
+        setCompteEnEdition(compte)
+        setFormEdition({
+            nom: compte.nom,
+            couleur: compte.couleur || COULEURS[0],
+            commentaire: compte.commentaire || ''
+        })
+    }
+
+    const handleSubmitEdition = async (e) => {
+        e.preventDefault()
+        const { error } = await modifierCompte(compteEnEdition.id, {
+            nom: formEdition.nom,
+            couleur: formEdition.couleur,
+            commentaire: formEdition.commentaire || null
+        })
+        if (!error) setCompteEnEdition(null)
+    }
 
     const formatMontant = (montant, devise = 'EUR') =>
         new Intl.NumberFormat('fr-FR', { style: 'currency', currency: devise }).format(montant)
@@ -149,11 +171,20 @@ function Comptes() {
 
                                 <div className="divide-y divide-[var(--border)]">
                                     {cat.comptes.map((compte) => (
-                                        <div key={compte.id} className="flex items-center justify-between px-5 py-3.5">
+                                        <div
+                                            key={compte.id}
+                                            className="flex items-center justify-between px-5 py-3.5"
+                                            title={compte.commentaire || undefined}
+                                        >
                                             <div className="flex items-center gap-3">
                                                 <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: compte.couleur }} />
                                                 <div>
-                                                    <p className="font-medium text-[var(--text-h)]">{compte.nom}</p>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <p className="font-medium text-[var(--text-h)]">{compte.nom}</p>
+                                                        {compte.commentaire && (
+                                                            <MessageSquare size={12} className="text-[var(--text-muted)]" />
+                                                        )}
+                                                    </div>
                                                     <p className="text-xs text-[var(--text)]">{compte.type}</p>
                                                 </div>
                                             </div>
@@ -161,6 +192,9 @@ function Comptes() {
                                                 <p className="font-semibold text-[var(--text-h)]">
                                                     <SecureValue value={compte.soldeReel ?? compte.solde} formatter={(v) => formatMontant(v, compte.devise)} />
                                                 </p>
+                                                <button onClick={() => ouvrirEdition(compte)} className="text-[var(--text-muted)] hover:text-emerald transition">
+                                                    <Pencil size={16} />
+                                                </button>
                                                 <button onClick={() => handleSupprimer(compte.id)} className="text-[var(--text-muted)] hover:text-[var(--negative)] transition">
                                                     <Trash2 size={16} />
                                                 </button>
@@ -213,6 +247,37 @@ function Comptes() {
                     </div>
                     <button type="submit" className="w-full bg-emerald hover:bg-emerald-light text-white font-semibold py-2 rounded-lg transition">
                         Créer le compte
+                    </button>
+                </form>
+            </Modal>
+            {/* Modal édition compte */}
+            <Modal isOpen={!!compteEnEdition} onClose={() => setCompteEnEdition(null)} title="Modifier le compte">
+                <form onSubmit={handleSubmitEdition} className="space-y-4">
+                    <div>
+                        <label className="text-sm text-[var(--text)] mb-1 block">Nom du compte</label>
+                        <input type="text" required value={formEdition.nom}
+                            onChange={(e) => setFormEdition({ ...formEdition, nom: e.target.value })}
+                            className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2" />
+                    </div>
+                    <div>
+                        <label className="text-sm text-[var(--text)] mb-1 block">Couleur</label>
+                        <div className="flex gap-2">
+                            {COULEURS.map((couleur) => (
+                                <button key={couleur} type="button" onClick={() => setFormEdition({ ...formEdition, couleur })}
+                                    className={`w-8 h-8 rounded-full border-2 ${formEdition.couleur === couleur ? 'border-emerald' : 'border-transparent'}`}
+                                    style={{ backgroundColor: couleur }} />
+                            ))}
+                        </div>
+                    </div>
+                    <div>
+                        <label className="text-sm text-[var(--text)] mb-1 block">Commentaire (visible au survol)</label>
+                        <textarea rows="3" value={formEdition.commentaire}
+                            onChange={(e) => setFormEdition({ ...formEdition, commentaire: e.target.value })}
+                            placeholder="Ex: Compte pour les projets perso, à ne pas toucher avant 2027"
+                            className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2 resize-none" />
+                    </div>
+                    <button type="submit" className="w-full bg-emerald hover:bg-emerald-light text-white font-semibold py-2 rounded-lg transition">
+                        Enregistrer
                     </button>
                 </form>
             </Modal>
