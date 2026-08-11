@@ -4,7 +4,8 @@ import Sidebar, { menuItems } from './Sidebar';
 import Footer from './Footer';
 import { useAuth } from '../context/AuthContext';
 import { useIncognito } from '../context/IncognitoContext';
-import { LogOut } from 'lucide-react';
+import { LogOut, HelpCircle } from 'lucide-react';
+import AideModal from './AideModal';
 
 export default function Layout({ children }) {
     const { profile, user, signOut } = useAuth();
@@ -12,6 +13,7 @@ export default function Layout({ children }) {
     const location = useLocation();
 
     const [menuOuvert, setMenuOuvert] = useState(false);
+    const [aideOuverte, setAideOuverte] = useState(false);
     const menuRef = useRef(null);
 
     const currentMenu = menuItems.find(item => location.pathname.includes(item.path)) || menuItems[0];
@@ -41,8 +43,15 @@ export default function Layout({ children }) {
 
                 {/* Header avec bouton incognito */}
                 <header className="h-16 md:h-20 flex items-center justify-between px-6 md:px-8 border-b border-[var(--border)] bg-surface/30 backdrop-blur-md sticky top-0 z-30">
-                    <h1 className="text-lg md:text-xl font-bold tracking-tight text-white">
+                    <h1 className="text-lg md:text-xl font-bold tracking-tight text-white flex items-center gap-2">
                         {currentMenu.name}
+                        <button
+                            onClick={() => setAideOuverte(true)}
+                            className="text-slate-500 hover:text-[#10b981] transition-colors"
+                            title="Aide de cette page"
+                        >
+                            <HelpCircle size={18} />
+                        </button>
                     </h1>
 
                     <div className="flex items-center gap-4">
@@ -112,6 +121,12 @@ export default function Layout({ children }) {
                     ))}
                 </div>
             </nav>
+
+            <AideModal
+                isOpen={aideOuverte}
+                onClose={() => setAideOuverte(false)}
+                route={currentMenu.path}
+            />
 
         </div>
     );

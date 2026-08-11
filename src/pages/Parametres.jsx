@@ -6,6 +6,7 @@ import AffichageTaux from '../components/devises/AffichageTaux'
 import { useCategories } from '../hooks/useCategories'
 import { useSmartRules } from '../hooks/useSmartRules'
 import { useAlertes } from '../hooks/useAlertes'
+import { usePartages } from '../hooks/usePartages'
 import MFASetup from '../components/mfa/MFASetup'
 import './Parametres.css'
 
@@ -34,6 +35,7 @@ const SECTIONS = [
     { id: 'categories', label: '🏷️ Catégories' },
     { id: 'smart_rules', label: '🤖 Règles auto' },
     { id: 'notifications', label: '🔔 Notifications' },
+    { id: 'partage', label: '🔗 Partage' },
     { id: 'compte', label: '🗑️ Compte' },
 ]
 
@@ -79,6 +81,31 @@ export default function Parametres() {
 
     // Alertes
     const { alertes, loading: alertesLoading, toggleAlerte, initAlertes } = useAlertes()
+
+    const { partages, loading: partagesLoading, creerPartage, revoquerPartage, supprimerPartage } = usePartages()
+    const [nouveauPartage, setNouveauPartage] = useState({ nom_partage: '', masquer_montants: true, date_expiration: '' })
+
+    async function handleCreerPartage(e) {
+        e.preventDefault()
+        const { error } = await creerPartage(nouveauPartage)
+        if (error) return showMsg(error.message, 'error')
+        setNouveauPartage({ nom_partage: '', masquer_montants: true, date_expiration: '' })
+        showMsg('Lien créé ✓')
+    }
+    async function handleRevoquerPartage(id) {
+        if (!confirm('Révoquer ce lien ?')) return
+        const { error } = await revoquerPartage(id)
+        showMsg(error ? error.message : 'Lien révoqué ✓', error ? 'error' : 'success')
+    }
+    async function handleSupprimerPartage(id) {
+        if (!confirm('Supprimer ce lien ?')) return
+        const { error } = await supprimerPartage(id)
+        showMsg(error ? error.message : 'Lien supprimé ✓', error ? 'error' : 'success')
+    }
+    function copierLien(token) {
+        navigator.clipboard.writeText(`${window.location.origin}/partage/${token}`)
+        showMsg('Lien copié ✓')
+    }
 
     // Suppression compte
     const [deleteConfirm, setDeleteConfirm] = useState('')
@@ -545,6 +572,47 @@ export default function Parametres() {
                                                 </div>
                                             )
                                         })}
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+                    )}
+
+                    {/* ══ PARTAGE ══ */}
+                    {activeSection === 'partage' && (
+                        <section className="parametres-section">
+                            <h2 className="parametres-section-titre">Partage de patrimoine</h2>
+                            <div className="parametres-section-contenu">
+                                <p className="parametres-hint" style={{ marginBottom: 16 }}>
+                                    Génère un lien en lecture seule (montants masquables) à envoyer à un conseiller ou un proche.
+                                </p>
+                                <div className="parametres-card--add">
+                                    <form onSubmit={handleCreerPartage} className="parametres-row-add">
+                                        <input value={nouveauPartage.nom_partage} onChange={e => setNouveauPartage(p => ({ ...p, nom_partage: e.target.value }))}
+                                            placeholder="Nom (ex: Pour mon conseiller)" className="parametres-input" style={{ flex: 1 }} />
+                                        <input type="date" value={nouveauPartage.date_expiration} onChange={e => setNouveauPartage(p => ({ ...p, date_expiration: e.target.value }))}
+                                            className="parametres-input" style={{ width: 160 }} title="Expiration (optionnel)" />
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text)' }}>
+                                            <input type="checkbox" checked={nouveauPartage.masquer_montants} onChange={e => setNouveauPartage(p => ({ ...p, masquer_montants: e.target.checked }))} />
+                                            Masquer les montants
+                                        </label>
+                                        <button type="submit" className="parametres-btn parametres-btn--success">+ Créer</button>
+                                    </form>
+                                </div>
+                                {partagesLoading ? <p className="parametres-hint">Chargement…</p> : partages.length === 0 ? (
+                                    <p className="parametres-empty">Aucun lien de partage créé.</p>
+                                ) : (
+                                    <div className="parametres-liste">
+                                        {partages.map(p => (
+                                            <div key={p.id} className="parametres-liste-item">
+                                                <span className="parametres-liste-item-nom">{p.nom_partage}</span>
+                                                <span className={`parametres-badge ${p.actif ? 'parametres-badge--on' : 'parametres-badge--off'}`}>{p.actif ? 'Actif' : 'Révoqué'}</span>
+                                                <span className="parametres-hint">{p.nombre_vues || 0} vue(s)</span>
+                                                {p.actif && <button onClick={() => copierLien(p.token)} className="parametres-icon-btn" title="Copier le lien">🔗</button>}
+                                                {p.actif && <button onClick={() => handleRevoquerPartage(p.id)} className="parametres-icon-btn" title="Révoquer">⛔</button>}
+                                                <button onClick={() => handleSupprimerPartage(p.id)} className="parametres-icon-btn parametres-icon-btn--danger" title="Supprimer">🗑️</button>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>

@@ -25,6 +25,7 @@ import MentionsLegales from './pages/legal/MentionsLegales'
 import Cgu from './pages/legal/CGU'
 import PolitiqueConfidentialite from './pages/legal/PolitiqueConfidentialite'
 import ExportDonnees from './pages/ExportDonnees'
+import PartagePublic from './pages/PartagePublic'
 
 // Composants globaux RGPD
 import CookieBanner from './components/CookieBanner'
@@ -80,6 +81,7 @@ function App() {
             <Route path="/mentions-legales" element={<MentionsLegales />} />
             <Route path="/cgu" element={<Cgu />} />
             <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+            <Route path="/partage/:token" element={<PartagePublic />} />
 
             {/* Application principale */}
             <Route path="/*" element={<AppRoutes />} />
