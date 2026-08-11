@@ -42,7 +42,7 @@ function BudgetContent() {
     const { transactions, loading, ajouterTransaction, supprimerTransaction, recategoriserTransactions, charger } = useTransactions(mois, annee)
     const { categories } = useCategories()
     const { comptes } = useComptes()
-    const { budgets, definirBudget } = useBudgets(mois, annee)
+    const { budgets, definirBudget, supprimerBudget } = useBudgets(mois, annee)
     const {
         abonnements, loading: loadingAb,
         ajouterAbonnement, planifierResiliation, supprimerAbonnement,
@@ -184,7 +184,12 @@ function BudgetContent() {
     const handleSubmitBudgets = async (e) => {
         e.preventDefault()
         for (const [categorieId, montant] of Object.entries(budgetForm)) {
-            if (montant) await definirBudget(categorieId, parseFloat(montant))
+            if (montant) {
+                await definirBudget(categorieId, parseFloat(montant))
+            } else if (montant === '') {
+                const budgetExistant = budgets.find(b => b.categorie_id === categorieId && b.mois === mois && b.annee === annee)
+                if (budgetExistant) await supprimerBudget(budgetExistant.id)
+            }
         }
         setModalBudgetOuvert(false)
     }
@@ -367,10 +372,13 @@ function BudgetContent() {
                         return (
                             <BudgetBar
                                 key={b.id}
+                                id={b.id}
                                 nom={b.categories?.nom}
                                 couleur={b.categories?.couleur}
                                 depense={depense}
                                 budgetMax={Number(b.montant_max)}
+                                herite={b.herite}
+                                onDelete={supprimerBudget}
                             />
                         )
                     })}
@@ -492,12 +500,29 @@ function BudgetContent() {
                                 <div key={c.id} className="flex items-center gap-3">
                                     <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.couleur }} />
                                     <span className="flex-1 text-sm text-[var(--text-h)]">{c.nom}</span>
-                                    <input
-                                        type="number" step="0.01" placeholder="Max €"
-                                        defaultValue={budgetExistant?.montant_max || ''}
-                                        onChange={(e) => setBudgetForm({ ...budgetForm, [c.id]: e.target.value })}
-                                        className="w-28 border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-2 py-1.5 text-sm"
-                                    />
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="number" step="0.01" placeholder="Max €"
+                                            defaultValue={budgetExistant?.montant_max || ''}
+                                            onChange={(e) => setBudgetForm({ ...budgetForm, [c.id]: e.target.value })}
+                                            className="w-28 border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-2 py-1.5 text-sm"
+                                        />
+                                        {budgetExistant && !budgetExistant.herite && (
+                                            <button
+                                                type="button"
+                                                onClick={async () => {
+                                                    if (window.confirm(`Supprimer le budget pour ${c.nom} ?`)) {
+                                                        await supprimerBudget(budgetExistant.id)
+                                                        setBudgetForm({ ...budgetForm, [c.id]: '' })
+                                                    }
+                                                }}
+                                                className="text-[var(--text-muted)] hover:text-[var(--negative)] transition"
+                                                title="Supprimer ce budget"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             )
                         })}
