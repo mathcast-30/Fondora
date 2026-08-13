@@ -40,7 +40,7 @@ export function useTransactions(mois, annee) {
                 const jour = Math.min(modele.jour_recurrence || 1, new Date(annee, mois, 0).getDate())
                 const dateOccurrence = `${annee}-${String(mois).padStart(2, '0')}-${String(jour).padStart(2, '0')}`
 
-                await supabase.from('transactions').insert({
+                await supabase.from('transactions').upsert({
                     user_id: user.id,
                     compte_id: modele.compte_id,
                     categorie_id: modele.categorie_id,
@@ -53,7 +53,7 @@ export function useTransactions(mois, annee) {
                     recurrence_active: true,
                     jour_recurrence: modele.jour_recurrence,
                     recurrence_groupe_id: groupeId,
-                })
+                }, { onConflict: 'recurrence_groupe_id,date', ignoreDuplicates: true })
             }
         }
     }, [annee, mois, debutMois, finMois, user])
