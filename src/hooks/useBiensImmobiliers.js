@@ -52,5 +52,5 @@ export function useBiensImmobiliers() {
         const { valeurNette } = calculerRentabilite(b)
         return acc + valeurNette
     }, 0)
-    return { biens, loading, ajouterBien, modifierBien, supprimerBien, valeurTotaleImmo }
+    return { biens, loading, ajouterBien, modifierBien, supprimerBien, valeurTotaleImmo, rafraichir: charger }
 }

@@ -1,12 +1,24 @@
 import { useState } from 'react'
+import { supabase } from '../lib/supabase'
 import { Trash2, ChevronDown, ChevronUp, Home, TrendingUp, TrendingDown, SlidersHorizontal } from 'lucide-react'
 import { calculerRentabilite } from '../lib/calculImmo'
 import { useDettes } from '../hooks/useDettes'
 import SecureValue from './SecureValue'
 
-function BienImmobilierCard({ bien, onSupprimer }) {
+function BienImmobilierCard({ bien, onSupprimer, onEstime }) {
     const [deplié, setDeplié] = useState(false)
     const [simulateur, setSimulateur] = useState(false)
+    const [estimationEnCours, setEstimationEnCours] = useState(false)
+    const [erreurDvf, setErreurDvf] = useState(null)
+
+    const handleEstimerDVF = async () => {
+        setEstimationEnCours(true)
+        setErreurDvf(null)
+        const { data, error } = await supabase.functions.invoke('estimer-valeur-bien', { body: { bien_id: bien.id } })
+        setEstimationEnCours(false)
+        if (error || data?.error) { setErreurDvf(data?.error || error.message); return }
+        onEstime?.()
+    }
     // Valeurs simulées (overrides locaux, ne modifient pas la DB)
     const [simLoyer, setSimLoyer] = useState(bien.loyer_mensuel || 0)
     const [simTaux, setSimTaux] = useState(bien.taux_credit || 0)
@@ -56,6 +68,12 @@ function BienImmobilierCard({ bien, onSupprimer }) {
                         <p className="text-xs text-[var(--text)]">Valeur nette</p>
                         <p className="font-bold text-[var(--text-h)]"><SecureValue value={valeurNette} formatter={fmt} /></p>
                         <p className="text-xs text-[var(--text)]">Valeur: <SecureValue value={bienSim.valeur_actuelle} formatter={fmt} /></p>
+                        {bien.valeur_source === 'dvf' && bien.date_estimation_dvf && (
+                            <p className="text-[10px] text-emerald mt-0.5">
+                                Estimation DVF du {new Date(bien.date_estimation_dvf).toLocaleDateString('fr-FR')} ({bien.prix_m2_zone_dvf?.toLocaleString('fr-FR')} €/m²)
+                            </p>
+                        )}
+                        {erreurDvf && <p className="text-[10px] text-red-400 mt-0.5">{erreurDvf}</p>}
                     </div>
                     {estLocatif && (
                         <div className={`text-right ${cashFlowMensuel >= 0 ? 'text-emerald' : 'text-[var(--negative)]'}`}>
@@ -67,6 +85,10 @@ function BienImmobilierCard({ bien, onSupprimer }) {
                         </div>
                     )}
                     <div className="flex items-center gap-1">
+                        <button onClick={handleEstimerDVF} disabled={estimationEnCours} title="Estimer via DVF (données notariales)"
+                            className="p-1.5 rounded-lg text-[var(--text)] hover:text-emerald disabled:opacity-50">
+                            {estimationEnCours ? '⏳' : '🔎'}
+                        </button>
                         <button
                             onClick={() => { setSimulateur(!simulateur); setDeplié(true) }}
                             title="Simulateur"

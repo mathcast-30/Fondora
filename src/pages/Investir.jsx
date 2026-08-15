@@ -147,7 +147,7 @@ function Investir() {
     // ============================================
     // IMMOBILIER STATE
     // ============================================
-    const { biens, loading: loadingImmo, ajouterBien, supprimerBien, valeurTotaleImmo } = useBiensImmobiliers()
+    const { biens, loading: loadingImmo, ajouterBien, supprimerBien, valeurTotaleImmo, rafraichir: rafraichirBiens } = useBiensImmobiliers()
     const [modalImmoOuvert, setModalImmoOuvert] = useState(false)
     const [modalCryptoTransactionOuvert, setModalCryptoTransactionOuvert] = useState(false)
     const [cryptoTransactionType, setCryptoTransactionType] = useState('buy')
@@ -606,7 +606,7 @@ function Investir() {
                     ) : (
                         <div className="space-y-4">
                             {biens.map((bien) => (
-                                <BienImmobilierCard key={bien.id} bien={bien} onSupprimer={supprimerBien} />
+                                <BienImmobilierCard key={bien.id} bien={bien} onSupprimer={supprimerBien} onEstime={rafraichirBiens} />
                             ))}
                         </div>
                     )}
@@ -616,8 +616,6 @@ function Investir() {
             {/* ============================================
                  MODALS
                  ============================================ */}
-
-
 
             {/* Modal FormulaireAchatVente */}
             <Modal isOpen={modalAchatVenteOuvert} onClose={() => setModalAchatVenteOuvert(false)} title="Passer un ordre">

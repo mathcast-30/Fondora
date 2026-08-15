@@ -6,7 +6,7 @@ const TYPES_BIENS = ['Appartement', 'Maison', 'Studio', 'Immeuble', 'Local comme
 const STATUTS = ['Résidence principale', 'Résidence secondaire', 'Investissement locatif', 'SCPI', 'Autre']
 
 const FORM_INITIAL = {
-    nom: '', adresse: '', type_bien: 'Appartement', statut: 'Résidence principale',
+    nom: '', adresse: '', code_postal: '', surface_m2: '', type_bien: 'Appartement', statut: 'Résidence principale',
     prix_achat: '', valeur_actuelle: '', date_achat: '',
     assurance_emprunteur_annuelle: '', taxe_fonciere_annuelle: '',
     charges_copropriete_annuelle: '', assurance_habitation_annuelle: '',
@@ -130,6 +130,20 @@ function FormBienImmobilier({ onSubmit, onAnnuler }) {
                         <input type="text" value={form.adresse}
                             onChange={(e) => set('adresse', e.target.value)}
                             placeholder="Ex: 15 rue de la Paix, Paris" className={inputClass} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        <div>
+                            <label className={labelClass}>Code postal</label>
+                            <input type="text" value={form.code_postal || ''}
+                                onChange={(e) => set('code_postal', e.target.value)}
+                                placeholder="75011" className={inputClass} />
+                        </div>
+                        <div>
+                            <label className={labelClass}>Surface (m²)</label>
+                            <input type="number" step="0.1" value={form.surface_m2 || ''}
+                                onChange={(e) => set('surface_m2', e.target.value)}
+                                placeholder="65" className={inputClass} />
+                        </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                         <div>
