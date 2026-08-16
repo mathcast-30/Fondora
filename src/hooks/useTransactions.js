@@ -171,18 +171,9 @@ export function useTransactions(mois, annee) {
                 dette_id: dette.id,
             })
 
-            // Déduire le solde du compte associé
-            const { data: compte } = await supabase
-                .from('comptes')
-                .select('solde')
-                .eq('id', dette.compte_id)
-                .single()
-            if (compte) {
-                await supabase
-                    .from('comptes')
-                    .update({ solde: Number(compte.solde) - mensualiteCourante })
-                    .eq('id', dette.compte_id)
-            }
+            // NB: comptes.solde est immuable après création. Le solde réel est calculé
+            // dynamiquement (solde + revenus − dépenses) dans useComptes.js ; toute
+            // écriture ici entraînerait un double-comptage de la mensualité.
         }
     }, [annee, mois, debutMois, finMois, user])
 
