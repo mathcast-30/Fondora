@@ -2,7 +2,7 @@
 
 ## Vue d'ensemble
 
-**Fondora** est une application web complète et moderne de gestion financière personnelle. Elle permet aux utilisateurs français de gérer intégralement leur patrimoine, budget, investissements et placements en un seul endroit, avec des calculs financiers avancés conformes à la réglementation fiscale française.
+**Fondora** est une application web complète et moderne de gestion financière personnelle. Elle permet aux utilisateurs français de gérer intégralement leur patrimoine, budget, investissements et dettes avec des outils analytiques avancés.
 
 🌐 **Site en ligne** : https://fondora.vercel.app
 
@@ -33,6 +33,21 @@
 | **Authentification Multi-Facteurs (2FA)** | Vérification MFA TOTP | `src/pages/auth/VerifyMFA.jsx`, `src/components/auth/MFAGuard.jsx` |
 | **Routes protégées** | Redirection automatique des utilisateurs non authentifiés | `src/components/ProtectedRoute.jsx` |
 | **Suppression de compte** | Suppression sécurisée avec confirmation | `src/pages/SupprimerCompteConfirmer.jsx` |
+| **Connexion Google** | Authentification rapide via Google OAuth | `src/pages/Login.jsx` |
+
+---
+
+### 🚀 Onboarding & Setup Wizard
+
+**Localisation** : `src/pages/Onboarding.jsx`, `src/components/onboarding/`
+
+#### 🧙 Wizard étape par étape
+
+- **Étape 1** : Profil fiscal français (résidence, situation familiale)
+- **Étape 2** : Sélection des modules actifs (Patrimoine, Bourse, Crypto, etc.)
+- **Étape 3** : Création du premier compte bancaire
+- **Étape 4** : Définition de l'objectif financier principal
+- **Étape 5** : Récapitulatif et validation des paramètres
 
 ---
 
@@ -67,6 +82,7 @@
   - Couleur de catégorisation
   - Frais de gestion
   - Frais de courtage
+  - Commentaires (visibles au survol)
 - **CRUD complet** : Ajout, modification, suppression de comptes
 
 #### 📍 Comparaison INSEE
@@ -85,6 +101,7 @@
 - Création de budgets par catégorie (alimentation, transports, loisirs, etc.)
 - Définition d'un montant limite par catégorie et période
 - Support de plusieurs devises
+- Alertes visuelles de dépassement de budget
 
 #### 📊 Visualisation des dépenses
 
@@ -92,19 +109,36 @@
   - Diagramme circulaire (donut chart) de la répartition
   - Graphique en barres comparatif : budgeté vs dépensé
   - Évolution temporelle des soldes
+  - **Top 5 dépenses** : Les catégories les plus coûteuses
+  - **Sankey Chart** : Flux de trésorerie détaillé
 
 #### 📈 Suivi des performances
 
 - Taux de dépassement par catégorie
 - Indicateurs visuels (alertes si dépassement)
+- **Reste à vivre calculé** : Simulation des flux restants
 - Historique des dépenses
+
+#### 🎯 Objectifs & Projections
+
+- **Widget Objectif d'Épargne** : Définir et suivre les économies mensuelles
+- **Jauge d'épargne** : Visualisation graphique de la progression
+- **Widget "What If"** : Simuler l'impact de changements budgétaires
+- **Projections mensuelles** : Prévisions de solde fin de mois
+
+#### 🔔 Gestion des abonnements
+
+- Suivi des abonnements/services récurrents
+- **Nettoyeur d'abonnements** : Détection et résilience programmée
+- Calendrier des échéances des abonnements
+- Impact sur le budget mensuel
 
 #### 💾 Import de données
 
 - Importation de fichiers CSV/Excel
 - Mappeur automatique de colonnes
 - Contrôle de qualité avant enregistrement
-- Composant : `src/components/ImportCSVModal.jsx`
+- Composant : `src/components/import/ImportCSVModal.jsx`
 
 ---
 
@@ -115,8 +149,9 @@
 #### 🎯 Suivi des positions de bourse
 
 - Ajout de positions (symbole, quantité, prix d'achat)
-- Récupération des cours en temps réel via API
+- **Mise à jour automatique des cours** : Edge Function Supabase + GitHub Actions
 - Calcul automatique de la valeur actuelle
+- Support PEA/CTO pour conformité fiscale française
 
 #### 💹 Métriques de performance avancées
 
@@ -136,7 +171,7 @@
   - Classe d'actifs (0-40 points)
   - Secteurs (0-30 points)
   - Concentration des positions (0-30 points)
-- Conseils d'amélioration
+- Conseils d'amélioration personnalisés
 - Composant : `src/components/DiversificationScore.jsx`
 
 #### 📚 Bibliothèque financière
@@ -193,6 +228,7 @@
   - KPI clés du budget
   - Alertes et recommandations
   - Visualisations en graphiques
+  - Liste rapide des comptes principaux
 
 ---
 
@@ -214,7 +250,7 @@
 
 #### 📈 Visualisation
 
-- Carte interactice des biens
+- Carte interactive des biens
 - Calcul automatique de la plus-value
 - Comparaison avec les prix de marché
 
@@ -251,6 +287,7 @@
 - Durée de remboursement restante
 - Impact sur le patrimoine net
 - Ratio d'endettement
+- **Export CSV** : Télécharger les dettes au format Excel
 
 ---
 
@@ -274,6 +311,20 @@
   - Projection du patrimoine
   - Impact de changements d'épargne
   - Objectifs à court/moyen/long terme
+
+---
+
+### 📤 Partage public sécurisé
+
+**Localisation** : `src/pages/PartagePublic.jsx`
+
+#### 🔗 Partage du patrimoine
+
+- Génération de liens publics temporaires
+- Affichage du patrimoine net avec historique
+- **Option masquage montants** : Partage anonyme (•••• €)
+- Graphique d'évolution du patrimoine visible
+- Lien sécurisé avec token temporaire
 
 ---
 
@@ -318,17 +369,26 @@
 
 #### 📦 Formats d'export
 
-- **Export JSON** : Format machine-readable
+- **Export JSON** : Format machine-readable complet
 - **Export CSV** : Ouverture facile dans Excel/Sheets
+- **Export Excel** : Format .xlsx avec plusieurs feuilles
 - **Export PDF** : Rapport formaté pour impression
 
 #### 📋 Données exportées
 
 - Historique complet des transactions
-- Positions d'investissement
+- Positions d'investissement (actions, crypto, immobilier)
 - Budgets et dépenses
-- Patrimoine net
+- Patrimoine net et historique
 - Comptes et leurs historiques
+- Dettes et abonnements
+- Profil utilisateur et préférences
+
+#### 🔒 Sécurité
+
+- Téléchargement direct sans serveur intermédiaire
+- Conforme RGPD (Article 20 - Portabilité)
+- Edge Function Supabase pour agrégation des données
 
 ---
 
@@ -355,9 +415,11 @@ Frontend Framework    : React 19 + Vite
 UI/CSS               : Tailwind CSS v4
 Charting             : Recharts (graphiques)
 Backend              : Supabase (authentification, base de données)
+Edge Functions       : Supabase Edge Functions (Node.js)
 Déploiement          : Vercel
 Gestion d'état       : React Hooks + Context API
 Analyse             : Vercel Analytics
+CI/CD               : GitHub Actions
 ```
 
 ### Dépendances principales
@@ -368,6 +430,7 @@ Analyse             : Vercel Analytics
   "react-dom": "^19.2.7",
   "react-router-dom": "^7.18.1",
   "@supabase/supabase-js": "^2.110.0",
+  "@vercel/analytics": "^2.0.1",
   "recharts": "^3.9.2",
   "tailwindcss": "^4.3.1",
   "lucide-react": "^1.22.0",
@@ -395,7 +458,9 @@ Fondora/
 │   │   ├── passifs/          # Composants dettes
 │   │   ├── assurance-vie/    # Composants assurance-vie
 │   │   ├── mfa/              # Composants 2FA
-│   │   └── onboarding/       # Composants onboarding
+│   │   ├── onboarding/       # Composants onboarding
+│   │   ├── import/           # Composants import données
+│   │   └── Fondora/          # Composants génériques
 │   ├── config/               # Configuration (Supabase, API)
 │   ├── context/              # Context API (Auth, Currency, Incognito)
 │   ├── hooks/                # Custom hooks
@@ -406,10 +471,14 @@ Fondora/
 │   │   ├── useCoursBourse.js
 │   │   ├── useCoursCrypto.js
 │   │   ├── useDettes.js
-│   │   └── useBiensImmobiliers.js
+│   │   ├── useAbonnements.js # Gestion abonnements
+│   │   ├── useBiensImmobiliers.js
+│   │   ├── useObjectifEpargne.js
+│   │   └── useTransactions.js
 │   ├── lib/                  # Utilitaires
 │   │   ├── financialCalculations.js  # Formules financières
-│   │   └── diversificationScore.js   # Calcul diversification
+│   │   ├── diversificationScore.js   # Calcul diversification
+│   │   └── supabase.js               # Configuration Supabase
 │   ├── pages/               # Pages principales
 │   │   ├── Patrimoine.jsx
 │   │   ├── Budget.jsx
@@ -418,13 +487,27 @@ Fondora/
 │   │   ├── Analyse.jsx
 │   │   ├── Parametres.jsx
 │   │   ├── PassifsPage.jsx
+│   │   ├── Onboarding.jsx
+│   │   ├── PartagePublic.jsx
+│   │   ├── ExportDonnees.jsx
 │   │   ├── Login.jsx
 │   │   ├── Signup.jsx
+│   │   ├── Comptes.jsx
 │   │   └── legal/
 │   ├── utils/               # Fonctions utilitaires
+│   │   ├── budgetCalculator.js
+│   │   └── exportBilanBudget.js
 │   ├── App.jsx              # Routage principal
 │   └── main.jsx
 ├── supabase/                # Configuration Supabase
+│   ├── functions/           # Edge Functions
+│   │   ├── export-donnees/
+│   │   ├── update-courses/  # Mise à jour automatique des cours
+│   │   └── voir-partage/
+│   └── migrations/          # Migrations BDD
+├── .github/
+│   └── workflows/           # GitHub Actions
+│       └── update-prices.yml
 ├── package.json
 ├── vite.config.js
 └── vercel.json
@@ -444,6 +527,7 @@ Fondora/
   - Répartition actifs/passifs
   - Derniers mouvements
   - Alertes urgentes
+  - Liste rapide des comptes
 
 ### Page Patrimoine (`/patrimoine`)
 
@@ -465,6 +549,12 @@ Fondora/
   - Visualisation dépenses vs budgets
   - Graphique en camembert
   - Graphique en barres comparatif
+  - Widget "Reste à vivre"
+  - Widget "What If" (simulations)
+  - Jauge d'épargne
+  - Top 5 dépenses
+  - Calendrier d'échéances
+  - Nettoyeur d'abonnements
   - Import CSV pour dépenses
 
 ### Page Investir (`/investir`)
@@ -508,6 +598,7 @@ Fondora/
   - Tableau d'amortissement
   - Calcul des intérêts
   - Projection d'extinction
+  - Export CSV
 
 ### Page Export (`/export-donnees`)
 
@@ -516,7 +607,29 @@ Fondora/
 - **Options d'export** :
   - JSON complet
   - CSV par catégorie
+  - Excel avec feuilles multiples
   - PDF formaté
+
+### Page Partage public (`/partage/:token`)
+
+**Fichier** : `src/pages/PartagePublic.jsx`
+
+- **Visualisation sécurisée** :
+  - Patrimoine net partagé
+  - Historique d'évolution
+  - Mode masquage montants
+  - Lien temporaire avec token
+
+### Page Onboarding (`/onboarding`)
+
+**Fichier** : `src/pages/Onboarding.jsx`
+
+- **Wizard 5 étapes** :
+  - Profil fiscal
+  - Modules patrimoine
+  - Premier compte
+  - Objectif principal
+  - Récapitulatif
 
 ---
 
@@ -528,9 +641,11 @@ Fondora/
 2. **Clic "S'inscrire"** → `Signup.jsx`
    - Création compte Supabase
    - Vérification email
+   - Redirection Onboarding
 3. **Clic "Se connecter"** → `Login.jsx`
    - Authentification email/password
    - Vérification 2FA (si activé)
+   - Redirection Synthese
 
 ### Vérification MFA
 
@@ -573,6 +688,9 @@ Fondora/
 | `EvolutionPatrimoineChart` | Historique | `src/components/EvolutionPatrimoineChart.jsx` |
 | `SankeyChart` | Flux de trésorerie | `src/components/SankeyChart.jsx` |
 | `CryptoPortfolioChart` | Crypto historique | `src/components/CryptoPortfolioChart.jsx` |
+| `BudgetVsReelChart` | Budget vs réel | `src/components/budget/BudgetVsReelChart.jsx` |
+| `EvolutionTempsChart` | Évolution temporelle | `src/components/budget/EvolutionTempsChart.jsx` |
+| `Top5DepensesChart` | Top 5 dépenses | `src/components/budget/Top5DepensesChart.jsx` |
 
 ### Composants métier
 
@@ -587,7 +705,12 @@ Fondora/
 | `PnLLatentToggle` | Toggle €/% | `src/components/PnLLatentToggle.jsx` |
 | `TransactionForm` | Formulaire transaction bourse | `src/components/TransactionForm.jsx` |
 | `CryptoTransactionForm` | Formulaire transaction crypto | `src/components/CryptoTransactionForm.jsx` |
-| `ImportCSVModal` | Import fichiers | `src/components/ImportCSVModal.jsx` |
+| `ImportCSVModal` | Import fichiers | `src/components/import/ImportCSVModal.jsx` |
+| `WidgetRestantAVivre` | Reste à vivre | `src/components/budget/WidgetRestantAVivre.jsx` |
+| `WidgetWhatIf` | Simulations budget | `src/components/budget/WidgetWhatIf.jsx` |
+| `JaugeEpargneChart` | Jauge d'épargne | `src/components/budget/JaugeEpargneChart.jsx` |
+| `CalendrierEcheances` | Calendrier dettes | `src/components/budget/CalendrierEcheances.jsx` |
+| `SubscriptionCleaner` | Nettoyeur abonnements | `src/components/budget/SubscriptionCleaner.jsx` |
 
 ---
 
@@ -599,6 +722,7 @@ Fondora/
 Node.js >= 18
 npm ou yarn
 Compte Supabase (gratuit)
+Compte Vercel (gratuit)
 ```
 
 ### Installation locale
@@ -658,6 +782,7 @@ npm run lint  # Vérifier avec oxlint
 - couleur (VARCHAR: hex color)
 - frais_gestion_enveloppe (DECIMAL)
 - frais_courtage_pourcentage (DECIMAL)
+- commentaire (TEXT)
 - created_at (TIMESTAMP)
 ```
 
@@ -747,6 +872,19 @@ npm run lint  # Vérifier avec oxlint
 - created_at (TIMESTAMP)
 ```
 
+##### `abonnements`
+```sql
+- id (UUID)
+- user_id (FK)
+- nom (VARCHAR)
+- montant (DECIMAL)
+- frequence (VARCHAR: "mensuel", "annuel", "trimestriel")
+- date_debut (TIMESTAMP)
+- date_fin_prevue (TIMESTAMP)
+- statut (VARCHAR: "actif", "resilié")
+- created_at (TIMESTAMP)
+```
+
 ### Sécurité des données
 
 - **Row Level Security (RLS)** : Chaque utilisateur ne voit que ses données
@@ -761,6 +899,7 @@ npm run lint  # Vérifier avec oxlint
 | `AuthContext` | `src/context/` | Gestion authentification utilisateur |
 | `CurrencyContext` | `src/context/` | Devise de référence globale |
 | `IncognitoContext` | `src/context/` | Mode masquage montants |
+| `BudgetContext` | `src/context/` | État global du budget |
 
 ---
 
@@ -819,6 +958,34 @@ getDiversificationBgColor(score) // Couleur fond
 
 ---
 
+## 🤖 Automatisations & Edge Functions
+
+### Supabase Edge Functions
+
+#### 1. `export-donnees`
+- Agrégation complète des données utilisateur
+- Export en JSON
+- Conforme RGPD (Portabilité)
+
+#### 2. `update-courses`
+- Récupération des cours de bourse
+- Récupération des prix crypto
+- Sauvegarde en base de données
+
+#### 3. `voir-partage`
+- Récupération des données partagées
+- Validation du token temporaire
+- Retour des données publiques
+
+### GitHub Actions
+
+#### Workflow `update-prices.yml`
+- Déclenche la mise à jour des cours **quotidiennement**
+- Exécute l'Edge Function `update-courses`
+- Logs disponibles dans GitHub Actions
+
+---
+
 ## 📱 Aspects responsive
 
 Tous les composants utilisent **Tailwind CSS v4** :
@@ -859,6 +1026,7 @@ vercel.json:
 - Tests de linting avec oxlint
 - Déploiement preview pour chaque PR
 - Déploiement production après merge
+- Vercel Analytics intégré
 
 ---
 
@@ -881,10 +1049,13 @@ Tous les documents légaux sont stockés en Markdown :
 → Vérifier que Supabase est correctement configuré et l'AuthContext initialisé
 
 ### Problème : Cours de bourse ne se chargent pas
-→ Vérifier l'API utilisée, possibles limites de requêtes
+→ Vérifier l'API utilisée, possibles limites de requêtes, ou status des Edge Functions
 
 ### Problème : Export CSV échoue
 → Vérifier les permissions de téléchargement et la taille des données
+
+### Problème : Mise à jour automatique des cours non effectuée
+→ Vérifier que le workflow GitHub Actions est activé et que les Edge Functions sont déployées sur Supabase
 
 ---
 
@@ -914,11 +1085,17 @@ Pour toute question ou problème :
 - ✅ Gestion dettes
 - ✅ Analyses avancées
 - ✅ Export données RGPD
-- 🚀 Prêt pour utilisation
+- ✅ Onboarding wizard
+- ✅ Mise à jour automatique des cours
+- ✅ Partage public sécurisé
+- ✅ Widgets budget avancés (Reste à vivre, What If, Épargne, Top 5)
+- ✅ Gestion abonnements & nettoyeur
+- ✅ Calendrier d'échéances
+- 🚀 Prêt pour utilisation professionnelle
 
 ---
 
-**Dernière mise à jour** : Juillet 2026
+**Dernière mise à jour** : Août 2026
 
 **Auteur** : mathcast-30
 
