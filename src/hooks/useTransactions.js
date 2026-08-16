@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { calculerMensualiteCourante } from '../utils/financeCredit'
+import { toastError } from '../utils/toast'
 
 export function useTransactions(mois, annee) {
     const { user } = useAuth()
@@ -171,18 +172,9 @@ export function useTransactions(mois, annee) {
                 dette_id: dette.id,
             })
 
-            // Déduire le solde du compte associé
-            const { data: compte } = await supabase
-                .from('comptes')
-                .select('solde')
-                .eq('id', dette.compte_id)
-                .single()
-            if (compte) {
-                await supabase
-                    .from('comptes')
-                    .update({ solde: Number(compte.solde) - mensualiteCourante })
-                    .eq('id', dette.compte_id)
-            }
+            // NB: comptes.solde est immuable après création. Le solde réel est calculé
+            // dynamiquement (solde + revenus − dépenses) dans useComptes.js ; toute
+            // écriture ici entraînerait un double-comptage de la mensualité.
         }
     }, [annee, mois, debutMois, finMois, user])
 
@@ -217,7 +209,7 @@ export function useTransactions(mois, annee) {
             recurrence_modele: Boolean(transaction.recurrente),
             recurrence_active: true,
         })
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 
@@ -228,7 +220,7 @@ export function useTransactions(mois, annee) {
             query = supabase.from('transactions').delete().eq('recurrence_groupe_id', transaction.recurrence_groupe_id)
         }
         const { error } = await query
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 
@@ -238,7 +230,7 @@ export function useTransactions(mois, annee) {
             .from('transactions')
             .update({ categorie_id: nouvelleCategorieId })
             .in('id', transactionIds)
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 

@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useEntiteFiltre } from '../context/EntiteContext'
 import { calculateFIFOPnL, calculateXIRR, calculateCAGR } from '../lib/financialCalculations'
+import { toastError } from '../utils/toast'
 
 export function usePositions() {
     const { user } = useAuth()
@@ -53,7 +54,7 @@ export function usePositions() {
         const { error } = await supabase
             .from('positions_financieres')
             .insert({ entite_id: position?.entite_id || entiteFiltre || null, ...position, user_id: user.id })
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 
@@ -65,7 +66,7 @@ export function usePositions() {
             .update(updates)
             .eq('id', id)
             .eq('user_id', user.id)
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 
@@ -77,7 +78,7 @@ export function usePositions() {
             .delete()
             .eq('id', id)
             .eq('user_id', user.id)
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 
@@ -201,7 +202,7 @@ export function usePositions() {
             .delete()
             .eq('id', id)
             .eq('user_id', user.id)
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 

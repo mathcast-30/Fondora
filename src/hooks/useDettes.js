@@ -95,14 +95,22 @@ export function useDettes() {
 
     // --- CRUD ---
     const creerTransactionMensualite = async (dette, userId) => {
+        // Calcul de l'échéance du mois courant (sans déborder sur le mois suivant).
+        // On repart de date_debut et on avance mois par mois jusqu'à atteindre le mois
+        // en cours. On utilise une copie de la Date pour éviter l'effet de bord de
+        // setMonth() (le 31/01 + 1 mois doit donner fin février, pas le 3 mars).
         const aujourdhui = new Date();
-        let dateEcheance = new Date(dette.date_debut);
-
-        // Calculer la prochaine échéance à venir
-        while (dateEcheance < aujourdhui) {
-            const nextMonth = dateEcheance.getMonth() + 1;
-            dateEcheance = new Date(dateEcheance.setMonth(nextMonth));
+        let curseur = new Date(dette.date_debut + 'T00:00:00');
+        while (curseur <= aujourdhui) {
+            const prochain = new Date(curseur.getFullYear(), curseur.getMonth() + 1, curseur.getDate());
+            curseur = prochain;
         }
+        // curseur est maintenant la prochaine échéance future ; on conserve le jour
+        // d'origine mais borné au nombre de jours du mois visé.
+        const jourOriginal = new Date(dette.date_debut + 'T00:00:00').getDate();
+        const maxJour = new Date(curseur.getFullYear(), curseur.getMonth() + 1, 0).getDate();
+        const jour = Math.min(jourOriginal, maxJour);
+        const dateEcheance = new Date(curseur.getFullYear(), curseur.getMonth(), jour);
         const dateStr = dateEcheance.toISOString().split('T')[0];
 
         // Mensualité réelle due à cette échéance (varie selon la phase : différé, in fine…)
@@ -112,46 +120,45 @@ export function useDettes() {
         // (typiquement : phase de différé total)
         if (!mensualiteCourante || mensualiteCourante <= 0) return;
 
-        // Vérifier si une transaction existe déjà pour cette échéance
+        // Vérifier qu'aucune mensualité n'a déjà été créée pour ce couple dette/mois
+        // (plage mensuelle plutôt que date exacte, pour tolérer les écarts de jour).
+        const debutMois = new Date(dateEcheance.getFullYear(), dateEcheance.getMonth(), 1)
+            .toISOString().split('T')[0];
+        const finMois = new Date(dateEcheance.getFullYear(), dateEcheance.getMonth() + 1, 0)
+            .toISOString().split('T')[0];
         const { data: existante } = await supabase
             .from('transactions')
             .select('id')
             .eq('dette_id', dette.id)
-            .eq('date', dateStr)
+            .eq('source', 'dette_auto')
+            .gte('date', debutMois)
+            .lte('date', finMois)
             .maybeSingle();
 
-        if (existante) return; // déjà créée
+        if (existante) return; // déjà créée ce mois
 
         const CATEGORIE_CREDITS_DETTES = 'c139d313-61e3-48ce-b163-968daf7926c6';
 
-        // Créer la transaction
+        // Créer la transaction. Convention du projet : montant TOUJOURS positif,
+        // le sens (revenu/dépense) est porté par le champ `type`. Un montant négatif
+        // ferait inverser les totaux (totalDepenses < 0 → solde faussement augmenté).
         await supabase.from('transactions').insert([{
             user_id: userId,
             compte_id: dette.compte_id,
             categorie_id: CATEGORIE_CREDITS_DETTES,
             description: `Mensualité — ${dette.nom}`,
-            montant: -Math.abs(mensualiteCourante),
+            montant: Math.abs(mensualiteCourante),
             type: 'depense',
             date: dateStr,
             recurrente: true,
-            jour_recurrence: dateEcheance.getDate(),
+            jour_recurrence: jour,
             dette_id: dette.id,
             source: 'dette_auto',
         }]);
 
-        // Déduire le solde du compte
-        const { data: compte } = await supabase
-            .from('comptes')
-            .select('solde')
-            .eq('id', dette.compte_id)
-            .single();
-
-        if (compte) {
-            await supabase
-                .from('comptes')
-                .update({ solde: Number(compte.solde) - Math.abs(mensualiteCourante) })
-                .eq('id', dette.compte_id);
-        }
+        // NB: comptes.solde est immuable après création. Le solde réel est calculé
+        // dynamiquement (solde + revenus − dépenses) dans useComptes.js ; toute
+        // écriture ici entraînerait un double-comptage de la mensualité.
     };
 
     const ajouterDette = async (formData) => {

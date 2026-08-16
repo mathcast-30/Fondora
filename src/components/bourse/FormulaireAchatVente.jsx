@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { aujourdhuiLocale } from '../../utils/dateLocale'
 
 export default function FormulaireAchatVente({ compteId, comptes = [], onTransactionSuccess, onSubmitTransaction, onSelectActif, typeInitial = 'ACHAT', positionsExistantes = [] }) {
   // Comptes investissement filtrés (PEA, CTO)
@@ -11,7 +12,7 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
   const [type, setType] = useState(typeInitial);
   const [quantite, setQuantite] = useState('');
   const [prix, setPrix] = useState('');
-  const [dateTransaction, setDateTransaction] = useState(new Date().toISOString().split('T')[0]);
+  const [dateTransaction, setDateTransaction] = useState(aujourdhuiLocale());
   const [loadingEnrich, setLoadingEnrich] = useState(false);
   const [loadingPrix, setLoadingPrix] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
@@ -27,7 +28,7 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
     setRecherche('');
     setQuantite('');
     setPrix('');
-    setDateTransaction(new Date().toISOString().split('T')[0]);
+    setDateTransaction(aujourdhuiLocale());
   }, [typeInitial]);
 
   // Recherche par nom ET ticker (uniquement pour ACHAT)
@@ -73,7 +74,7 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
         if (histData?.prix_cloture) {
           setPrix(histData.prix_cloture.toString());
         } else {
-          const today = new Date().toISOString().split('T')[0];
+          const today = aujourdhuiLocale();
           if (dateTransaction === today) {
             const { data: cacheData } = await supabase
               .from('asset_prices_cache')
@@ -206,7 +207,7 @@ export default function FormulaireAchatVente({ compteId, comptes = [], onTransac
     setRecherche('');
     setQuantite('');
     setPrix('');
-    setDateTransaction(new Date().toISOString().split('T')[0]);
+    setDateTransaction(aujourdhuiLocale());
 
     if (onTransactionSuccess) onTransactionSuccess();
   };

@@ -4,13 +4,14 @@ import Modal from './Modal'
 import SecureValue from './SecureValue'
 import DividendesGraphiques from './DividendesGraphiques'
 import EstimationDividendesPanel from './EstimationDividendesPanel'
+import { aujourdhuiLocale } from '../utils/dateLocale'
 
 function DividendesCard({ dividendes, totalDouzeMois, syntheseDouzeMois, valorisationTotale, positions, onAjouter, onSupprimer }) {
     const [modalOuvert, setModalOuvert] = useState(false)
     const [form, setForm] = useState({
         position_id: '',
         montant: '',
-        date: new Date().toISOString().split('T')[0],
+        date: aujourdhuiLocale(),
         reinvesti: false,
         type_compte: 'CTO',
     })
@@ -37,7 +38,7 @@ function DividendesCard({ dividendes, totalDouzeMois, syntheseDouzeMois, valoris
             position_id: form.position_id || null,
         })
         if (!error) {
-            setForm({ position_id: '', montant: '', date: new Date().toISOString().split('T')[0], reinvesti: false, type_compte: 'CTO' })
+            setForm({ position_id: '', montant: '', date: aujourdhuiLocale(), reinvesti: false, type_compte: 'CTO' })
             setModalOuvert(false)
         }
     }

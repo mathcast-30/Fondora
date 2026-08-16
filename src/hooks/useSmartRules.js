@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { toastError } from '../utils/toast'
 
 export function useSmartRules() {
     const [rules, setRules] = useState([])
@@ -22,19 +23,19 @@ export function useSmartRules() {
         const { error } = await supabase.from('smart_rules').insert({
             user_id: user.id, mot_cle, categorie_id, priorite: priorite || 1
         })
-        if (!error) fetchRules()
+        if (error) { toastError(error.message) } else { fetchRules() }
         return { error }
     }
 
     const updateRule = async (id, updates) => {
         const { error } = await supabase.from('smart_rules').update(updates).eq('id', id)
-        if (!error) fetchRules()
+        if (error) { toastError(error.message) } else { fetchRules() }
         return { error }
     }
 
     const deleteRule = async (id) => {
         const { error } = await supabase.from('smart_rules').delete().eq('id', id)
-        if (!error) fetchRules()
+        if (error) { toastError(error.message) } else { fetchRules() }
         return { error }
     }
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { calculerFiscaliteDividende, calculerSyntheseDividendes } from '../utils/fiscaliteDividendes'
+import { toastError } from '../utils/toast'
 
 export function useDividendes() {
     const { user } = useAuth()
@@ -69,13 +70,13 @@ export function useDividendes() {
                 if (!ordreError) await supabase.from('dividendes').update({ transaction_reinvestissement_id: ordre.id }).eq('id', created.id)
             }
         }
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 
     const supprimerDividende = async (id) => {
         const { error } = await supabase.from('dividendes').delete().eq('id', id)
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
+import { aujourdhuiLocale } from '../../utils/dateLocale'
 
 function StepResume({ wizardData, refreshProfile }) {
     const { user } = useAuth()
@@ -36,7 +37,7 @@ function StepResume({ wizardData, refreshProfile }) {
 
         await supabase.from('snapshot_patrimoine').upsert({
             user_id: user.id,
-            date: new Date().toISOString().split('T')[0],
+            date: aujourdhuiLocale(),
             total_cash: wizardData.premier_compte?.solde || 0,
         })
 

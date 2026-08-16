@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { toastError } from '../utils/toast'
 
 function genererToken() {
     const bytes = new Uint8Array(24)
@@ -31,19 +32,19 @@ export function usePartages() {
             masquer_montants: !!masquer_montants,
             date_expiration: date_expiration || null,
         })
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error, token }
     }
 
     const revoquerPartage = async (id) => {
         const { error } = await supabase.from('partages_patrimoine').update({ actif: false }).eq('id', id)
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 
     const supprimerPartage = async (id) => {
         const { error } = await supabase.from('partages_patrimoine').delete().eq('id', id)
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 

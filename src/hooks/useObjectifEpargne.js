@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { toastError } from '../utils/toast'
 
 export function useObjectifEpargne(mois, annee) {
     const { user } = useAuth()
@@ -31,7 +32,7 @@ export function useObjectifEpargne(mois, annee) {
                 { user_id: user.id, montant_cible: montantCible, mois, annee },
                 { onConflict: 'user_id,mois,annee' }
             )
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { toastError } from '../utils/toast'
 
 export function useCategories() {
     const { user } = useAuth()
@@ -25,7 +26,7 @@ export function useCategories() {
         const { error } = await supabase
             .from('categories')
             .insert({ ...categorie, user_id: user.id })
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 
@@ -39,13 +40,13 @@ export function useCategories() {
             const { error } = await supabase
                 .from('categories_masquees')
                 .insert({ user_id: user.id, categorie_id: id })
-            if (!error) await charger()
+            if (error) { toastError(error.message) } else { await charger() }
             return { error }
         }
 
         // Catégorie perso → suppression réelle
         const { error } = await supabase.from('categories').delete().eq('id', id)
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 

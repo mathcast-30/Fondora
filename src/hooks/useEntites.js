@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { toastError } from '../utils/toast'
 
 export const TYPES_ENTITE = [
     { value: 'personnel', label: 'Personnel', emoji: '👤' },
@@ -29,17 +30,17 @@ export function useEntites() {
 
     const ajouterEntite = async (payload) => {
         const { error } = await supabase.from('entites').insert({ ...payload, user_id: user.id })
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
     const modifierEntite = async (id, updates) => {
         const { error } = await supabase.from('entites').update(updates).eq('id', id)
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
     const supprimerEntite = async (id) => {
         const { error } = await supabase.from('entites').delete().eq('id', id)
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 

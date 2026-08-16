@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useEntites } from '../hooks/useEntites'
 import { useEntiteFiltre } from '../context/EntiteContext'
+import { aujourdhuiLocale } from '../utils/dateLocale'
 
 const TYPES_BIENS = ['Appartement', 'Maison', 'Studio', 'Immeuble', 'Local commercial', 'Terrain', 'Autre']
 const STATUTS = ['Résidence principale', 'Résidence secondaire', 'Investissement locatif', 'SCPI', 'Autre']
@@ -22,7 +23,7 @@ const CREDIT_INITIAL = {
     capital_emprunte: '',
     taux_interet: '',
     duree_mois: '',
-    date_debut: new Date().toISOString().split('T')[0],
+    date_debut: aujourdhuiLocale(),
 }
 
 function calculerMensualite(capital, taux, duree) {

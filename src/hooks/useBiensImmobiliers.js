@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useEntiteFiltre } from '../context/EntiteContext'
 import { calculerRentabilite } from '../lib/calculImmo'
+import { toastError } from '../utils/toast'
 
 export function useBiensImmobiliers() {
     const { user } = useAuth()
@@ -29,7 +30,7 @@ export function useBiensImmobiliers() {
             .insert({ ...bien, user_id: user.id })
             .select()
             .single()
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { data, error }
     }
 
@@ -38,13 +39,13 @@ export function useBiensImmobiliers() {
             .from('biens_immobiliers')
             .update(updates)
             .eq('id', id)
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 
     const supprimerBien = async (id) => {
         const { error } = await supabase.from('biens_immobiliers').delete().eq('id', id)
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 

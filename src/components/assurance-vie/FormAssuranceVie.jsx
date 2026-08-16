@@ -19,6 +19,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
+import { aujourdhuiLocale } from '../../utils/dateLocale'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -29,7 +30,7 @@ const ONGLETS = [
     { id: 'uc', label: 'Unités de Compte' },
 ]
 
-const today = () => new Date().toISOString().split('T')[0]
+const today = () => aujourdhuiLocale()
 
 // ─── Composant principal ──────────────────────────────────────────────────────
 
