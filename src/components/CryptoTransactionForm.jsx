@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Plus } from 'lucide-react'
 import { CRYPTOS_COURANTES } from '../lib/cryptosCourantes'
 import { useCoursCrypto } from '../hooks/useCoursCrypto'
+import { aujourdhuiLocale } from '../utils/dateLocale'
 
 /**
  * Form component for adding crypto transactions (buy/sell)
@@ -20,7 +21,7 @@ function CryptoTransactionForm({ type = 'buy', positions = [], onSubmit, onCance
         nom: 'Bitcoin',
         quantite: '',
         prix: '',
-        date: new Date().toISOString().split('T')[0],
+        date: aujourdhuiLocale(),
         fees: '0'
     })
 
@@ -38,7 +39,7 @@ function CryptoTransactionForm({ type = 'buy', positions = [], onSubmit, onCance
                 nom: initialData.nom || crypto?.nom || '',
                 quantite: initialData.quantity || initialData.quantite || '',
                 prix: initialData.price || initialData.prix || '',
-                date: initialData.date ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                date: initialData.date ? new Date(initialData.date).toISOString().split('T')[0] : aujourdhuiLocale(),
                 fees: initialData.fees || initialData.frais || '0'
             })
         }

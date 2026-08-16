@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { calculerMensualiteCourante } from '../utils/financeCredit'
+import { toastError } from '../utils/toast'
 
 export function useTransactions(mois, annee) {
     const { user } = useAuth()
@@ -208,7 +209,7 @@ export function useTransactions(mois, annee) {
             recurrence_modele: Boolean(transaction.recurrente),
             recurrence_active: true,
         })
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 
@@ -219,7 +220,7 @@ export function useTransactions(mois, annee) {
             query = supabase.from('transactions').delete().eq('recurrence_groupe_id', transaction.recurrence_groupe_id)
         }
         const { error } = await query
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 
@@ -229,7 +230,7 @@ export function useTransactions(mois, annee) {
             .from('transactions')
             .update({ categorie_id: nouvelleCategorieId })
             .in('id', transactionIds)
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 

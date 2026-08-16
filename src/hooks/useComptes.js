@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useEntiteFiltre } from '../context/EntiteContext'
+import { toastError } from '../utils/toast'
 
 export function useComptes() {
     const { user } = useAuth()
@@ -75,7 +76,7 @@ export function useComptes() {
             .from('comptes')
             .insert({ ...compte, user_id: user.id })
 
-        if (!error) await chargerComptes()
+        if (error) { toastError(error.message) } else { await chargerComptes() }
         return { error }
     }
 
@@ -85,7 +86,7 @@ export function useComptes() {
             .update(updates)
             .eq('id', id)
 
-        if (!error) await chargerComptes()
+        if (error) { toastError(error.message) } else { await chargerComptes() }
         return { error }
     }
 
@@ -95,7 +96,7 @@ export function useComptes() {
             .delete()
             .eq('id', id)
 
-        if (!error) await chargerComptes()
+        if (error) { toastError(error.message) } else { await chargerComptes() }
         return { error }
     }
 

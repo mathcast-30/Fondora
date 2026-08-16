@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Plus, X } from 'lucide-react'
+import { aujourdhuiLocale } from '../utils/dateLocale'
 
 /**
  * Form component for adding investment transactions (buy/sell)
@@ -16,7 +17,7 @@ function TransactionForm({ type = 'buy', positions = [], onSubmit, onCancel, ini
         symbole: '',
         quantite: '',
         prix: '',
-        date: new Date().toISOString().split('T')[0],
+        date: aujourdhuiLocale(),
         type_compte: 'PEA',
         fees: '0'
     })
@@ -28,7 +29,7 @@ function TransactionForm({ type = 'buy', positions = [], onSubmit, onCancel, ini
                 symbole: initialData.symbole || '',
                 quantite: initialData.quantity || initialData.quantite || '',
                 prix: initialData.price || initialData.prix || '',
-                date: initialData.date ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                date: initialData.date ? new Date(initialData.date).toISOString().split('T')[0] : aujourdhuiLocale(),
                 type_compte: initialData.type_compte || 'PEA',
                 fees: initialData.fees || initialData.frais || '0'
             })

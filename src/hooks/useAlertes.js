@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { toastError } from '../utils/toast'
 
 export function useAlertes() {
     const [alertes, setAlertes] = useState([])
@@ -22,7 +23,7 @@ export function useAlertes() {
             .from('alertes_utilisateur')
             .update({ actif })
             .eq('id', id)
-        if (!error) fetchAlertes()
+        if (error) { toastError(error.message) } else { fetchAlertes() }
         return { error }
     }
 
@@ -31,7 +32,7 @@ export function useAlertes() {
             .from('alertes_utilisateur')
             .update(updates)
             .eq('id', id)
-        if (!error) fetchAlertes()
+        if (error) { toastError(error.message) } else { fetchAlertes() }
         return { error }
     }
 

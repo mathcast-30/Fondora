@@ -28,6 +28,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useObjectifEpargne } from '../hooks/useObjectifEpargne'
 import { BudgetProvider, useBudget } from "../context/BudgetContext";
+import { aujourdhuiLocale } from '../utils/dateLocale'
 
 
 const MOIS_NOMS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
@@ -84,7 +85,7 @@ function BudgetContent() {
 
     const [form, setForm] = useState({
         description: '', montant: '', type: 'depense',
-        compte_id: '', categorie_id: '', date: new Date().toISOString().split('T')[0],
+        compte_id: '', categorie_id: '', date: aujourdhuiLocale(),
         recurrente: false, jour_recurrence: 1,
     })
     const [budgetForm, setBudgetForm] = useState({})
@@ -176,7 +177,7 @@ function BudgetContent() {
         })
         if (!error) {
             const compteDefaut = comptes.length === 1 ? comptes[0].id : ''
-            setForm({ description: '', montant: '', type: 'depense', compte_id: compteDefaut, categorie_id: '', date: new Date().toISOString().split('T')[0], recurrente: false, jour_recurrence: 1 })
+            setForm({ description: '', montant: '', type: 'depense', compte_id: compteDefaut, categorie_id: '', date: aujourdhuiLocale(), recurrente: false, jour_recurrence: 1 })
             setModalOuvert(false)
         }
     }

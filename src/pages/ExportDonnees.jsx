@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import Layout from '../components/Layout'
+import { aujourdhuiLocale } from '../utils/dateLocale'
 
 export default function ExportDonnees() {
     const [loading, setLoading] = useState(false)
@@ -26,7 +27,7 @@ export default function ExportDonnees() {
             // Génération du fichier JSON et téléchargement automatique
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
             const url = URL.createObjectURL(blob)
-            const date = new Date().toISOString().split('T')[0]
+            const date = aujourdhuiLocale()
             
             const link = document.createElement('a')
             link.href = url

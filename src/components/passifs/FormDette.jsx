@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { useEntites } from '../../hooks/useEntites';
 import { useEntiteFiltre } from '../../context/EntiteContext';
 import { genererTableauAmortissement, calculerMensualiteCredit } from '../../utils/financeCredit';
+import { aujourdhuiLocale } from '../../utils/dateLocale'
 
 const TYPES_DETTE = ['Consommation', 'Immobilier', 'Automobile', 'Dette Privée', 'Fiscale', 'Autre'];
 
@@ -22,7 +23,7 @@ const FORM_VIDE = {
     taux_interet: '',
     duree_mois: '',
     mensualite: '',
-    date_debut: new Date().toISOString().split('T')[0],
+    date_debut: aujourdhuiLocale(),
     rembourse_automatiquement: true,
     notes: '',
     compte_id: '',
@@ -104,7 +105,7 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
                 taux_interet: String(detteInitiale.taux_interet || ''),
                 duree_mois: String(detteInitiale.duree_mois || ''),
                 mensualite: String(detteInitiale.mensualite || ''),
-                date_debut: detteInitiale.date_debut || new Date().toISOString().split('T')[0],
+                date_debut: detteInitiale.date_debut || aujourdhuiLocale(),
                 rembourse_automatiquement: detteInitiale.rembourse_automatiquement ?? true,
                 notes: detteInitiale.notes || '',
                 compte_id: detteInitiale.compte_id || '',

@@ -1,0 +1,32 @@
+-- Fondora: suppression des tables orphelines (À EXÉCUTER MANUELLEMENT après
+-- validation de Jean).
+--
+-- ⚠️  CE SCRIPT EST DESTRUCTIF. Il supprime définitivement les tables listées
+--     et toutes leurs données. NE PAS EXÉCUTER sans confirmation explicite.
+--
+-- Tables confirmées orphelines (aucune référence dans le code frontend ni
+-- dans les Edge Functions) :
+--   - historique_patrimoine        (remplacée par snapshot_patrimoine)
+--   - cache_des_prix_des_actifs    (remplacée par asset_prices_cache)
+--   - comptes_investissement       (non utilisé, les comptes PEA/CTO vivent dans `comptes`)
+--   - positions_investissement     (remplacée par positions_financieres)
+--
+-- ⚠️ transactions_bourse est EXCLUE de ce script : bien qu'elle semble
+--    orpheline, elle est encore référencée dans src/components/bourse/
+--    FormulaireAchatVente.jsx (chemin de fallback quand onSubmitTransaction
+--    n'est pas fourni). À vérifier séparément.
+--
+-- Recommandation : exécuter d'abord un SELECT COUNT(*) sur chaque table pour
+-- confirmer qu'elles sont vides ou que leurs données ne sont plus nécessaires.
+
+-- Vérification préalable (décommenter pour auditer) :
+-- SELECT 'historique_patrimoine' AS t, count(*) FROM public.historique_patrimoine
+-- UNION ALL SELECT 'cache_des_prix_des_actifs', count(*) FROM public.cache_des_prix_des_actifs
+-- UNION ALL SELECT 'comptes_investissement', count(*) FROM public.comptes_investissement
+-- UNION ALL SELECT 'positions_investissement', count(*) FROM public.positions_investissement;
+
+-- Suppression (décommenter pour exécuter, après confirmation de Jean) :
+-- DROP TABLE IF EXISTS public.historique_patrimoine CASCADE;
+-- DROP TABLE IF EXISTS public.cache_des_prix_des_actifs CASCADE;
+-- DROP TABLE IF EXISTS public.comptes_investissement CASCADE;
+-- DROP TABLE IF EXISTS public.positions_investissement CASCADE;

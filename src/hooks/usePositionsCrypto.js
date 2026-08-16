@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { calculateCryptoRealizedPL, calculatePRU } from '../lib/financialCalculations'
+import { toastError } from '../utils/toast'
+import { aujourdhuiLocale } from '../utils/dateLocale'
 
 export function usePositionsCrypto() {
     const { user } = useAuth()
@@ -58,7 +60,7 @@ export function usePositionsCrypto() {
         const { error } = await supabase
             .from('positions_crypto')
             .insert({ ...position, user_id: user.id })
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 
@@ -70,7 +72,7 @@ export function usePositionsCrypto() {
             .delete()
             .eq('id', id)
             .eq('user_id', user.id)
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 
@@ -91,7 +93,7 @@ export function usePositionsCrypto() {
                 symbole: transaction.symbole,
                 nom: transaction.nom
             })
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 
@@ -108,7 +110,7 @@ export function usePositionsCrypto() {
             .delete()
             .eq('id', id)
             .eq('user_id', user.id)
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 
@@ -167,7 +169,7 @@ export function usePositionsCrypto() {
     const sauvegarderValeurHistorique = async (value) => {
         if (!user) return { error: new Error('User not authenticated') }
 
-        const today = new Date().toISOString().split('T')[0]
+        const today = aujourdhuiLocale()
 
         const { error } = await supabase
             .from('historique_valeur_crypto')
@@ -177,7 +179,7 @@ export function usePositionsCrypto() {
                 date: today
             }, { onConflict: 'user_id,date' })
 
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 

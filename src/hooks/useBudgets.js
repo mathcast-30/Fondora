@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { toastError } from '../utils/toast'
 
 export function useBudgets(mois, annee) {
     const { user } = useAuth()
@@ -48,13 +49,13 @@ export function useBudgets(mois, annee) {
                 { user_id: user.id, categorie_id: categorieId, montant_max: montantMax, mois, annee },
                 { onConflict: 'categorie_id,mois,annee' }
             )
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 
     const supprimerBudget = async (id) => {
         const { error } = await supabase.from('budgets').delete().eq('id', id)
-        if (!error) await charger()
+        if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
 
