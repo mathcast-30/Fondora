@@ -1,19 +1,20 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { useEntiteFiltre } from '../context/EntiteContext'
 
 export function useComptes() {
     const { user } = useAuth()
+    const { entiteFiltre } = useEntiteFiltre()
     const [comptes, setComptes] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
     const chargerComptes = useCallback(async () => {
         setLoading(true)
-        const { data: comptesData, error: comptesError } = await supabase
-            .from('comptes')
-            .select('*')
-            .order('created_at', { ascending: true })
+        let query = supabase.from('comptes').select('*').order('created_at', { ascending: true })
+        if (entiteFiltre) query = query.eq('entite_id', entiteFiltre)
+        const { data: comptesData, error: comptesError } = await query
 
         if (comptesError) {
             setError(comptesError.message)
@@ -40,7 +41,7 @@ export function useComptes() {
             .select('symbole, prix_actuel')
         const prixParSymbole = new Map((prixData || []).map(p => [p.symbole, Number(p.prix_actuel)]))
 
-        const comptesEnrichis = comptesData.map(compte => {
+        const comptesEnrichis = (comptesData || []).map(compte => {
             const txCompte = txData.filter(t => t.compte_id === compte.id)
             const totalRevenus = txCompte.filter(t => t.type === 'revenu').reduce((s, t) => s + Number(t.montant), 0)
             const totalDepenses = txCompte.filter(t => t.type === 'depense').reduce((s, t) => s + Number(t.montant), 0)
@@ -63,7 +64,7 @@ export function useComptes() {
         setComptes(comptesEnrichis)
         setError(null)
         setLoading(false)
-    }, [])
+    }, [entiteFiltre])
 
     useEffect(() => {
         if (user) chargerComptes()

@@ -3,6 +3,8 @@ import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import SecureValue from '../components/SecureValue'
 import { useComptes } from '../hooks/useComptes'
+import { useEntites } from '../hooks/useEntites'
+import { useEntiteFiltre } from '../context/EntiteContext'
 import { Wallet, TrendingUp, CreditCard, Home, HelpCircle, Plus, Trash2, Pencil, MessageSquare } from 'lucide-react'
 
 const TYPES_COMPTES = ['Compte courant', 'Compte chèques', 'Épargne', 'Espèces', 'Crédit', 'PEA', 'CTO', 'Assurance vie', 'Crypto', 'Immobilier', 'Autre']
@@ -48,10 +50,13 @@ const normaliser = (str) => (str || '').trim().toLowerCase()
 
 function Comptes() {
     const { comptes, loading, ajouterCompte, modifierCompte, supprimerCompte } = useComptes()
+    const { entites } = useEntites()
+    const { entiteFiltre } = useEntiteFiltre()
     const [modalOuvert, setModalOuvert] = useState(false)
     const [form, setForm] = useState({
         nom: '', type: 'Compte courant', solde: '', devise: 'EUR', couleur: COULEURS[0],
-        frais_gestion_enveloppe: 0.60, frais_courtage_pourcentage: 0.20
+        frais_gestion_enveloppe: 0.60, frais_courtage_pourcentage: 0.20,
+        entite_id: entiteFiltre || ''
     })
 
     const [compteEnEdition, setCompteEnEdition] = useState(null)
@@ -108,12 +113,13 @@ function Comptes() {
         e.preventDefault()
         const { error } = await ajouterCompte({
             ...form,
+            entite_id: form.entite_id || null,
             solde: parseFloat(form.solde) || 0,
             frais_gestion_enveloppe: parseFloat(form.frais_gestion_enveloppe) || 0,
             frais_courtage_pourcentage: parseFloat(form.frais_courtage_pourcentage) || 0
         })
         if (!error) {
-            setForm({ nom: '', type: 'Compte courant', solde: '', devise: 'EUR', couleur: COULEURS[0], frais_gestion_enveloppe: 0.60, frais_courtage_pourcentage: 0.20 })
+            setForm({ nom: '', type: 'Compte courant', solde: '', devise: 'EUR', couleur: COULEURS[0], frais_gestion_enveloppe: 0.60, frais_courtage_pourcentage: 0.20, entite_id: entiteFiltre || '' })
             setModalOuvert(false)
         }
     }
@@ -222,6 +228,17 @@ function Comptes() {
                             {TYPES_COMPTES.map((type) => <option key={type} value={type}>{type}</option>)}
                         </select>
                     </div>
+                    {entites.length > 0 && (
+                        <div>
+                            <label className="text-sm text-[var(--text)] mb-1 block">Rattaché à (Entité)</label>
+                            <select value={form.entite_id} onChange={(e) => setForm({ ...form, entite_id: e.target.value })} className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2">
+                                <option value="">Aucune (Globale)</option>
+                                {entites.map(e => (
+                                    <option key={e.id} value={e.id}>{e.nom}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                     <div className="flex gap-3">
                         <div className="flex-1">
                             <label className="text-sm text-[var(--text)] mb-1 block">Solde actuel</label>

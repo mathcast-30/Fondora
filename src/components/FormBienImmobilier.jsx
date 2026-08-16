@@ -1,6 +1,8 @@
 // src/components/FormBienImmobilier.jsx
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useEntites } from '../hooks/useEntites'
+import { useEntiteFiltre } from '../context/EntiteContext'
 
 const TYPES_BIENS = ['Appartement', 'Maison', 'Studio', 'Immeuble', 'Local commercial', 'Terrain', 'Autre']
 const STATUTS = ['Résidence principale', 'Résidence secondaire', 'Investissement locatif', 'SCPI', 'Autre']
@@ -34,7 +36,9 @@ function calculerMensualite(capital, taux, duree) {
 }
 
 function FormBienImmobilier({ onSubmit, onAnnuler }) {
-    const [form, setForm] = useState(FORM_INITIAL)
+    const { entites } = useEntites()
+    const { entiteFiltre } = useEntiteFiltre()
+    const [form, setForm] = useState({ ...FORM_INITIAL, entite_id: entiteFiltre || '' })
     const [etape, setEtape] = useState(1)
     const [credit, setCredit] = useState(CREDIT_INITIAL)
 
@@ -66,6 +70,7 @@ function FormBienImmobilier({ onSubmit, onAnnuler }) {
         // On passe montant_credit = 0 pour ne pas polluer les champs legacy
         donnees.montant_credit = 0
         donnees.mensualite_credit = 0
+        donnees.entite_id = form.entite_id || null
 
         // 1. Créer le bien immobilier
         const bienCree = await onSubmit(donnees)
@@ -92,6 +97,7 @@ function FormBienImmobilier({ onSubmit, onAnnuler }) {
                 mensualite: Math.round(mensualiteCalculee * 100) / 100,
                 date_debut: credit.date_debut,
                 rembourse_automatiquement: true,
+                entite_id: form.entite_id || null,
             }])
         }
     }
@@ -163,6 +169,19 @@ function FormBienImmobilier({ onSubmit, onAnnuler }) {
                             </select>
                         </div>
                     </div>
+                    {entites.length > 0 && (
+                        <div>
+                            <label className={labelClass}>Rattaché à (Entité)</label>
+                            <select value={form.entite_id || ''}
+                                onChange={(e) => set('entite_id', e.target.value)}
+                                className={inputClass}>
+                                <option value="">Aucune (Globale)</option>
+                                {entites.map((e) => (
+                                    <option key={e.id} value={e.id}>{e.nom}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                     <div className="grid grid-cols-2 gap-2">
                         <div>
                             <label className={labelClass}>Prix d'achat (€) *</label>

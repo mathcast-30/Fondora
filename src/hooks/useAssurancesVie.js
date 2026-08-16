@@ -13,6 +13,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { useEntiteFiltre } from '../context/EntiteContext'
 import {
     calculerVersementsTotaux,
     calculerValeurActuelleContrat,
@@ -29,6 +30,7 @@ import {
 
 export function useAssurancesVie() {
     const { user } = useAuth()
+    const { entiteFiltre } = useEntiteFiltre()
 
     // État brut Supabase
     const [contrats, setContrats] = useState([])
@@ -51,10 +53,12 @@ export function useAssurancesVie() {
 
         try {
             // 1. Contrats
-            const { data: contratsData, error: errContrats } = await supabase
+            let query = supabase
                 .from('assurances_vie')
                 .select('*')
                 .eq('user_id', user.id)
+            if (entiteFiltre) query = query.eq('entite_id', entiteFiltre)
+            const { data: contratsData, error: errContrats } = await query
                 .order('date_ouverture', { ascending: true })
 
             if (errContrats) throw errContrats
@@ -154,7 +158,7 @@ export function useAssurancesVie() {
         } finally {
             setLoading(false)
         }
-    }, [user])
+    }, [user, entiteFiltre])
 
     useEffect(() => {
         charger()
@@ -231,11 +235,12 @@ export function useAssurancesVie() {
             const { error: err } = await supabase.from('assurances_vie').insert({
                 ...payload,
                 user_id: user.id,
+                entite_id: payload?.entite_id || entiteFiltre || null,
             })
             if (err) throw err
             await charger()
         },
-        [user, charger]
+        [user, charger, entiteFiltre]
     )
 
     /**

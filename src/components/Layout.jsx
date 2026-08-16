@@ -4,12 +4,16 @@ import Sidebar, { menuItems } from './Sidebar';
 import Footer from './Footer';
 import { useAuth } from '../context/AuthContext';
 import { useIncognito } from '../context/IncognitoContext';
+import { useEntites } from '../hooks/useEntites';
+import { useEntiteFiltre } from '../context/EntiteContext';
 import { LogOut, HelpCircle } from 'lucide-react';
 import AideModal from './AideModal';
 
 export default function Layout({ children }) {
     const { profile, user, signOut } = useAuth();
     const { incognito, toggleIncognito } = useIncognito();
+    const { entites } = useEntites();
+    const { entiteFiltre, setEntiteFiltre } = useEntiteFiltre();
     const location = useLocation();
 
     const [menuOuvert, setMenuOuvert] = useState(false);
@@ -53,6 +57,22 @@ export default function Layout({ children }) {
                             <HelpCircle size={18} />
                         </button>
                     </h1>
+
+                    {entites.length > 0 && (
+                        <div className="hidden lg:flex items-center gap-1 bg-white/5 border border-white/10 rounded-full p-1 mx-4 overflow-x-auto">
+                            <button type="button" onClick={() => setEntiteFiltre(null)}
+                                className={`px-3 py-1 rounded-full text-xs font-medium transition whitespace-nowrap ${!entiteFiltre ? 'bg-[#10b981] text-white' : 'text-slate-400 hover:text-white'}`}>
+                                Tous
+                            </button>
+                            {entites.map(e => (
+                                <button type="button" key={e.id} onClick={() => setEntiteFiltre(e.id)}
+                                    className="px-3 py-1 rounded-full text-xs font-medium transition whitespace-nowrap"
+                                    style={entiteFiltre === e.id ? { backgroundColor: e.couleur, color: '#fff' } : { color: '#94a3b8' }}>
+                                    {e.nom}
+                                </button>
+                            ))}
+                        </div>
+                    )}
 
                     <div className="flex items-center gap-4">
                         <button

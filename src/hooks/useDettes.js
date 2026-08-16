@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { useEntiteFiltre } from '../context/EntiteContext';
 import {
     calculerCRD,
     calculerProgressionRemboursement,
@@ -9,6 +10,7 @@ import {
 } from '../utils/financeCredit';
 
 export function useDettes() {
+    const { entiteFiltre } = useEntiteFiltre();
     const [dettes, setDettes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -45,7 +47,7 @@ export function useDettes() {
     const fetchDettes = useCallback(async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
+            let query = supabase
                 .from('dettes')
                 .select(`
       *,
@@ -54,8 +56,9 @@ export function useDettes() {
         nom,
         adresse
       )
-    `)
-                .order('created_at', { ascending: false });
+    `);
+            if (entiteFiltre) query = query.eq('entite_id', entiteFiltre);
+            const { data, error } = await query.order('created_at', { ascending: false });
 
             if (error) throw error;
 
@@ -65,7 +68,7 @@ export function useDettes() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [entiteFiltre]);
 
     useEffect(() => {
         fetchDettes();

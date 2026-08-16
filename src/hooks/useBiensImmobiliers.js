@@ -1,22 +1,23 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { useEntiteFiltre } from '../context/EntiteContext'
 import { calculerRentabilite } from '../lib/calculImmo'
 
 export function useBiensImmobiliers() {
     const { user } = useAuth()
+    const { entiteFiltre } = useEntiteFiltre()
     const [biens, setBiens] = useState([])
     const [loading, setLoading] = useState(true)
 
     const charger = useCallback(async () => {
         setLoading(true)
-        const { data, error } = await supabase
-            .from('biens_immobiliers')
-            .select('*')
-            .order('created_at', { ascending: true })
-        if (!error) setBiens(data)
+        let query = supabase.from('biens_immobiliers').select('*').order('created_at', { ascending: true })
+        if (entiteFiltre) query = query.eq('entite_id', entiteFiltre)
+        const { data, error } = await query
+        if (!error) setBiens(data || [])
         setLoading(false)
-    }, [])
+    }, [entiteFiltre])
 
     useEffect(() => {
         if (user) charger()

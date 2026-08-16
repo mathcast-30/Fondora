@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { useEntiteFiltre } from '../context/EntiteContext'
 import { calculateFIFOPnL, calculateXIRR, calculateCAGR } from '../lib/financialCalculations'
 
 export function usePositions() {
     const { user } = useAuth()
+    const { entiteFiltre } = useEntiteFiltre()
     const [positions, setPositions] = useState([])
     const [transactions, setTransactions] = useState([])
     const [loading, setLoading] = useState(true)
@@ -17,11 +19,13 @@ export function usePositions() {
         
         try {
             // Load positions
-            const { data: positionsData, error: positionsError } = await supabase
+            let positionsQuery = supabase
                 .from('positions_financieres')
                 .select('*')
                 .eq('user_id', user.id)
-                .order('created_at', { ascending: true })
+            if (entiteFiltre) positionsQuery = positionsQuery.eq('entite_id', entiteFiltre)
+            positionsQuery = positionsQuery.order('created_at', { ascending: true })
+            const { data: positionsData, error: positionsError } = await positionsQuery
             
             // Load investment transactions
             const { data: transactionsData, error: transactionsError } = await supabase
@@ -37,7 +41,7 @@ export function usePositions() {
         }
         
         setLoading(false)
-    }, [user])
+    }, [user, entiteFiltre])
 
     useEffect(() => {
         if (user) charger()
@@ -48,7 +52,7 @@ export function usePositions() {
         
         const { error } = await supabase
             .from('positions_financieres')
-            .insert({ ...position, user_id: user.id })
+            .insert({ entite_id: position?.entite_id || entiteFiltre || null, ...position, user_id: user.id })
         if (!error) await charger()
         return { error }
     }
@@ -149,7 +153,8 @@ export function usePositions() {
                         type_compte: typeCompte,
                         compte_id: transaction.compte_id,
                         secteur: transaction.secteur || null,
-                        date_achat: transaction.date
+                        date_achat: transaction.date,
+                        entite_id: transaction.entite_id || entiteFiltre || null
                     })
                     .select()
                     .single()
@@ -168,8 +173,8 @@ export function usePositions() {
                     symbole: symbolUpper,
                     quantite: quantiteTx,
                     prix_unitaire: prixTx,
-                    date: transaction.date
-                    ,compte_id: transaction.compte_id,
+                    date: transaction.date,
+                    compte_id: transaction.compte_id,
                     actif_id: transaction.actif_id || null,
                 })
 

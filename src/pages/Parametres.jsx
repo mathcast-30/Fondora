@@ -7,6 +7,7 @@ import { useCategories } from '../hooks/useCategories'
 import { useSmartRules } from '../hooks/useSmartRules'
 import { useAlertes } from '../hooks/useAlertes'
 import { usePartages } from '../hooks/usePartages'
+import { useEntites, TYPES_ENTITE } from '../hooks/useEntites'
 import MFASetup from '../components/mfa/MFASetup'
 import './Parametres.css'
 
@@ -36,6 +37,7 @@ const SECTIONS = [
     { id: 'smart_rules', label: '🤖 Règles auto' },
     { id: 'notifications', label: '🔔 Notifications' },
     { id: 'partage', label: '🔗 Partage' },
+    { id: 'entites', label: '👨‍👩‍👧 Entités' },
     { id: 'compte', label: '🗑️ Compte' },
 ]
 
@@ -105,6 +107,31 @@ export default function Parametres() {
     function copierLien(token) {
         navigator.clipboard.writeText(`${window.location.origin}/partage/${token}`)
         showMsg('Lien copié ✓')
+    }
+
+    // Entités
+    const { entites, loading: entitesLoading, ajouterEntite, supprimerEntite } = useEntites()
+    const [newEntite, setNewEntite] = useState({ nom: '', type: 'personnel', couleur: '#10b981' })
+
+    async function handleAddEntite() {
+        if (!newEntite.nom.trim()) return
+        const { error } = await ajouterEntite(newEntite)
+        if (error) {
+            showMsg(error.message, 'error')
+            return
+        }
+        setNewEntite({ nom: '', type: 'personnel', couleur: '#10b981' })
+        showMsg('Entité ajoutée ✓')
+    }
+
+    async function handleDeleteEntite(id) {
+        if (!confirm('Supprimer cette entité ?')) return
+        const { error } = await supprimerEntite(id)
+        if (error) {
+            showMsg(error.message, 'error')
+            return
+        }
+        showMsg('Entité supprimée ✓')
     }
 
     // Suppression compte
@@ -613,6 +640,68 @@ export default function Parametres() {
                                                 <button onClick={() => handleSupprimerPartage(p.id)} className="parametres-icon-btn parametres-icon-btn--danger" title="Supprimer">🗑️</button>
                                             </div>
                                         ))}
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+                    )}
+
+                    {/* ══ ENTITÉS ══ */}
+                    {activeSection === 'entites' && (
+                        <section className="parametres-section">
+                            <h2 className="parametres-section-titre">Entités</h2>
+                            <div className="parametres-section-contenu">
+                                <p className="parametres-hint" style={{ marginBottom: '12px' }}>
+                                    Crée et gère tes entités (personne physique, société, enfant...) pour filtrer la vue de ton patrimoine.
+                                </p>
+                                <div className="parametres-card--add">
+                                    <p className="parametres-label" style={{ marginBottom: '10px' }}>Nouvelle entité</p>
+                                    <div className="parametres-row-add">
+                                        <input
+                                            value={newEntite.nom}
+                                            onChange={e => setNewEntite(p => ({ ...p, nom: e.target.value }))}
+                                            placeholder="Nom (ex: Jean, SCI Horizon...)"
+                                            className="parametres-input"
+                                            style={{ flex: 1 }}
+                                        />
+                                        <select
+                                            value={newEntite.type}
+                                            onChange={e => setNewEntite(p => ({ ...p, type: e.target.value }))}
+                                            className="parametres-input"
+                                            style={{ width: 140 }}
+                                        >
+                                            {TYPES_ENTITE.map(t => (
+                                                <option key={t.value} value={t.value}>{t.emoji} {t.label}</option>
+                                            ))}
+                                        </select>
+                                        <input
+                                            type="color"
+                                            value={newEntite.couleur}
+                                            onChange={e => setNewEntite(p => ({ ...p, couleur: e.target.value }))}
+                                            className="parametres-color-picker"
+                                        />
+                                        <button type="button" onClick={handleAddEntite} className="parametres-btn parametres-btn--success">
+                                            + Ajouter
+                                        </button>
+                                    </div>
+                                </div>
+                                {entitesLoading ? (
+                                    <p className="parametres-hint">Chargement…</p>
+                                ) : entites.length === 0 ? (
+                                    <p className="parametres-empty">Aucune entité créée pour l'instant.</p>
+                                ) : (
+                                    <div className="parametres-liste">
+                                        {entites.map(e => {
+                                            const typeInfo = TYPES_ENTITE.find(t => t.value === e.type)
+                                            return (
+                                                <div key={e.id} className="parametres-liste-item">
+                                                    <span className="parametres-cat-dot" style={{ backgroundColor: e.couleur }} />
+                                                    <span className="parametres-liste-item-nom">{e.nom}</span>
+                                                    <span className="parametres-badge">{typeInfo ? `${typeInfo.emoji} ${typeInfo.label}` : e.type}</span>
+                                                    <button type="button" onClick={() => handleDeleteEntite(e.id)} className="parametres-icon-btn parametres-icon-btn--danger" title="Supprimer">🗑️</button>
+                                                </div>
+                                            )
+                                        })}
                                     </div>
                                 )}
                             </div>

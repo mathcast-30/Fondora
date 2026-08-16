@@ -1,6 +1,8 @@
 // src/components/passifs/FormDette.jsx
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { useEntites } from '../../hooks/useEntites';
+import { useEntiteFiltre } from '../../context/EntiteContext';
 import { genererTableauAmortissement, calculerMensualiteCredit } from '../../utils/financeCredit';
 
 const TYPES_DETTE = ['Consommation', 'Immobilier', 'Automobile', 'Dette Privée', 'Fiscale', 'Autre'];
@@ -77,7 +79,9 @@ function calculerApercu(form) {
 }
 
 export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmobiliers }) {
-    const [form, setForm] = useState(FORM_VIDE);
+    const { entites } = useEntites();
+    const { entiteFiltre } = useEntiteFiltre();
+    const [form, setForm] = useState({ ...FORM_VIDE, entite_id: entiteFiltre || '' });
     const [erreurs, setErreurs] = useState({});
     const [loading, setLoading] = useState(false);
     const [comptes, setComptes] = useState([]);
@@ -106,9 +110,10 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
                 compte_id: detteInitiale.compte_id || '',
                 type_amortissement: detteInitiale.type_amortissement || 'classique',
                 duree_differe_mois: String(detteInitiale.duree_differe_mois || ''),
+                entite_id: detteInitiale.entite_id || entiteFiltre || '',
             });
         } else if (ouvert && !detteInitiale) {
-            setForm(FORM_VIDE);
+            setForm({ ...FORM_VIDE, entite_id: entiteFiltre || '' });
         }
         setErreurs({});
     }, [ouvert, detteInitiale]);
@@ -175,6 +180,7 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
                 notes: form.notes || null,
                 type_amortissement: form.type_amortissement,
                 duree_differe_mois: aDiffere ? parseInt(form.duree_differe_mois) || 0 : 0,
+                entite_id: form.entite_id || null,
             });
             onClose();
         } catch (err) {
@@ -279,6 +285,23 @@ export function FormDette({ ouvert, onClose, onSubmit, detteInitiale, biensImmob
                             {TYPES_DETTE.map((t) => <option key={t} value={t}>{t}</option>)}
                         </select>
                     </div>
+
+                    {/* Entité */}
+                    {entites.length > 0 && (
+                        <div>
+                            <label style={labelStyle}>Rattaché à (Entité)</label>
+                            <select
+                                value={form.entite_id || ''}
+                                onChange={(e) => set('entite_id', e.target.value)}
+                                style={inputStyle(false)}
+                            >
+                                <option value="">— Aucune (Globale) —</option>
+                                {entites.map((e) => (
+                                    <option key={e.id} value={e.id}>{e.nom}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     {/* Bien immobilier lié (conditionnel) */}
                     {form.type === 'Immobilier' && (

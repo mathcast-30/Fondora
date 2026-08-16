@@ -18,6 +18,7 @@ import MFAGuard from './components/auth/MFAGuard'
 import { CurrencyProvider } from './context/CurrencyContext'
 import SupprimerCompteConfirmer from './pages/SupprimerCompteConfirmer'
 import { IncognitoProvider } from './context/IncognitoContext'
+import { EntiteProvider } from './context/EntiteContext'
 import { useAuth } from './context/AuthContext' // ✅ Importation essentielle pour le routage dynamique
 
 // Pages Légales et Export
@@ -74,21 +75,23 @@ function AppRoutes() {
 function App() {
   return (
     <IncognitoProvider>
-      <CurrencyProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Pages légales accessibles sans authentification ni MFA */}
-            <Route path="/mentions-legales" element={<MentionsLegales />} />
-            <Route path="/cgu" element={<Cgu />} />
-            <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
-            <Route path="/partage/:token" element={<PartagePublic />} />
+      <EntiteProvider>
+        <CurrencyProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Pages légales accessibles sans authentification ni MFA */}
+              <Route path="/mentions-legales" element={<MentionsLegales />} />
+              <Route path="/cgu" element={<Cgu />} />
+              <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+              <Route path="/partage/:token" element={<PartagePublic />} />
 
-            {/* Application principale */}
-            <Route path="/*" element={<AppRoutes />} />
-          </Routes>
-          <Analytics />
-        </BrowserRouter>
-      </CurrencyProvider>
+              {/* Application principale */}
+              <Route path="/*" element={<AppRoutes />} />
+            </Routes>
+            <Analytics />
+          </BrowserRouter>
+        </CurrencyProvider>
+      </EntiteProvider>
     </IncognitoProvider>
   )
 }
