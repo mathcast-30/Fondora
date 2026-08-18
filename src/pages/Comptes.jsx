@@ -60,12 +60,16 @@ function Comptes() {
     })
 
     const [compteEnEdition, setCompteEnEdition] = useState(null)
-    const [formEdition, setFormEdition] = useState({ nom: '', couleur: COULEURS[0], commentaire: '' })
+    const [formEdition, setFormEdition] = useState({
+        nom: '', type: 'Compte courant', devise: 'EUR', couleur: COULEURS[0], commentaire: ''
+    })
 
     const ouvrirEdition = (compte) => {
         setCompteEnEdition(compte)
         setFormEdition({
             nom: compte.nom,
+            type: compte.type || 'Compte courant',
+            devise: compte.devise || 'EUR',
             couleur: compte.couleur || COULEURS[0],
             commentaire: compte.commentaire || ''
         })
@@ -75,6 +79,8 @@ function Comptes() {
         e.preventDefault()
         const { error } = await modifierCompte(compteEnEdition.id, {
             nom: formEdition.nom,
+            type: formEdition.type,
+            devise: formEdition.devise,
             couleur: formEdition.couleur,
             commentaire: formEdition.commentaire || null
         })
@@ -275,6 +281,24 @@ function Comptes() {
                         <input type="text" required value={formEdition.nom}
                             onChange={(e) => setFormEdition({ ...formEdition, nom: e.target.value })}
                             className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2" />
+                    </div>
+                    <div className="flex gap-3">
+                        <div className="flex-1">
+                            <label className="text-sm text-[var(--text)] mb-1 block">Type de compte</label>
+                            <select value={formEdition.type}
+                                onChange={(e) => setFormEdition({ ...formEdition, type: e.target.value })}
+                                className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2">
+                                {TYPES_COMPTES.map((type) => <option key={type} value={type}>{type}</option>)}
+                            </select>
+                        </div>
+                        <div className="w-28">
+                            <label className="text-sm text-[var(--text)] mb-1 block">Devise</label>
+                            <select value={formEdition.devise}
+                                onChange={(e) => setFormEdition({ ...formEdition, devise: e.target.value })}
+                                className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2">
+                                {['EUR', 'USD', 'GBP', 'CHF', 'JPY', 'CAD', 'AUD', 'SEK', 'NOK', 'DKK'].map(devise => <option key={devise} value={devise}>{devise}</option>)}
+                            </select>
+                        </div>
                     </div>
                     <div>
                         <label className="text-sm text-[var(--text)] mb-1 block">Couleur</label>
