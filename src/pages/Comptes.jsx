@@ -2,13 +2,18 @@ import { useState } from 'react'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import SecureValue from '../components/SecureValue'
+import BadgeTauxLivret from '../components/BadgeTauxLivret'
+import ModalHistoriqueInterets from '../components/ModalHistoriqueInterets'
+import ModalTauxLivretJeune from '../components/ModalTauxLivretJeune'
 import { useComptes } from '../hooks/useComptes'
 import { useEntites } from '../hooks/useEntites'
 import { useEntiteFiltre } from '../context/EntiteContext'
-import { Wallet, TrendingUp, CreditCard, Home, HelpCircle, Plus, Trash2, Pencil, MessageSquare } from 'lucide-react'
+import { Wallet, TrendingUp, CreditCard, Home, HelpCircle, Plus, Trash2, Pencil, MessageSquare, PiggyBank, Percent } from 'lucide-react'
 
-const TYPES_COMPTES = ['Compte courant', 'Compte chèques', 'Épargne', 'Espèces', 'Crédit', 'PEA', 'CTO', 'Assurance vie', 'Crypto', 'Immobilier', 'Autre']
+const TYPES_COMPTES = ['Compte courant', 'Compte chèques', 'Épargne', 'Livret A', 'LDDS', 'LEP', 'Livret Jeune', 'Espèces', 'Crédit', 'PEA', 'CTO', 'Assurance vie', 'Crypto', 'Immobilier', 'Autre']
 const COULEURS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+const TYPES_LIVRETS = ['livret a', 'ldds', 'lep', 'livret jeune']
+const PLAFONDS = { 'livret a': 22950, 'ldds': 12000, 'lep': 10000 }
 
 const CATEGORIES = [
     {
@@ -17,8 +22,7 @@ const CATEGORIES = [
         description: "Ton argent disponible au quotidien : dépenses courantes, virements, espèces, et l'épargne de précaution (Livret A, LDDS...). C'est ce qui alimente ton \"Restant à vivre\" dans le Budget.",
         icone: Wallet,
         couleur: '#10b981',
-        // comparaison normalisée (minuscules, sans espaces superflus) pour ne jamais rater un compte
-        types: ['compte courant', 'compte chèques', 'compte cheques', 'épargne', 'epargne', 'espèces', 'especes', 'cash'],
+        types: ['compte courant', 'compte chèques', 'compte cheques', 'épargne', 'epargne', 'espèces', 'especes', 'cash', 'livret a', 'ldds', 'lep', 'livret jeune'],
     },
     {
         id: 'investissement',
@@ -61,6 +65,8 @@ function Comptes() {
 
     const [compteEnEdition, setCompteEnEdition] = useState(null)
     const [formEdition, setFormEdition] = useState({ nom: '', couleur: COULEURS[0], commentaire: '' })
+    const [compteHistoriqueInterets, setCompteHistoriqueInterets] = useState(null)
+    const [compteTauxLivretJeune, setCompteTauxLivretJeune] = useState(null)
 
     const ouvrirEdition = (compte) => {
         setCompteEnEdition(compte)
@@ -95,8 +101,6 @@ function Comptes() {
         })
         return { ...cat, comptes: comptesCategorie }
     })
-    // Filet de sécurité : aucun compte ne doit jamais disparaître silencieusement,
-    // même si son "type" ne correspond à aucune catégorie connue.
     const comptesNonClasses = comptes.filter((c) => !idsClasses.has(c.id))
     if (comptesNonClasses.length > 0) {
         groupes.push({
@@ -111,21 +115,43 @@ function Comptes() {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        const { error } = await ajouterCompte({
-            ...form,
+        const typeNormalise = normaliser(form.type)
+        const estLivretJeune = typeNormalise === 'livret jeune'
+
+        const { error, data } = await ajouterCompte({
+            nom: form.nom, type: form.type,
             entite_id: form.entite_id || null,
             solde: parseFloat(form.solde) || 0,
+            devise: form.devise,
+            couleur: form.couleur,
             frais_gestion_enveloppe: parseFloat(form.frais_gestion_enveloppe) || 0,
             frais_courtage_pourcentage: parseFloat(form.frais_courtage_pourcentage) || 0
         })
+
         if (!error) {
             setForm({ nom: '', type: 'Compte courant', solde: '', devise: 'EUR', couleur: COULEURS[0], frais_gestion_enveloppe: 0.60, frais_courtage_pourcentage: 0.20, entite_id: entiteFiltre || '' })
             setModalOuvert(false)
+
+            // Livret Jeune : le taux est propre à chaque banque, on demande immédiatement à l'utilisateur de le saisir
+            if (estLivretJeune && data) {
+                setCompteTauxLivretJeune(data)
+            }
         }
     }
 
     const handleSupprimer = async (id) => {
         if (confirm('Supprimer ce compte ?')) await supprimerCompte(id)
+    }
+
+    const estLivret = (compte) => TYPES_LIVRETS.includes(normaliser(compte.type))
+
+    const alertePlafond = (compte) => {
+        const plafond = PLAFONDS[normaliser(compte.type)]
+        if (!plafond) return null
+        const solde = compte.soldeReel ?? compte.solde
+        const pourcentage = (solde / plafond) * 100
+        if (pourcentage >= 90) return { pourcentage, plafond }
+        return null
     }
 
     return (
@@ -176,37 +202,56 @@ function Comptes() {
                                 </div>
 
                                 <div className="divide-y divide-[var(--border)]">
-                                    {cat.comptes.map((compte) => (
-                                        <div
-                                            key={compte.id}
-                                            className="flex items-center justify-between px-5 py-3.5"
-                                            title={compte.commentaire || undefined}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: compte.couleur }} />
-                                                <div>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <p className="font-medium text-[var(--text-h)]">{compte.nom}</p>
-                                                        {compte.commentaire && (
-                                                            <MessageSquare size={12} className="text-[var(--text-muted)]" />
+                                    {cat.comptes.map((compte) => {
+                                        const alerte = alertePlafond(compte)
+                                        return (
+                                            <div
+                                                key={compte.id}
+                                                className="flex items-center justify-between px-5 py-3.5"
+                                                title={compte.commentaire || undefined}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: compte.couleur }} />
+                                                    <div>
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            <p className="font-medium text-[var(--text-h)]">{compte.nom}</p>
+                                                            {compte.commentaire && (
+                                                                <MessageSquare size={12} className="text-[var(--text-muted)]" />
+                                                            )}
+                                                            {estLivret(compte) && <BadgeTauxLivret compte={compte} />}
+                                                        </div>
+                                                        <p className="text-xs text-[var(--text)]">{compte.type}</p>
+                                                        {alerte && (
+                                                            <p className="text-xs text-amber-500 mt-0.5">
+                                                                {alerte.pourcentage.toFixed(0)}% du plafond ({formatMontant(alerte.plafond)})
+                                                            </p>
                                                         )}
                                                     </div>
-                                                    <p className="text-xs text-[var(--text)]">{compte.type}</p>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <p className="font-semibold text-[var(--text-h)]">
+                                                        <SecureValue value={compte.soldeReel ?? compte.solde} formatter={(v) => formatMontant(v, compte.devise)} />
+                                                    </p>
+                                                    {estLivret(compte) && (
+                                                        <button onClick={() => setCompteHistoriqueInterets(compte)} title="Voir les intérêts perçus" className="text-[var(--text-muted)] hover:text-emerald transition">
+                                                            <PiggyBank size={16} />
+                                                        </button>
+                                                    )}
+                                                    {normaliser(compte.type) === 'livret jeune' && (
+                                                        <button onClick={() => setCompteTauxLivretJeune(compte)} title="Modifier le taux" className="text-[var(--text-muted)] hover:text-emerald transition">
+                                                            <Percent size={16} />
+                                                        </button>
+                                                    )}
+                                                    <button onClick={() => ouvrirEdition(compte)} className="text-[var(--text-muted)] hover:text-emerald transition">
+                                                        <Pencil size={16} />
+                                                    </button>
+                                                    <button onClick={() => handleSupprimer(compte.id)} className="text-[var(--text-muted)] hover:text-[var(--negative)] transition">
+                                                        <Trash2 size={16} />
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-4">
-                                                <p className="font-semibold text-[var(--text-h)]">
-                                                    <SecureValue value={compte.soldeReel ?? compte.solde} formatter={(v) => formatMontant(v, compte.devise)} />
-                                                </p>
-                                                <button onClick={() => ouvrirEdition(compte)} className="text-[var(--text-muted)] hover:text-emerald transition">
-                                                    <Pencil size={16} />
-                                                </button>
-                                                <button onClick={() => handleSupprimer(compte.id)} className="text-[var(--text-muted)] hover:text-[var(--negative)] transition">
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                             </div>
                         )
@@ -227,7 +272,13 @@ function Comptes() {
                         <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2">
                             {TYPES_COMPTES.map((type) => <option key={type} value={type}>{type}</option>)}
                         </select>
+                        {['livret a', 'ldds', 'lep'].includes(normaliser(form.type)) && (
+                            <p className="text-xs text-[var(--text-muted)] mt-1">
+                                Taux national fixé par la Banque de France, appliqué automatiquement.
+                            </p>
+                        )}
                     </div>
+
                     {entites.length > 0 && (
                         <div>
                             <label className="text-sm text-[var(--text)] mb-1 block">Rattaché à (Entité)</label>
@@ -267,6 +318,7 @@ function Comptes() {
                     </button>
                 </form>
             </Modal>
+
             {/* Modal édition compte */}
             <Modal isOpen={!!compteEnEdition} onClose={() => setCompteEnEdition(null)} title="Modifier le compte">
                 <form onSubmit={handleSubmitEdition} className="space-y-4">
@@ -298,6 +350,12 @@ function Comptes() {
                     </button>
                 </form>
             </Modal>
+
+            {/* Modal historique des intérêts perçus */}
+            <ModalHistoriqueInterets compte={compteHistoriqueInterets} onClose={() => setCompteHistoriqueInterets(null)} />
+
+            {/* Modal taux du Livret Jeune */}
+            <ModalTauxLivretJeune compte={compteTauxLivretJeune} onClose={() => setCompteTauxLivretJeune(null)} />
         </Layout>
     )
 }

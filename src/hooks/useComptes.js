@@ -72,12 +72,14 @@ export function useComptes() {
     }, [user, chargerComptes])
 
     const ajouterCompte = async (compte) => {
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('comptes')
             .insert({ ...compte, user_id: user.id })
+            .select()
+            .single()
 
         if (error) { toastError(error.message) } else { await chargerComptes() }
-        return { error }
+        return { error, data }
     }
 
     const modifierCompte = async (id, updates) => {
