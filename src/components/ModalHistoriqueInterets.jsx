@@ -10,9 +10,10 @@ const formatMontantDefaut = (montant, devise = 'EUR') =>
     new Intl.NumberFormat('fr-FR', { style: 'currency', currency: devise }).format(montant)
 
 const formatQuinzaine = (q) => {
+    if (!q?.debut) return ''
     const [, mois] = q.debut.split('-')
     const jourDebut = q.debut.slice(-2)
-    const jourFin = q.fin.slice(-2)
+    const jourFin = q.fin ? q.fin.slice(-2) : ''
     return `${jourDebut}-${jourFin}/${mois}`
 }
 
@@ -72,7 +73,7 @@ function OngletProjection({ compte, formatMontant }) {
         return <p className="text-[var(--text)] text-sm">Pas de taux connu pour ce compte pour l'instant.</p>
     }
 
-    const donneesGraphique = projection.detailQuinzaines.map((q) => ({
+    const donneesGraphique = (projection.detailQuinzaines || []).filter((q) => q?.debut).map((q) => ({
         label: formatQuinzaine(q),
         interet: q.interet,
         soldeProductif: q.soldeProductif,
