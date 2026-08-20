@@ -31,100 +31,89 @@ export function dateValeurRetrait(date) {
 }
 
 /**
- * Génère les 24 quinzaines (dates de début/fin) d'une année civile.
+ * Génère les 24 quinzaines (dates de début/fin en YYYY-MM-DD) d'une année civile.
  */
-function genererQuinzaines(annee) {
-    const quinzaines = [];
-    for (let mois = 0; mois < 12; mois++) {
-        quinzaines.push({ debut: new Date(annee, mois, 1), fin: new Date(annee, mois, 15) });
-        const finMois = new Date(annee, mois + 1, 0).getDate(); // dernier jour du mois
-        quinzaines.push({ debut: new Date(annee, mois, 16), fin: new Date(annee, mois, finMois) });
-    }
-    return quinzaines;
-}
-
-/**
- * Taux annuel (%) applicable à une date, à partir d'un historique [{ taux, date_effet: 'YYYY-MM-DD' }].
- */
-function tauxApplicable(date, historiqueTaux) {
-    const dateStr = date.toISOString().split('T')[0];
-    const applicables = historiqueTaux
-        .filter(t => t.date_effet <= dateStr)
-        .sort((a, b) => (a.date_effet < b.date_effet ? 1 : -1));
-    if (applicables.length === 0) return 0;
-    return parseFloat(applicables[0].taux);
-}
-
-/**
- * Calcule les intérêts annuels d'un livret réglementé selon la règle des quinzaines.
- *
- * @param {Object} params
- * @param {number} params.annee - Année civile à calculer (ex: 2026)
- * @param {number} params.soldeDebutAnnee - Solde du compte au 1er janvier de l'année
- * @param {Array}  params.transactions - [{ date: 'YYYY-MM-DD', montant: number }] montant > 0 = versement, < 0 = retrait
- * @param {Array}  params.historiqueTaux - [{ taux: number, date_effet: 'YYYY-MM-DD' }]
- * @param {string} [params.dateOuvertureCompte] - Si ouvert en cours d'année, ignore les quinzaines antérieures
- *
- * @returns {{ montantInterets: number, tauxMoyenPondere: number, detailQuinzaines: Array }}
- */
-export function calculerInteretsLivret({
-    annee,
-    soldeDebutAnnee,
-    transactions = [],
-    historiqueTaux = [],
-    dateOuvertureCompte = null,
-}) {
-    const quinzaines = genererQuinzaines(annee);
-
-    // Convertit chaque transaction en événement daté à sa date de valeur (pas sa date réelle)
-    const evenements = transactions.map(t => {
-        const dateOriginale = new Date(t.date);
-        const dateValeur = t.montant >= 0
-            ? dateValeurVersement(dateOriginale)
-            : dateValeurRetrait(dateOriginale);
-        return { dateValeur, delta: t.montant };
+export function getQuinzaines(annee) {
+  const quinzaines = [];
+  for (let mois = 0; mois < 12; mois++) {
+    const mm = String(mois + 1).padStart(2, '0');
+    quinzaines.push({
+      debut: `${annee}-${mm}-01`,
+      fin: `${annee}-${mm}-15`,
     });
+    const dernierJour = new Date(annee, mois + 1, 0).getDate();
+    quinzaines.push({
+      debut: `${annee}-${mm}-16`,
+      fin: `${annee}-${mm}-${String(dernierJour).padStart(2, '0')}`,
+    });
+  }
+  return quinzaines;
+}
 
-    // Les versements de fin décembre ont une valeur au 1er janvier N+1 : aucun intérêt cette année
-    const evenementsDansAnnee = evenements.filter(e => e.dateValeur.getFullYear() === annee);
+function getTauxApplicable(dateStr, tauxHistorique) {
+  const applicables = tauxHistorique
+    .filter((t) => t?.date_effet && t.date_effet <= dateStr && !isNaN(Number(t.taux)))
+    .sort((a, b) => (a.date_effet < b.date_effet ? 1 : -1));
+  return applicables.length > 0 ? Number(applicables[0].taux) : null;
+}
 
-    const dateOuverture = dateOuvertureCompte ? new Date(dateOuvertureCompte) : null;
+export function calculerInteretsLivret({
+  soldeInitial = 0,
+  dateOuverture,
+  transactions = [],
+  tauxHistorique = [],
+  annee,
+}) {
+  const quinzaines = getQuinzaines(annee);
 
-    let montantTotal = 0;
-    let sommeTauxPonderee = 0;
-    const detailQuinzaines = [];
+  const mouvementsValorises = transactions
+    .filter((t) => t?.date >= `${annee}-01-01` && t.date <= `${annee}-12-31` && !isNaN(Number(t.montant)))
+    .map((t) => ({ montant: Number(t.montant), dateValeur: getDateValeur(t.date, Number(t.montant)) }));
 
-    for (const q of quinzaines) {
-        // Compte pas encore ouvert pendant cette quinzaine -> ignorée
-        if (dateOuverture && q.fin < dateOuverture) continue;
+  const soldeInitialSur = Number(soldeInitial) || 0;
+  const soldeDepart = dateOuverture > `${annee}-01-01` ? 0 : soldeInitialSur;
 
-        const soldeProductifBrut = soldeDebutAnnee + evenementsDansAnnee
-            .filter(e => e.dateValeur <= q.debut)
-            .reduce((sum, e) => sum + e.delta, 0);
+  let montantInterets = 0;
+  let sommeInteretsPonderee = 0;
+  let sommeSoldesPonderes = 0;
+  const detailQuinzaines = [];
 
-        const soldeProductif = Math.max(0, soldeProductifBrut); // jamais négatif
-        const taux = tauxApplicable(q.debut, historiqueTaux);
-        const interetQuinzaine = (soldeProductif * (taux / 100)) / 24;
-
-        montantTotal += interetQuinzaine;
-        sommeTauxPonderee += taux * soldeProductif;
-
-        detailQuinzaines.push({
-            periode: `${q.debut.toISOString().split('T')[0]} au ${q.fin.toISOString().split('T')[0]}`,
-            soldeProductif: Math.round(soldeProductif * 100) / 100,
-            taux,
-            interet: Math.round(interetQuinzaine * 100) / 100,
-        });
+  for (const q of quinzaines) {
+    if (!dateOuverture || q.fin < dateOuverture) {
+      detailQuinzaines.push({ ...q, soldeProductif: 0, taux: null, interet: 0 });
+      continue;
     }
 
-    const sommeSoldes = detailQuinzaines.reduce((s, q) => s + q.soldeProductif, 0);
-    const tauxMoyenPondere = sommeSoldes > 0 ? sommeTauxPonderee / sommeSoldes : 0;
+    const soldeProductif = mouvementsValorises
+      .filter((m) => m.dateValeur <= q.debut)
+      .reduce((sum, m) => sum + m.montant, soldeDepart);
 
-    return {
-        montantInterets: Math.round(montantTotal * 100) / 100,
-        tauxMoyenPondere: Math.round(tauxMoyenPondere * 10000) / 10000,
-        detailQuinzaines,
-    };
+    const taux = getTauxApplicable(q.debut, tauxHistorique);
+    const base = Math.max(Number.isFinite(soldeProductif) ? soldeProductif : 0, 0);
+    const interetQuinzaine = taux != null ? (base * (taux / 100)) / 24 : 0;
+
+    montantInterets += interetQuinzaine;
+    if (taux != null) {
+      sommeInteretsPonderee += base * taux;
+      sommeSoldesPonderes += base;
+    }
+
+    detailQuinzaines.push({
+      ...q,
+      soldeProductif: Math.round(soldeProductif * 100) / 100,
+      taux,
+      interet: Math.round(interetQuinzaine * 100) / 100,
+    });
+  }
+
+  return {
+    montantInterets: Number.isFinite(montantInterets) ? Math.round(montantInterets * 100) / 100 : 0,
+    tauxMoyenPondere:
+      sommeSoldesPonderes > 0 && Number.isFinite(sommeInteretsPonderee)
+        ? Math.round((sommeInteretsPonderee / sommeSoldesPonderes) * 1000) / 1000
+        : null,
+    detailQuinzaines,
+  };
 }
 
 export function getDateValeur(dateStr, montant) {
