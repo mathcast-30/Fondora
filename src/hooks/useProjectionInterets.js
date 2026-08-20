@@ -41,18 +41,22 @@ export function useProjectionInterets(compte) {
     const dateOuverture = compte?.created_at ? compte.created_at.slice(0, 10) : `${annee}-01-01`
     const signe = (t) => (t.type === 'depense' ? -1 : 1) * Number(t.montant)
 
-    const soldeInitial = useMemo(() => {
-        if (!compte) return 0
-        return Number(compte.solde) + transactions
-            .filter((t) => t.date < `${annee}-01-01`)
-            .reduce((s, t) => s + signe(t), 0)
-    }, [compte, transactions, annee])
+    // Le solde de départ du compte est traité comme un versement fait à la date
+    // d'ouverture, pas comme "de l'argent déjà là au 1er janvier" - important pour
+    // les livrets créés en cours d'année avec un solde initial non nul.
+    const ledgerComplet = useMemo(() => {
+        if (!compte) return []
+        const versementInitial = { date: dateOuverture, montant: Number(compte.solde) || 0 }
+        return [versementInitial, ...transactions.map((t) => ({ date: t.date, montant: signe(t) }))]
+    }, [compte, transactions, dateOuverture])
+
+    const soldeInitial = useMemo(() => (
+        ledgerComplet.filter((m) => m.date < `${annee}-01-01`).reduce((s, m) => s + m.montant, 0)
+    ), [ledgerComplet, annee])
 
     const transactionsAnnee = useMemo(() => (
-        transactions
-            .filter((t) => t.date >= `${annee}-01-01` && t.date <= `${annee}-12-31`)
-            .map((t) => ({ date: t.date, montant: signe(t) }))
-    ), [transactions, annee])
+        ledgerComplet.filter((m) => m.date >= `${annee}-01-01` && m.date <= `${annee}-12-31`)
+    ), [ledgerComplet, annee])
 
     // Projection à date d'aujourd'hui : ce qui a déjà été gagné + ce qui sera gagné
     // d'ici le 31/12 si le solde actuel ne bouge plus.
