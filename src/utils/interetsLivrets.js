@@ -126,3 +126,18 @@ export function calculerInteretsLivret({
         detailQuinzaines,
     };
 }
+
+export function getDateValeur(dateStr, montant) {
+    const d = new Date(dateStr);
+    const dateVal = montant >= 0 ? dateValeurVersement(d) : dateValeurRetrait(d);
+    const annee = dateVal.getFullYear();
+    const mois = String(dateVal.getMonth() + 1).padStart(2, '0');
+    const jour = String(dateVal.getDate()).padStart(2, '0');
+    return `${annee}-${mois}-${jour}`;
+}
+
+// Exposé séparément pour l'affichage pédagogique dans le simulateur
+// (indique à partir de quelle date un mouvement commence/cesse de porter intérêt)
+export function getDateValeurPourAffichage(dateStr, montant) {
+  return getDateValeur(dateStr, montant)
+}
