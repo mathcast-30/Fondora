@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useEntiteFiltre } from '../context/EntiteContext';
+import { useFoyerActif } from '../context/FoyerContext';
 import {
     calculerCRD,
     calculerProgressionRemboursement,
@@ -11,6 +12,7 @@ import {
 
 export function useDettes() {
     const { entiteFiltre } = useEntiteFiltre();
+    const { ownerUserIdActif } = useFoyerActif();
     const [dettes, setDettes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -57,6 +59,7 @@ export function useDettes() {
         adresse
       )
     `);
+            if (ownerUserIdActif) query = query.eq('user_id', ownerUserIdActif);
             if (entiteFiltre) query = query.eq('entite_id', entiteFiltre);
             const { data, error } = await query.order('created_at', { ascending: false });
 
@@ -68,7 +71,7 @@ export function useDettes() {
         } finally {
             setLoading(false);
         }
-    }, [entiteFiltre]);
+    }, [entiteFiltre, ownerUserIdActif]);
 
     useEffect(() => {
         fetchDettes();
@@ -162,16 +165,15 @@ export function useDettes() {
     };
 
     const ajouterDette = async (formData) => {
-        const { data: { user } } = await supabase.auth.getUser();
         const { data: nouvelleDette, error } = await supabase
             .from('dettes')
-            .insert([{ ...formData, user_id: user.id }])
+            .insert([{ ...formData, user_id: ownerUserIdActif }])
             .select()
             .single();
         if (error) throw error;
 
         if (formData.rembourse_automatiquement && formData.compte_id) {
-            await creerTransactionMensualite(nouvelleDette, user.id);
+            await creerTransactionMensualite(nouvelleDette, ownerUserIdActif);
         }
 
         await fetchDettes();
@@ -187,8 +189,7 @@ export function useDettes() {
         if (error) throw error;
 
         if (updatedDette.rembourse_automatiquement && updatedDette.compte_id) {
-            const { data: { user } } = await supabase.auth.getUser();
-            await creerTransactionMensualite(updatedDette, user.id);
+            await creerTransactionMensualite(updatedDette, ownerUserIdActif);
         }
 
         await fetchDettes();

@@ -21,7 +21,8 @@ export default function Login() {
             setErrorMsg(error.message);
             setLoading(false);
         } else {
-            navigate('/synthese');
+            const params = new URLSearchParams(window.location.search)
+            navigate(params.get('redirect') || '/synthese');
         }
     };
 

@@ -14,6 +14,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useEntiteFiltre } from '../context/EntiteContext'
+import { useFoyerActif } from '../context/FoyerContext'
 import {
     calculerVersementsTotaux,
     calculerValeurActuelleContrat,
@@ -31,6 +32,7 @@ import {
 export function useAssurancesVie() {
     const { user } = useAuth()
     const { entiteFiltre } = useEntiteFiltre()
+    const { ownerUserIdActif } = useFoyerActif()
 
     // État brut Supabase
     const [contrats, setContrats] = useState([])
@@ -56,7 +58,7 @@ export function useAssurancesVie() {
             let query = supabase
                 .from('assurances_vie')
                 .select('*')
-                .eq('user_id', user.id)
+                .eq('user_id', ownerUserIdActif)
             if (entiteFiltre) query = query.eq('entite_id', entiteFiltre)
             const { data: contratsData, error: errContrats } = await query
                 .order('date_ouverture', { ascending: true })
@@ -158,7 +160,7 @@ export function useAssurancesVie() {
         } finally {
             setLoading(false)
         }
-    }, [user, entiteFiltre])
+    }, [user, entiteFiltre, ownerUserIdActif])
 
     useEffect(() => {
         charger()
@@ -234,13 +236,13 @@ export function useAssurancesVie() {
         async (payload) => {
             const { error: err } = await supabase.from('assurances_vie').insert({
                 ...payload,
-                user_id: user.id,
+                user_id: ownerUserIdActif,
                 entite_id: payload?.entite_id || entiteFiltre || null,
             })
             if (err) throw err
             await charger()
         },
-        [user, charger, entiteFiltre]
+        [ownerUserIdActif, charger, entiteFiltre]
     )
 
     /**
@@ -253,11 +255,11 @@ export function useAssurancesVie() {
                 .from('assurances_vie')
                 .delete()
                 .eq('id', contratId)
-                .eq('user_id', user.id)
+                .eq('user_id', ownerUserIdActif)
             if (err) throw err
             await charger()
         },
-        [user, charger]
+        [ownerUserIdActif, charger]
     )
 
     /**
@@ -269,14 +271,14 @@ export function useAssurancesVie() {
         async (contratId, payload) => {
             const { error: err } = await supabase.from('assurances_vie_versements').insert({
                 contrat_id: contratId,
-                user_id: user.id,
+                user_id: ownerUserIdActif,
                 date: payload.date,
                 montant: payload.montant,
             })
             if (err) throw err
             await charger()
         },
-        [user, charger]
+        [ownerUserIdActif, charger]
     )
 
     /**
@@ -292,7 +294,7 @@ export function useAssurancesVie() {
                 .upsert(
                     {
                         contrat_id: contratId,
-                        user_id: user.id,
+                        user_id: ownerUserIdActif,
                         date: payload.date,
                         valeur: payload.valeur,
                     },
@@ -301,7 +303,7 @@ export function useAssurancesVie() {
             if (err) throw err
             await charger()
         },
-        [user, charger]
+        [ownerUserIdActif, charger]
     )
 
     /**
@@ -317,7 +319,7 @@ export function useAssurancesVie() {
                 .upsert(
                     {
                         contrat_id: contratId,
-                        user_id: user.id,
+                        user_id: ownerUserIdActif,
                         asset_id: payload.asset_id,
                         isin: payload.isin,
                         nb_parts: payload.nb_parts,
@@ -327,7 +329,7 @@ export function useAssurancesVie() {
             if (err) throw err
             await charger()
         },
-        [user, charger]
+        [ownerUserIdActif, charger]
     )
 
     /**
@@ -340,11 +342,11 @@ export function useAssurancesVie() {
                 .from('assurances_vie_positions')
                 .delete()
                 .eq('id', positionId)
-                .eq('user_id', user.id)
+                .eq('user_id', ownerUserIdActif)
             if (err) throw err
             await charger()
         },
-        [user, charger]
+        [ownerUserIdActif, charger]
     )
 
     // ── Valeur totale du patrimoine AV (tous contrats) ───────────────────────

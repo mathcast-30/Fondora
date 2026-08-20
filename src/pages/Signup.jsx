@@ -27,7 +27,8 @@ export default function Signup() {
             } else {
                 // ✅ Vérification si la session est immédiatement active ou si un e-mail de confirmation est requis
                 if (data?.session) {
-                    navigate('/onboarding');
+                    const params = new URLSearchParams(window.location.search)
+                    navigate(params.get('redirect') || '/onboarding');
                 } else {
                     setSuccessMsg('Compte créé avec succès ! Un e-mail de confirmation vous a été envoyé. Veuillez cliquer sur le lien pour valider votre inscription.');
                     setEmail('');

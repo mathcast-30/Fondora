@@ -19,7 +19,9 @@ import { CurrencyProvider } from './context/CurrencyContext'
 import SupprimerCompteConfirmer from './pages/SupprimerCompteConfirmer'
 import { IncognitoProvider } from './context/IncognitoContext'
 import { EntiteProvider } from './context/EntiteContext'
+import { FoyerProvider } from './context/FoyerContext'
 import { useAuth } from './context/AuthContext' // ✅ Importation essentielle pour le routage dynamique
+import RejoindreFoyer from './pages/RejoindreFoyer'
 
 // Pages Légales et Export
 import MentionsLegales from './pages/legal/MentionsLegales'
@@ -75,23 +77,26 @@ function AppRoutes() {
 function App() {
   return (
     <IncognitoProvider>
-      <EntiteProvider>
-        <CurrencyProvider>
-          <BrowserRouter>
-            <Routes>
-              {/* Pages légales accessibles sans authentification ni MFA */}
-              <Route path="/mentions-legales" element={<MentionsLegales />} />
-              <Route path="/cgu" element={<Cgu />} />
-              <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
-              <Route path="/partage/:token" element={<PartagePublic />} />
+      <FoyerProvider>
+        <EntiteProvider>
+          <CurrencyProvider>
+            <BrowserRouter>
+              <Routes>
+                {/* Pages légales accessibles sans authentification ni MFA */}
+                <Route path="/mentions-legales" element={<MentionsLegales />} />
+                <Route path="/cgu" element={<Cgu />} />
+                <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+                <Route path="/partage/:token" element={<PartagePublic />} />
+                <Route path="/foyer/rejoindre/:token" element={<RejoindreFoyer />} />
 
-              {/* Application principale */}
-              <Route path="/*" element={<AppRoutes />} />
-            </Routes>
-            <Analytics />
-          </BrowserRouter>
-        </CurrencyProvider>
-      </EntiteProvider>
+                {/* Application principale */}
+                <Route path="/*" element={<AppRoutes />} />
+              </Routes>
+              <Analytics />
+            </BrowserRouter>
+          </CurrencyProvider>
+        </EntiteProvider>
+      </FoyerProvider>
     </IncognitoProvider>
   )
 }

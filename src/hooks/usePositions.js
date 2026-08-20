@@ -2,12 +2,14 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useEntiteFiltre } from '../context/EntiteContext'
+import { useFoyerActif } from '../context/FoyerContext'
 import { calculateFIFOPnL, calculateXIRR, calculateCAGR } from '../lib/financialCalculations'
 import { toastError } from '../utils/toast'
 
 export function usePositions() {
     const { user } = useAuth()
     const { entiteFiltre } = useEntiteFiltre()
+    const { ownerUserIdActif } = useFoyerActif()
     const [positions, setPositions] = useState([])
     const [transactions, setTransactions] = useState([])
     const [loading, setLoading] = useState(true)
@@ -23,7 +25,7 @@ export function usePositions() {
             let positionsQuery = supabase
                 .from('positions_financieres')
                 .select('*')
-                .eq('user_id', user.id)
+                .eq('user_id', ownerUserIdActif)
             if (entiteFiltre) positionsQuery = positionsQuery.eq('entite_id', entiteFiltre)
             positionsQuery = positionsQuery.order('created_at', { ascending: true })
             const { data: positionsData, error: positionsError } = await positionsQuery
@@ -32,7 +34,7 @@ export function usePositions() {
             const { data: transactionsData, error: transactionsError } = await supabase
                 .from('transactions_investissement')
                 .select('*')
-                .eq('user_id', user.id)
+                .eq('user_id', ownerUserIdActif)
                 .order('date', { ascending: true })
             
             if (!positionsError) setPositions(positionsData || [])
@@ -42,7 +44,7 @@ export function usePositions() {
         }
         
         setLoading(false)
-    }, [user, entiteFiltre])
+    }, [user, entiteFiltre, ownerUserIdActif])
 
     useEffect(() => {
         if (user) charger()
@@ -53,7 +55,7 @@ export function usePositions() {
         
         const { error } = await supabase
             .from('positions_financieres')
-            .insert({ entite_id: position?.entite_id || entiteFiltre || null, ...position, user_id: user.id })
+            .insert({ entite_id: position?.entite_id || entiteFiltre || null, ...position, user_id: ownerUserIdActif })
         if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
@@ -65,7 +67,7 @@ export function usePositions() {
             .from('positions_financieres')
             .update(updates)
             .eq('id', id)
-            .eq('user_id', user.id)
+            .eq('user_id', ownerUserIdActif)
         if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
@@ -77,7 +79,7 @@ export function usePositions() {
             .from('positions_financieres')
             .delete()
             .eq('id', id)
-            .eq('user_id', user.id)
+            .eq('user_id', ownerUserIdActif)
         if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }
@@ -101,7 +103,7 @@ export function usePositions() {
             const { data: existingPositions, error: findError } = await supabase
                 .from('positions_financieres')
                 .select('*')
-                .eq('user_id', user.id)
+                .eq('user_id', ownerUserIdActif)
                 .eq('symbole', symbolUpper)
                 .eq('type_compte', typeCompte)
                 .eq('compte_id', transaction.compte_id)
@@ -145,7 +147,7 @@ export function usePositions() {
                 const { data: newPos, error: insertPosError } = await supabase
                     .from('positions_financieres')
                     .insert({
-                        user_id: user.id,
+                        user_id: ownerUserIdActif,
                         symbole: symbolUpper,
                         nom: transaction.nom || symbolUpper,
                         quantite: quantiteTx,
@@ -168,7 +170,7 @@ export function usePositions() {
             const { error: txError } = await supabase
                 .from('transactions_investissement')
                 .insert({ 
-                    user_id: user.id,
+                    user_id: ownerUserIdActif,
                     position_id: positionId,
                     type: transaction.type,
                     symbole: symbolUpper,
@@ -201,7 +203,7 @@ export function usePositions() {
             .from('transactions_investissement')
             .delete()
             .eq('id', id)
-            .eq('user_id', user.id)
+            .eq('user_id', ownerUserIdActif)
         if (error) { toastError(error.message) } else { await charger() }
         return { error }
     }

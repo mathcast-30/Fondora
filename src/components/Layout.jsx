@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useIncognito } from '../context/IncognitoContext';
 import { useEntites } from '../hooks/useEntites';
 import { useEntiteFiltre } from '../context/EntiteContext';
+import { useFoyerActif } from '../context/FoyerContext';
 import { LogOut, HelpCircle } from 'lucide-react';
 import AideModal from './AideModal';
 
@@ -14,6 +15,7 @@ export default function Layout({ children }) {
     const { incognito, toggleIncognito } = useIncognito();
     const { entites } = useEntites();
     const { entiteFiltre, setEntiteFiltre } = useEntiteFiltre();
+    const { espaces, ownerUserIdActif, setEspaceActifId } = useFoyerActif();
     const location = useLocation();
 
     const [menuOuvert, setMenuOuvert] = useState(false);
@@ -58,21 +60,37 @@ export default function Layout({ children }) {
                         </button>
                     </h1>
 
-                    {entites.length > 0 && (
-                        <div className="hidden lg:flex items-center gap-1 bg-white/5 border border-white/10 rounded-full p-1 mx-4 overflow-x-auto">
-                            <button type="button" onClick={() => setEntiteFiltre(null)}
-                                className={`px-3 py-1 rounded-full text-xs font-medium transition whitespace-nowrap ${!entiteFiltre ? 'bg-[#10b981] text-white' : 'text-slate-400 hover:text-white'}`}>
-                                Tous
-                            </button>
-                            {entites.map(e => (
-                                <button type="button" key={e.id} onClick={() => setEntiteFiltre(e.id)}
-                                    className="px-3 py-1 rounded-full text-xs font-medium transition whitespace-nowrap"
-                                    style={entiteFiltre === e.id ? { backgroundColor: e.couleur, color: '#fff' } : { color: '#94a3b8' }}>
-                                    {e.nom}
+                    <div className="flex items-center gap-3">
+                        {espaces.length > 1 && (
+                            <select
+                                value={ownerUserIdActif || ''}
+                                onChange={(e) => setEspaceActifId(e.target.value)}
+                                className="bg-white/5 border border-white/10 text-white rounded-xl px-3 py-1.5 text-xs font-medium focus:outline-none focus:border-[#10b981] transition cursor-pointer"
+                            >
+                                {espaces.map((e) => (
+                                    <option key={e.ownerUserId} value={e.ownerUserId} className="bg-[#122a44] text-white">
+                                        {e.label}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+
+                        {entites.length > 0 && (
+                            <div className="hidden lg:flex items-center gap-1 bg-white/5 border border-white/10 rounded-full p-1 mx-2 overflow-x-auto">
+                                <button type="button" onClick={() => setEntiteFiltre(null)}
+                                    className={`px-3 py-1 rounded-full text-xs font-medium transition whitespace-nowrap ${!entiteFiltre ? 'bg-[#10b981] text-white' : 'text-slate-400 hover:text-white'}`}>
+                                    Tous
                                 </button>
-                            ))}
-                        </div>
-                    )}
+                                {entites.map(e => (
+                                    <button type="button" key={e.id} onClick={() => setEntiteFiltre(e.id)}
+                                        className="px-3 py-1 rounded-full text-xs font-medium transition whitespace-nowrap"
+                                        style={entiteFiltre === e.id ? { backgroundColor: e.couleur, color: '#fff' } : { color: '#94a3b8' }}>
+                                        {e.nom}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
 
                     <div className="flex items-center gap-4">
                         <button

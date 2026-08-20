@@ -2,23 +2,26 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useEntiteFiltre } from '../context/EntiteContext'
+import { useFoyerActif } from '../context/FoyerContext'
 import { calculerRentabilite } from '../lib/calculImmo'
 import { toastError } from '../utils/toast'
 
 export function useBiensImmobiliers() {
     const { user } = useAuth()
     const { entiteFiltre } = useEntiteFiltre()
+    const { ownerUserIdActif } = useFoyerActif()
     const [biens, setBiens] = useState([])
     const [loading, setLoading] = useState(true)
 
     const charger = useCallback(async () => {
         setLoading(true)
         let query = supabase.from('biens_immobiliers').select('*').order('created_at', { ascending: true })
+        if (ownerUserIdActif) query = query.eq('user_id', ownerUserIdActif)
         if (entiteFiltre) query = query.eq('entite_id', entiteFiltre)
         const { data, error } = await query
         if (!error) setBiens(data || [])
         setLoading(false)
-    }, [entiteFiltre])
+    }, [entiteFiltre, ownerUserIdActif])
 
     useEffect(() => {
         if (user) charger()
@@ -27,7 +30,7 @@ export function useBiensImmobiliers() {
     const ajouterBien = async (bien) => {
         const { data, error } = await supabase
             .from('biens_immobiliers')
-            .insert({ ...bien, user_id: user.id })
+            .insert({ ...bien, user_id: ownerUserIdActif })
             .select()
             .single()
         if (error) { toastError(error.message) } else { await charger() }

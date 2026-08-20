@@ -8,6 +8,7 @@ import { useSmartRules } from '../hooks/useSmartRules'
 import { useAlertes } from '../hooks/useAlertes'
 import { usePartages } from '../hooks/usePartages'
 import { useEntites, TYPES_ENTITE } from '../hooks/useEntites'
+import { useFoyer } from '../hooks/useFoyer'
 import MFASetup from '../components/mfa/MFASetup'
 import './Parametres.css'
 
@@ -37,6 +38,7 @@ const SECTIONS = [
     { id: 'smart_rules', label: '🤖 Règles auto' },
     { id: 'notifications', label: '🔔 Notifications' },
     { id: 'partage', label: '🔗 Partage' },
+    { id: 'foyer', label: '🏠 Foyer' },
     { id: 'entites', label: '👨‍👩‍👧 Entités' },
     { id: 'compte', label: '🗑️ Compte' },
 ]
@@ -112,6 +114,47 @@ export default function Parametres() {
     // Entités
     const { entites, loading: entitesLoading, ajouterEntite, supprimerEntite } = useEntites()
     const [newEntite, setNewEntite] = useState({ nom: '', type: 'personnel', couleur: '#10b981' })
+
+    // Foyer
+    const { foyer, membres, loading: foyerLoading, inviterMembre, retirerMembre } = useFoyer()
+    const [nouvelInvite, setNouvelInvite] = useState({
+        email_invite: '',
+        entite_geree_id: '',
+        niveau_acces: 'total',
+        peut_gerer_membres: false,
+    })
+
+    async function handleInviterMembre(e) {
+        e.preventDefault()
+        if (!nouvelInvite.email_invite.trim()) return
+        const { error, token } = await inviterMembre({
+            email_invite: nouvelInvite.email_invite,
+            entite_geree_id: nouvelInvite.entite_geree_id || null,
+            niveau_acces: nouvelInvite.niveau_acces,
+            peut_gerer_membres: nouvelInvite.peut_gerer_membres,
+        })
+        if (error) {
+            showMsg(error.message, 'error')
+            return
+        }
+        setNouvelInvite({ email_invite: '', entite_geree_id: '', niveau_acces: 'total', peut_gerer_membres: false })
+        showMsg('Invitation créée ✓')
+    }
+
+    function copierLienFoyer(token) {
+        navigator.clipboard.writeText(`${window.location.origin}/foyer/rejoindre/${token}`)
+        showMsg('Lien d\'invitation copié ✓')
+    }
+
+    async function handleRetirerMembre(id) {
+        if (!confirm('Retirer ce membre du foyer ?')) return
+        const { error } = await retirerMembre(id)
+        if (error) {
+            showMsg(error.message, 'error')
+            return
+        }
+        showMsg('Membre retiré ✓')
+    }
 
     async function handleAddEntite() {
         if (!newEntite.nom.trim()) return
@@ -638,6 +681,96 @@ export default function Parametres() {
                                                 {p.actif && <button onClick={() => copierLien(p.token)} className="parametres-icon-btn" title="Copier le lien">🔗</button>}
                                                 {p.actif && <button onClick={() => handleRevoquerPartage(p.id)} className="parametres-icon-btn" title="Révoquer">⛔</button>}
                                                 <button onClick={() => handleSupprimerPartage(p.id)} className="parametres-icon-btn parametres-icon-btn--danger" title="Supprimer">🗑️</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+                    )}
+
+                    {/* ══ FOYER ══ */}
+                    {activeSection === 'foyer' && (
+                        <section className="parametres-section">
+                            <h2 className="parametres-section-titre">Foyer</h2>
+                            <div className="parametres-section-contenu">
+                                <p className="parametres-hint" style={{ marginBottom: 16 }}>
+                                    Invites des membres à rejoindre ton foyer pour partager le suivi de ton patrimoine ou gérer des entités spécifiques.
+                                </p>
+                                <div className="parametres-card--add">
+                                    <form onSubmit={handleInviterMembre} className="parametres-form" style={{ gap: 12 }}>
+                                        <p className="parametres-label">Inviter un membre</p>
+                                        <div className="parametres-row-add">
+                                            <input
+                                                type="email"
+                                                required
+                                                value={nouvelInvite.email_invite}
+                                                onChange={(e) => setNouvelInvite((p) => ({ ...p, email_invite: e.target.value }))}
+                                                placeholder="Email du membre"
+                                                className="parametres-input"
+                                                style={{ flex: 1 }}
+                                            />
+                                            <select
+                                                value={nouvelInvite.entite_geree_id}
+                                                onChange={(e) => setNouvelInvite((p) => ({ ...p, entite_geree_id: e.target.value }))}
+                                                className="parametres-input"
+                                                style={{ width: 160 }}
+                                            >
+                                                <option value="">Toutes entités</option>
+                                                {entites.map((e) => (
+                                                    <option key={e.id} value={e.id}>{e.nom}</option>
+                                                ))}
+                                            </select>
+                                            <select
+                                                value={nouvelInvite.niveau_acces}
+                                                onChange={(e) => setNouvelInvite((p) => ({ ...p, niveau_acces: e.target.value }))}
+                                                className="parametres-input"
+                                                style={{ width: 170 }}
+                                            >
+                                                <option value="total">Total</option>
+                                                <option value="lecture_seule_reste">Lecture seule reste</option>
+                                                <option value="entite_uniquement">Entité uniquement</option>
+                                            </select>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 4 }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text)' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={nouvelInvite.peut_gerer_membres}
+                                                    onChange={(e) => setNouvelInvite((p) => ({ ...p, peut_gerer_membres: e.target.checked }))}
+                                                />
+                                                Peut gérer les membres
+                                            </label>
+                                            <button type="submit" className="parametres-btn parametres-btn--success">+ Inviter</button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                {foyerLoading ? (
+                                    <p className="parametres-hint">Chargement…</p>
+                                ) : membres.length === 0 ? (
+                                    <p className="parametres-empty">Aucun membre dans ce foyer pour l'instant.</p>
+                                ) : (
+                                    <div className="parametres-liste">
+                                        {membres.map((m) => (
+                                            <div key={m.id} className="parametres-liste-item">
+                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                    <span className="parametres-liste-item-nom">{m.email_invite || m.user_id}</span>
+                                                    <span className="parametres-hint" style={{ fontSize: 11 }}>
+                                                        Accès : {m.niveau_acces} {m.entites?.nom ? `(${m.entites.nom})` : ''}
+                                                    </span>
+                                                </div>
+                                                <span className={`parametres-badge ${m.statut === 'actif' ? 'parametres-badge--on' : 'parametres-badge--off'}`}>
+                                                    {m.statut}
+                                                </span>
+                                                {m.statut === 'invite' && m.token_invitation && (
+                                                    <button type="button" onClick={() => copierLienFoyer(m.token_invitation)} className="parametres-icon-btn" title="Copier le lien d'invitation">
+                                                        🔗 Lien
+                                                    </button>
+                                                )}
+                                                <button type="button" onClick={() => handleRetirerMembre(m.id)} className="parametres-icon-btn parametres-icon-btn--danger" title="Retirer le membre">
+                                                    🗑️
+                                                </button>
                                             </div>
                                         ))}
                                     </div>
