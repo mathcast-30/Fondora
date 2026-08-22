@@ -13,7 +13,7 @@ import WidgetRendementEpargne from '../components/WidgetRendementEpargne'
 import { useComptes } from '../hooks/useComptes'
 import { useEntites } from '../hooks/useEntites'
 import { useEntiteFiltre } from '../context/EntiteContext'
-import { useInteretsLivret } from '../hooks/useInteretsLivret'
+import { useInteretsLivretsTous } from '../hooks/useInteretsLivret'
 import { useEligibiliteLEP } from '../hooks/useEligibiliteLEP'
 import { Wallet, TrendingUp, CreditCard, Home, HelpCircle, Plus, Trash2, Pencil, MessageSquare, PiggyBank, Percent, Search, GripVertical, Archive, RotateCcw, AlertTriangle } from 'lucide-react'
 
@@ -60,12 +60,6 @@ const CATEGORIES = [
 
 const normaliser = (str) => (str || '').trim().toLowerCase()
 
-// Petite ligne dédiée pour vérifier l'historique d'intérêts avant suppression, sans
-// dupliquer la logique du hook dans le composant parent pour chaque compte.
-function useAHistoriqueInterets(compteId) {
-    const { historique } = useInteretsLivret(compteId)
-    return historique.length > 0
-}
 
 function LigneCompte({ compte, estLivret, alerte, alerteLEP, formatMontant, onOuvrirInterets, onOuvrirTauxLivretJeune, onEditer, onDemanderSuppression, dragProps }) {
     return (
@@ -131,6 +125,7 @@ function Comptes() {
     const { entites } = useEntites()
     const { entiteFiltre } = useEntiteFiltre()
     const { eligible: eligibleLEP, rfrRenseigne } = useEligibiliteLEP()
+    const comptesAvecHistorique = useInteretsLivretsTous()
 
     const [modalOuvert, setModalOuvert] = useState(false)
     const [recherche, setRecherche] = useState('')
@@ -451,7 +446,7 @@ function Comptes() {
             <ModalConfirmationSuppression
                 compte={compteASupprimer}
                 soldeReel={compteASupprimer ? Number(compteASupprimer.soldeReel ?? compteASupprimer.solde) : 0}
-                hasHistorique={compteASupprimer ? useAHistoriqueInterets(compteASupprimer.id) : false}
+                hasHistorique={compteASupprimer ? comptesAvecHistorique.has(compteASupprimer.id) : false}
                 onClose={() => setCompteASupprimer(null)}
                 onCloturer={async (id) => { await cloturerCompte(id); setCompteASupprimer(null) }}
                 onSupprimerDefinitivement={async (id) => { await supprimerDefinitivement(id); setCompteASupprimer(null) }}
