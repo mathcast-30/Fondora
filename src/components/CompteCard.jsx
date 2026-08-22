@@ -1,5 +1,6 @@
 import { Trash2 } from 'lucide-react'
 import SecureValue from './SecureValue'
+import BadgeProprietaire from './BadgeProprietaire'
 
 function CompteCard({ compte, onSupprimer }) {
     const formatMontant = (montant, devise) => {
@@ -19,6 +20,7 @@ function CompteCard({ compte, onSupprimer }) {
                 <div>
                     <p className="font-semibold text-[var(--text-h)]">{compte.nom}</p>
                     <p className="text-xs text-[var(--text)]">{compte.type}</p>
+                    <BadgeProprietaire entiteId={compte.entite_id} style={{ marginTop: 2 }} />
                 </div>
             </div>
 

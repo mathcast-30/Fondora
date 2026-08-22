@@ -4,6 +4,7 @@ import { Trash2, ChevronDown, ChevronUp, Home, TrendingUp, TrendingDown, Sliders
 import { calculerRentabilite } from '../lib/calculImmo'
 import { useDettes } from '../hooks/useDettes'
 import SecureValue from './SecureValue'
+import BadgeProprietaire from './BadgeProprietaire'
 
 function BienImmobilierCard({ bien, onSupprimer, onEstime }) {
     const [deplié, setDeplié] = useState(false)
@@ -60,7 +61,9 @@ function BienImmobilierCard({ bien, onSupprimer, onEstime }) {
                     </div>
                     <div>
                         <p className="font-semibold text-[var(--text-h)]">{bien.nom}</p>
-                        <p className="text-xs text-[var(--text)]">{bien.type_bien} • {bien.statut}</p>
+                        <p className="text-xs text-[var(--text)]">{bien.type_bien} • {bien.statut}
+                            <BadgeProprietaire entiteId={bien.entite_id} style={{ marginLeft: 8 }} />
+                        </p>
                     </div>
                 </div>
                 <div className="flex items-center gap-4">

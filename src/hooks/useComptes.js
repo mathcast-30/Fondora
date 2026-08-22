@@ -2,21 +2,17 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useEntiteFiltre } from '../context/EntiteContext'
-import { useFoyerActif } from '../context/FoyerContext'
-import { toastError } from '../utils/toast'
 
 export function useComptes() {
     const { user } = useAuth()
     const { entiteFiltre } = useEntiteFiltre()
-    const { ownerUserIdActif } = useFoyerActif()
     const [comptes, setComptes] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
     const chargerComptes = useCallback(async () => {
         setLoading(true)
-        let query = supabase.from('comptes').select('*').order('created_at', { ascending: true })
-        if (ownerUserIdActif) query = query.eq('user_id', ownerUserIdActif)
+        let query = supabase.from('comptes').select('*').order('ordre', { ascending: true }).order('created_at', { ascending: true })
         if (entiteFiltre) query = query.eq('entite_id', entiteFiltre)
         const { data: comptesData, error: comptesError } = await query
 
@@ -26,11 +22,10 @@ export function useComptes() {
             return
         }
 
-        // TODO: Paginer ou limiter le chargement des transactions si l'utilisateur en a beaucoup
         const { data: txData, error: txError } = await supabase
             .from('transactions')
             .select('compte_id, type, montant')
-            
+
         if (txError) {
             setError(txError.message)
             setLoading(false)
@@ -54,7 +49,7 @@ export function useComptes() {
                 ? (positionsData || []).filter(p => p.compte_id === compte.id).reduce((s, p) =>
                     s + Number(p.quantite) * (prixParSymbole.get(p.symbole) || Number(p.prix_achat_moyen)), 0)
                 : 0
-            
+
             return {
                 ...compte,
                 soldeReel: Number(compte.solde) + totalRevenus - totalDepenses + valeurPositions,
@@ -68,7 +63,7 @@ export function useComptes() {
         setComptes(comptesEnrichis)
         setError(null)
         setLoading(false)
-    }, [entiteFiltre, ownerUserIdActif])
+    }, [entiteFiltre])
 
     useEffect(() => {
         if (user) chargerComptes()
@@ -77,11 +72,11 @@ export function useComptes() {
     const ajouterCompte = async (compte) => {
         const { data, error } = await supabase
             .from('comptes')
-            .insert({ ...compte, user_id: ownerUserIdActif })
+            .insert({ ...compte, user_id: user.id })
             .select()
             .single()
 
-        if (error) { toastError(error.message) } else { await chargerComptes() }
+        if (!error) await chargerComptes()
         return { error, data }
     }
 
@@ -91,19 +86,58 @@ export function useComptes() {
             .update(updates)
             .eq('id', id)
 
-        if (error) { toastError(error.message) } else { await chargerComptes() }
+        if (!error) await chargerComptes()
         return { error }
     }
 
-    const supprimerCompte = async (id) => {
+    // Clôture douce : le compte disparaît des listes actives mais garde tout son
+    // historique (transactions, intérêts perçus...). Réversible via reactiverCompte.
+    const cloturerCompte = async (id) => {
+        const { error } = await supabase
+            .from('comptes')
+            .update({ statut: 'cloture', date_cloture: new Date().toISOString().slice(0, 10) })
+            .eq('id', id)
+
+        if (!error) await chargerComptes()
+        return { error }
+    }
+
+    const reactiverCompte = async (id) => {
+        const { error } = await supabase
+            .from('comptes')
+            .update({ statut: 'actif', date_cloture: null })
+            .eq('id', id)
+
+        if (!error) await chargerComptes()
+        return { error }
+    }
+
+    // Suppression irréversible - perd tout l'historique lié (cascade DB). À réserver
+    // aux comptes vides sans historique, ou après confirmation explicite renforcée.
+    const supprimerDefinitivement = async (id) => {
         const { error } = await supabase
             .from('comptes')
             .delete()
             .eq('id', id)
 
-        if (error) { toastError(error.message) } else { await chargerComptes() }
+        if (!error) await chargerComptes()
         return { error }
     }
 
-    return { comptes, loading, error, ajouterCompte, modifierCompte, supprimerCompte, chargerComptes }
+    // Réordonne une liste de comptes (typiquement ceux d'une même catégorie) selon
+    // l'ordre des ids fourni. Ne touche pas aux comptes des autres catégories.
+    const reordonnerComptes = async (idsOrdonnes) => {
+        await Promise.all(
+            idsOrdonnes.map((id, index) =>
+                supabase.from('comptes').update({ ordre: index }).eq('id', id)
+            )
+        )
+        await chargerComptes()
+    }
+
+    return {
+        comptes, loading, error,
+        ajouterCompte, modifierCompte, supprimerDefinitivement, reordonnerComptes,
+        cloturerCompte, reactiverCompte, chargerComptes
+    }
 }

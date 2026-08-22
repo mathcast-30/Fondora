@@ -1,5 +1,6 @@
 // src/components/passifs/DetteCard.jsx
 import SecureValue from '../SecureValue';
+import BadgeProprietaire from '../BadgeProprietaire';
 
 const CONFIG_TYPE = {
     Immobilier: { couleur: '#3B82F6', bg: '#EFF6FF', emoji: '🏠' },
@@ -119,6 +120,7 @@ export function DetteCard({ dette, onEdit, onDelete, onVoirTableau }) {
                                 ⏱️ Fin dans {moisRestants} mois
                             </span>
                         )}
+                        <BadgeProprietaire entiteId={dette.entite_id} />
                     </div>
                     <h3 style={{ margin: '8px 0 0', fontSize: 18, color: '#111827' }}>{dette.nom}</h3>
 

@@ -15,21 +15,22 @@ export default function Layout({ children }) {
     const { incognito, toggleIncognito } = useIncognito();
     const { entites } = useEntites();
     const { entiteFiltre, setEntiteFiltre } = useEntiteFiltre();
-    const { espaces, ownerUserIdActif, setEspaceActifId } = useFoyerActif();
+    const { espaces, espaceActif, setEspaceActifId } = useFoyerActif();
     const location = useLocation();
 
     const [menuOuvert, setMenuOuvert] = useState(false);
     const [aideOuverte, setAideOuverte] = useState(false);
+    const [espaceMenuOuvert, setEspaceMenuOuvert] = useState(false);
     const menuRef = useRef(null);
+    const espaceMenuRef = useRef(null);
 
     const currentMenu = menuItems.find(item => location.pathname.includes(item.path)) || menuItems[0];
 
     // Fermer le menu déroulant au clic en dehors
     useEffect(() => {
         function handleClickOutside(event) {
-            if (menuRef.current && !menuRef.current.contains(event.target)) {
-                setMenuOuvert(false);
-            }
+            if (menuRef.current && !menuRef.current.contains(event.target)) setMenuOuvert(false);
+            if (espaceMenuRef.current && !espaceMenuRef.current.contains(event.target)) setEspaceMenuOuvert(false);
         }
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -62,17 +63,24 @@ export default function Layout({ children }) {
 
                     <div className="flex items-center gap-3">
                         {espaces.length > 1 && (
-                            <select
-                                value={ownerUserIdActif || ''}
-                                onChange={(e) => setEspaceActifId(e.target.value)}
-                                className="bg-white/5 border border-white/10 text-white rounded-xl px-3 py-1.5 text-xs font-medium focus:outline-none focus:border-[#10b981] transition cursor-pointer"
-                            >
-                                {espaces.map((e) => (
-                                    <option key={e.ownerUserId} value={e.ownerUserId} className="bg-[#122a44] text-white">
-                                        {e.label}
-                                    </option>
-                                ))}
-                            </select>
+                            <div className="relative" ref={espaceMenuRef}>
+                                <button onClick={() => setEspaceMenuOuvert(v => !v)}
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-white/5 border border-white/10 text-slate-300 hover:text-white transition">
+                                    🏠 {espaceActif?.label || 'Mon espace'} <span className="text-[9px]">▼</span>
+                                </button>
+                                {espaceMenuOuvert && (
+                                    <div className="absolute left-0 mt-2 w-52 bg-surface border border-[var(--border)] rounded-xl shadow-2xl overflow-hidden z-40">
+                                        {espaces.map(e => (
+                                            <button key={e.ownerUserId}
+                                                onClick={() => { setEspaceActifId(e.estMoi ? null : e.ownerUserId); setEspaceMenuOuvert(false); }}
+                                                className={`w-full text-left px-4 py-2.5 text-sm transition ${espaceActif?.ownerUserId === e.ownerUserId ? 'text-[#10b981] bg-white/5' : 'text-slate-300 hover:bg-white/5'}`}>
+                                                {e.estMoi ? '👤 ' : '🏠 '}{e.label}
+                                                {!e.estMoi && <span className="block text-[10px] text-slate-500">Accès : {e.niveauAcces}</span>}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         )}
 
                         {entites.length > 0 && (

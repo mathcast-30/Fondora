@@ -22,6 +22,7 @@ import { useState, useMemo } from 'react'
 import { TrendingUp, TrendingDown, AlertTriangle, ChevronDown, ChevronUp, Trash2, Settings } from 'lucide-react'
 import { calculerFiscaliteAV, formatCurrency } from '../../lib/financialCalculations'
 import GraphiqueFraisComparatif from './GraphiqueFraisComparatif'
+import BadgeProprietaire from '../BadgeProprietaire'
 
 // ─── Helper d'affichage masqué (incognito) ────────────────────────────────────
 
@@ -237,6 +238,7 @@ export default function AssuranceVieCard({ metriques, isIncognito, situationFami
             <div style={s.row}>
                 <div style={s.col}>
                     <span style={s.assureur}>{contrat.assureur}</span>
+                    <BadgeProprietaire entiteId={metriques.contrat.entite_id} style={{ marginTop: 4 }} />
                     <span style={s.nom}>{contrat.nom}</span>
                     <span style={{ color: '#475569', fontSize: '11px', marginTop: '2px' }}>
                         Ouvert le {new Date(contrat.date_ouverture).toLocaleDateString('fr-FR')}

@@ -63,6 +63,7 @@ export default function Parametres() {
     const [nom, setNom] = useState('')
     const [email, setEmail] = useState('')
     const [situationFamiliale, setSituationFamiliale] = useState('celibataire')
+    const [rfr, setRfr] = useState('')
     const [newPassword, setNewPassword] = useState('')
 
     // Préférences
@@ -194,6 +195,7 @@ export default function Parametres() {
         if (data) {
             setNom(data.nom || '')
             setSituationFamiliale(data.situation_familiale || 'celibataire')
+            setRfr(data.rfr != null ? String(data.rfr) : '')
             setModulesActifs(data.modules_actifs || [])
         }
     }
@@ -208,7 +210,7 @@ export default function Parametres() {
         setSaving(true)
         const { data: { user } } = await supabase.auth.getUser()
         const { error } = await supabase.from('profiles')
-            .update({ nom, situation_familiale: situationFamiliale })
+            .update({ nom, situation_familiale: situationFamiliale, rfr: rfr ? parseFloat(rfr) : null })
             .eq('id', user.id)
         if (newPassword) {
             const { error: pwErr } = await supabase.auth.updateUser({ password: newPassword })
@@ -390,6 +392,18 @@ export default function Parametres() {
                                             <option value="marie_pacse">Marié(e) / Pacsé(e)</option>
                                         </select>
                                         <p className="parametres-hint">Impacte les abattements fiscaux (AV, PEA…)</p>
+                                    </div>
+                                    <div className="parametres-field">
+                                        <label className="parametres-label">Revenu fiscal de référence (RFR)</label>
+                                        <input
+                                            type="number" step="1" value={rfr}
+                                            onChange={e => setRfr(e.target.value)}
+                                            className="parametres-input"
+                                            placeholder="Ex: 21000"
+                                        />
+                                        <p className="parametres-hint">
+                                            Visible sur ton avis d’imposition. Utilisé uniquement pour t’avertir si tu perds ton éligibilité au LEP.
+                                        </p>
                                     </div>
                                     <button
                                         onClick={saveProfil}
