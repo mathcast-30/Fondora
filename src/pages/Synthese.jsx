@@ -14,7 +14,8 @@ function Synthese() {
     const annee = aujourdHui.getFullYear()
 
     const { transactions, loading } = useTransactions(mois, annee)
-    const { comptes } = useComptes()
+    const { comptes: comptesTous } = useComptes()
+    const comptes = comptesTous.filter(c => (c.statut ?? 'actif') === 'actif')
     const { objectif, definirObjectif } = useObjectifEpargne(mois, annee)
 
     const projection = calculerProjection(transactions, mois, annee)

@@ -6,6 +6,7 @@ import BadgeTauxLivret from '../components/BadgeTauxLivret'
 import ModalHistoriqueInterets from '../components/ModalHistoriqueInterets'
 import ModalTauxLivretJeune from '../components/ModalTauxLivretJeune'
 import ModalConfirmationSuppression from '../components/ModalConfirmationSuppression'
+import ModalClotureCompte from '../components/ModalClotureCompte'
 import SparklineCompte from '../components/SparklineCompte'
 import AvatarBanque from '../components/AvatarBanque'
 import AlerteArgentQuiDort from '../components/AlerteArgentQuiDort'
@@ -141,6 +142,7 @@ function Comptes() {
     const [compteHistoriqueInterets, setCompteHistoriqueInterets] = useState(null)
     const [compteTauxLivretJeune, setCompteTauxLivretJeune] = useState(null)
     const [compteASupprimer, setCompteASupprimer] = useState(null)
+    const [compteACloturer, setCompteACloturer] = useState(null)
     const [dragCompteId, setDragCompteId] = useState(null)
 
     const ouvrirEdition = (compte) => {
@@ -448,8 +450,14 @@ function Comptes() {
                 soldeReel={compteASupprimer ? Number(compteASupprimer.soldeReel ?? compteASupprimer.solde) : 0}
                 hasHistorique={compteASupprimer ? comptesAvecHistorique.has(compteASupprimer.id) : false}
                 onClose={() => setCompteASupprimer(null)}
-                onCloturer={async (id) => { await cloturerCompte(id); setCompteASupprimer(null) }}
+                onCloturer={(compte) => { setCompteASupprimer(null); setCompteACloturer(compte) }}
                 onSupprimerDefinitivement={async (id) => { await supprimerDefinitivement(id); setCompteASupprimer(null) }}
+            />
+            <ModalClotureCompte
+                compte={compteACloturer}
+                comptesDisponibles={comptes.filter((c) => c.id !== compteACloturer?.id && (c.statut ?? 'actif') === 'actif' && c.devise === compteACloturer?.devise)}
+                onClose={() => setCompteACloturer(null)}
+                onConfirmer={async (compte, destinationId) => { await cloturerCompte(compte, destinationId); setCompteACloturer(null) }}
             />
         </Layout>
     )

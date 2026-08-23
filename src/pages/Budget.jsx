@@ -137,7 +137,7 @@ function BudgetContent() {
 
     const soldeTotalCourants = useMemo(() =>
         comptes
-            .filter(c => (c.type || '').toLowerCase().includes('courant'))
+            .filter(c => (c.type || '').toLowerCase().includes('courant') && (c.statut ?? 'actif') === 'actif')
             .reduce((s, c) => s + Number(c.soldeReel ?? c.solde ?? 0), 0),
         [comptes]
     )
@@ -226,7 +226,7 @@ function BudgetContent() {
 
     const formatMontant = (m) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(m)
 
-    const variationsComptes = comptes.map(c => {
+    const variationsComptes = comptes.filter(c => (c.statut ?? 'actif') === 'actif').map(c => {
         const txCompte = transactions.filter(t => t.compte_id === c.id)
         const diff = txCompte.reduce((s, t) => s + (t.type === 'revenu' ? Number(t.montant) : -Number(t.montant)), 0)
         return { nom: c.nom, diff }
@@ -470,7 +470,7 @@ function BudgetContent() {
                             required
                             className="w-full border border-[var(--border)] bg-card text-[var(--text-h)] rounded-lg px-3 py-2">
                             <option value="" disabled>Choisir un compte…</option>
-                            {comptes.map((c) => (
+                            {comptes.filter(c => (c.statut ?? 'actif') === 'actif').map((c) => (
                                 <option key={c.id} value={c.id}>{c.nom}</option>
                             ))}
                         </select>

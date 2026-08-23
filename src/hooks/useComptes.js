@@ -90,13 +90,43 @@ export function useComptes() {
         return { error }
     }
 
-    // Clôture douce : le compte disparaît des listes actives mais garde tout son
-    // historique (transactions, intérêts perçus...). Réversible via reactiverCompte.
-    const cloturerCompte = async (id) => {
+    // Clôture douce avec gestion du solde : si le compte n'est pas vide, crée les
+    // transactions nécessaires pour le vider proprement (virement ou sortie de l'app)
+    // avant de le masquer. Réversible via reactiverCompte (mais pas les transferts).
+    const cloturerCompte = async (compte, destinationId = null) => {
+        const solde = Number(compte.soldeReel ?? compte.solde)
+
+        if (Math.abs(solde) > 0.01) {
+            const sens = solde > 0 ? 'depense' : 'revenu'
+            const { error: errSortie } = await supabase.from('transactions').insert({
+                user_id: user.id,
+                compte_id: compte.id,
+                montant: Math.abs(solde),
+                type: sens,
+                date: new Date().toISOString().slice(0, 10),
+                description: destinationId ? `Virement de clôture vers un autre compte` : 'Retrait de clôture (hors app)',
+                source: 'cloture_compte',
+            })
+            if (errSortie) return { error: errSortie }
+
+            if (destinationId) {
+                const { error: errEntree } = await supabase.from('transactions').insert({
+                    user_id: user.id,
+                    compte_id: destinationId,
+                    montant: Math.abs(solde),
+                    type: solde > 0 ? 'revenu' : 'depense',
+                    date: new Date().toISOString().slice(0, 10),
+                    description: `Virement depuis "${compte.nom}" (clôturé)`,
+                    source: 'cloture_compte',
+                })
+                if (errEntree) return { error: errEntree }
+            }
+        }
+
         const { error } = await supabase
             .from('comptes')
             .update({ statut: 'cloture', date_cloture: new Date().toISOString().slice(0, 10) })
-            .eq('id', id)
+            .eq('id', compte.id)
 
         if (!error) await chargerComptes()
         return { error }

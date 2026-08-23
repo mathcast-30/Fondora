@@ -27,7 +27,7 @@ function Patrimoine() {
     const totalDettes = kpisDettes.totalDettes || 0
 
     const totalComptes = comptes
-        .filter(c => !['pea', 'cto'].includes((c.type || '').toLowerCase()))
+        .filter(c => !['pea', 'cto'].includes((c.type || '').toLowerCase()) && (c.statut ?? 'actif') === 'actif')
         .reduce((acc, c) => acc + Number(c.soldeReel ?? c.solde), 0)
     const totalActions = positions.reduce((acc, p) => acc + (cours[p.symbole]?.coursActuel || p.prix_achat_moyen) * p.quantite, 0)
     const totalCrypto = positionsCrypto.reduce((acc, p) => acc + (coursCrypto[p.coin_id]?.eur || p.prix_achat_moyen) * p.quantite, 0)

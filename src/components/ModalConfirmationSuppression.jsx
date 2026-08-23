@@ -56,7 +56,7 @@ export default function ModalConfirmationSuppression({ compte, soldeReel, hasHis
                     <p className="text-xs text-[var(--text-muted)] mb-2">
                         Le compte disparaît de tes listes actives, mais tout son historique est conservé. Réversible à tout moment.
                     </p>
-                    <button onClick={() => onCloturer(compte.id)} className="w-full bg-emerald hover:bg-emerald-light text-white font-semibold py-2 rounded-lg transition">
+                    <button onClick={() => onCloturer(compte)} className="w-full bg-emerald hover:bg-emerald-light text-white font-semibold py-2 rounded-lg transition">
                         Clôturer le compte
                     </button>
                 </div>
