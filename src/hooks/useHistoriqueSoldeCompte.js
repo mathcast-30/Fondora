@@ -20,12 +20,16 @@ export function useHistoriqueSoldeCompte(compte) {
             const dateOuverture = (compte.created_at || '').slice(0, 10)
             const signe = (t) => (t.type === 'depense' ? -1 : 1) * Number(t.montant)
 
-            let solde = Number(compte.solde) || 0
-            const serie = [{ date: dateOuverture, solde }]
-                ; (data || []).forEach((t) => {
-                    solde += signe(t)
-                    serie.push({ date: t.date, solde: Math.round(solde * 100) / 100 })
-                })
+            // compte.solde est déjà le solde courant (trigger DB) : on retrouve le
+            // montant de départ en retirant l'effet cumulé de toutes les transactions,
+            // puis on rejoue la chronologie pour reconstruire l'historique.
+            const effetTotal = (data || []).reduce((s, t) => s + signe(t), 0)
+            let solde = (Number(compte.solde) || 0) - effetTotal
+            const serie = [{ date: dateOuverture, solde: Math.round(solde * 100) / 100 }]
+            ;(data || []).forEach((t) => {
+                solde += signe(t)
+                serie.push({ date: t.date, solde: Math.round(solde * 100) / 100 })
+            })
             // Point final = solde réel actuel (couvre l'écart si des positions d'investissement
             // sont incluses dans soldeReel mais pas dans les transactions brutes)
             serie.push({ date: new Date().toISOString().slice(0, 10), solde: compte.soldeReel ?? solde })

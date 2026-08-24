@@ -40,6 +40,12 @@ export function useComptes() {
             .select('symbole, prix_actuel')
         const prixParSymbole = new Map((prixData || []).map(p => [p.symbole, Number(p.prix_actuel)]))
 
+        // IMPORTANT : comptes.solde est déjà tenu à jour en temps réel par un trigger
+        // PostgreSQL (trg_solde_compte) à chaque insertion/modification/suppression de
+        // transaction. On ne doit donc PAS re-additionner les transactions ici, sous
+        // peine de compter chaque mouvement deux fois. `solde` est la seule source de
+        // vérité pour la partie cash ; totalRevenus/totalDepenses restent exposés pour
+        // les pages qui en ont besoin à des fins d'affichage/statistiques uniquement.
         const comptesEnrichis = (comptesData || []).map(compte => {
             const txCompte = txData.filter(t => t.compte_id === compte.id)
             const totalRevenus = txCompte.filter(t => t.type === 'revenu').reduce((s, t) => s + Number(t.montant), 0)
@@ -52,8 +58,8 @@ export function useComptes() {
 
             return {
                 ...compte,
-                soldeReel: Number(compte.solde) + totalRevenus - totalDepenses + valeurPositions,
-                liquidites: Number(compte.solde) + totalRevenus - totalDepenses,
+                soldeReel: Number(compte.solde) + valeurPositions,
+                liquidites: Number(compte.solde),
                 valeurPositions,
                 totalRevenus,
                 totalDepenses

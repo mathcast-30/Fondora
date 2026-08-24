@@ -41,12 +41,14 @@ export function useProjectionInterets(compte) {
     const dateOuverture = compte?.created_at ? compte.created_at.slice(0, 10) : `${annee}-01-01`
     const signe = (t) => (t.type === 'depense' ? -1 : 1) * Number(t.montant)
 
-    // Le solde de départ du compte est traité comme un versement fait à la date
-    // d'ouverture, pas comme "de l'argent déjà là au 1er janvier" - important pour
-    // les livrets créés en cours d'année avec un solde initial non nul.
     const ledgerComplet = useMemo(() => {
         if (!compte) return []
-        const versementInitial = { date: dateOuverture, montant: Number(compte.solde) || 0 }
+        // compte.solde est le solde ACTUEL (mis à jour en direct par un trigger DB à
+        // chaque transaction) - pas le montant de création. On reconstitue ce montant
+        // de création en retirant l'effet de toutes les transactions jamais faites.
+        const effetTransactionsTotal = transactions.reduce((s, t) => s + signe(t), 0)
+        const montantCreation = (Number(compte.solde) || 0) - effetTransactionsTotal
+        const versementInitial = { date: dateOuverture, montant: montantCreation }
         return [versementInitial, ...transactions.map((t) => ({ date: t.date, montant: signe(t) }))]
     }, [compte, transactions, dateOuverture])
 
