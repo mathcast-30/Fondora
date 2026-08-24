@@ -345,6 +345,156 @@ function Investir() {
                                 <div className="bg-white rounded-xl p-8 text-center text-gray-400">
                                     Chargement des positions...
                                 </div>
+                            ) : positions.length === 0 ? (
+                                <div className="bg-white rounded-xl p-8 text-center text-gray-400">
+                                    Aucune position. Clique sur "Achat" pour commencer.
+                                </div>
+                            ) : (
+                                <div className="bg-white rounded-xl shadow-sm divide-y">
+                                    {positions.map((p) => {
+                                        const infosCours = cours[p.symbole]
+                                        const coursActuel = infosCours?.coursActuel || p.prix_achat_moyen
+                                        const valeurActuelle = coursActuel * p.quantite
+                                        const valeurInvestie = p.prix_achat_moyen * p.quantite
+                                        const plusMoinsValue = valeurActuelle - valeurInvestie
+                                        const pourcentage = valeurInvestie > 0 ? (plusMoinsValue / valeurInvestie) * 100 : 0
+
+                                        return (
+                                            <div key={p.id} onClick={() => handleSelectPosition(p)} className={`flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 transition ${selectedActifId === p.id ? 'bg-indigo-50 border-l-4 border-indigo-500' : ''}`}>
+                                                <div className="flex items-center gap-3">
+                                                    {infosCours?.logo ? (
+                                                        <img src={infosCours.logo} alt={p.symbole} className="w-9 h-9 rounded-full object-contain bg-gray-50 p-1" />
+                                                    ) : (
+                                                        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-xs font-semibold text-gray-400">
+                                                            {p.symbole.slice(0, 2)}
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <p className="font-semibold text-navy">{infosCours?.nom || p.symbole}</p>
+                                                        <p className="text-xs text-gray-400">{p.symbole} • {p.quantite} parts</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="text-right">
+                                                        <p className="text-xs text-gray-400">PRU</p>
+                                                        <p className="font-medium text-navy text-sm"><SecureValue value={p.prix_achat_moyen} formatter={v => formatMontant(v, p.devise)} /></p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-xs text-gray-400">Valeur</p>
+                                                        <p className="font-semibold text-navy text-sm"><SecureValue value={valeurActuelle} formatter={v => formatMontant(v, p.devise)} /></p>
+                                                    </div>
+                                                    <div className="text-right w-16">
+                                                        <p className={`font-semibold text-sm ${plusMoinsValue >= 0 ? 'text-emerald' : 'text-red-500'}`}>
+                                                            {plusMoinsValue >= 0 ? '+' : ''}<SecureValue value={displayMode === 'euro' ? plusMoinsValue : pourcentage} formatter={v => displayMode === 'euro' ? formatMontant(v) : `${v.toFixed(1)}%`} />
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Droite 40% : graphique de l'actif sélectionné */}
+                        <div className="col-span-2">
+                            <div className="bg-[#0f172a] rounded-3xl p-6 shadow-sm border border-slate-800 sticky top-6">
+                                {selectedActifId ? (
+                                    <GraphiqueActif actifId={selectedCatalogueActifId} />
+                                ) : (
+                                    <div className="text-center text-slate-400 py-10">
+                                        Clique sur une position pour voir son graphique
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Diversification Score & Allocation Donut */}
+                    <div className="grid grid-cols-2 gap-6">
+                        {positions.length > 0 && !loadingPositions ? (
+                            <div className="h-full">
+                                <DiversificationScore positions={dataAllocation} total={valorisationTotale} />
+                            </div>
+                        ) : (
+                            <div />
+                        )}
+                        {positions.length > 0 && !loadingPositions ? (
+                            <div className="bg-white rounded-xl p-5 shadow-sm h-full flex flex-col justify-center">
+                                <h3 className="text-navy font-semibold mb-4 text-center">Allocation</h3>
+                                <DonutChart data={dataAllocation} total={valorisationTotale} libelleCentre="Portefeuille" />
+                                <div className="mt-4">
+                                    <LegendeAllocation data={dataAllocation} total={valorisationTotale} />
+                                </div>
+                            </div>
+                        ) : (
+                            <div />
+                        )}
+                    </div>
+
+                    {/* Analyse sectorielle & géographique Look-Through */}
+                    <RepartitionLookThrough positions={positions} />
+
+                    {/* Dividendes */}
+                    {positions.length > 0 && (
+                        <DividendesCard
+                            dividendes={dividendes}
+                            totalDouzeMois={totalDouzeMois}
+                            syntheseDouzeMois={syntheseDouzeMois}
+                            valorisationTotale={valorisationTotale}
+                            positions={positions}
+                            onAjouter={ajouterDividende}
+                            onSupprimer={supprimerDividende}
+                        />
+                    )}
+                </div>
+            )}
+
+            {/* ============================================
+                 ONGLET CRYPTO
+                 ============================================ */}
+            {ongletActif === 'crypto' && (
+                <div className="space-y-6">
+                    {/* Crypto Portfolio Chart - PLACED AT THE TOP */}
+                    <CryptoPortfolioChart
+                        data={historiqueCrypto}
+                        periode={periodeCrypto}
+                        setPeriode={setPeriodeCrypto}
+                    />
+
+                    {/* Crypto Metrics */}
+                    <div className="grid grid-cols-3 gap-4">
+                        <div className="bg-white rounded-xl p-4 shadow-sm">
+                            <p className="text-gray-400 text-xs mb-1">Valorisation</p>
+                            <p className="text-navy font-bold text-lg"><SecureValue value={valorisationCrypto} formatter={formatMontant} /></p>
+                        </div>
+                        <div className="bg-white rounded-xl p-4 shadow-sm">
+                            <p className="text-gray-400 text-xs mb-1">Investi</p>
+                            <p className="text-navy font-bold text-lg"><SecureValue value={investiCrypto} formatter={formatMontant} /></p>
+                        </div>
+                        <div className="bg-white rounded-xl p-4 shadow-sm">
+                            <p className="text-gray-400 text-xs mb-1">Plus/moins-value</p>
+                            <p className={`font-bold text-lg ${plusMoinsValueCrypto >= 0 ? 'text-emerald' : 'text-red-500'}`}>
+                                <SecureValue value={plusMoinsValueCrypto} formatter={formatMontant} />
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* PRU Information */}
+                    {positionsCrypto.length > 0 && (
+                        <div className="bg-white rounded-xl p-5 shadow-sm">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Calculator size={18} className="text-emerald" />
+                                <h3 className="text-navy font-semibold">P&L Réalisé Crypto (PRU - Méthode fiscale française)</h3>
+                            </div>
+                            <div className="grid grid-cols-3 gap-4">
+                                <div>
+                                    <p className="text-gray-400 text-sm mb-1">PRU Actuel</p>
+                                    <p className="text-navy text-xl font-bold"><SecureValue value={currentPRU} formatter={formatMontant} /></p>
+                                </div>
+                                <div>
+                                    <p className="text-gray-400 text-sm mb-1">Plus-value réalisée</p>
+                                    <p className={`text-xl font-bold ${cryptoPnL.realizedPL >= 0 ? 'text-emerald' : 'text-red-500'}`}>
                                         <SecureValue value={cryptoPnL.realizedPL} formatter={formatMontant} />
                                     </p>
                                 </div>
