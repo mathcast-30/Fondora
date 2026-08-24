@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { X, HelpCircle, Loader2, BookOpen, Compass, PlayCircle, ChevronRight } from 'lucide-react'
 import { useAidePage } from '../hooks/useAidePage'
 import AideTour from './AideTour'
@@ -7,12 +7,34 @@ function slugify(str) {
     return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-')
 }
 
-export default function AideModal({ isOpen, onClose, route }) {
+export default function AideModal({ isOpen, onClose, route, autoStart = false }) {
     const { aide, loading } = useAidePage(isOpen ? route : null)
     const [activeTerm, setActiveTerm] = useState(null)
     const [ongletActif, setOngletActif] = useState('concepts') // 'concepts' | 'mode_emploi'
     const [tourEnCours, setTourEnCours] = useState(false)
     const [indexDepart, setIndexDepart] = useState(0)
+    const [autoStartConsomme, setAutoStartConsomme] = useState(false)
+
+    // Réinitialise le déclencheur d'auto-start à chaque nouvelle ouverture
+    useEffect(() => {
+        if (isOpen) {
+            setAutoStartConsomme(false)
+        } else {
+            setTourEnCours(false)
+        }
+    }, [isOpen])
+
+    // Dès que les étapes sont chargées, si on nous a demandé un démarrage auto
+    // (via le bandeau de découverte), on lance directement la visite guidée.
+    useEffect(() => {
+        const etapesDispo = Array.isArray(aide?.mode_emploi) ? aide.mode_emploi.length > 0 : false
+        if (isOpen && autoStart && !autoStartConsomme && etapesDispo) {
+            setOngletActif('mode_emploi')
+            setIndexDepart(0)
+            setTourEnCours(true)
+            setAutoStartConsomme(true)
+        }
+    }, [isOpen, autoStart, autoStartConsomme, aide])
 
     const termes = useMemo(() => (Array.isArray(aide?.glossaire) ? aide.glossaire : []), [aide])
     const etapes = useMemo(() => {

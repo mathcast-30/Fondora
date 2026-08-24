@@ -9,6 +9,7 @@ import { useEntiteFiltre } from '../context/EntiteContext';
 import { useFoyerActif } from '../context/FoyerContext';
 import { LogOut, HelpCircle } from 'lucide-react';
 import AideModal from './AideModal';
+import AideBandeauDecouverte from './AideBandeauDecouverte';
 
 export default function Layout({ children }) {
     const { profile, user, signOut } = useAuth();
@@ -20,6 +21,7 @@ export default function Layout({ children }) {
 
     const [menuOuvert, setMenuOuvert] = useState(false);
     const [aideOuverte, setAideOuverte] = useState(false);
+    const [demarrerTourAuto, setDemarrerTourAuto] = useState(false);
     const [espaceMenuOuvert, setEspaceMenuOuvert] = useState(false);
     const menuRef = useRef(null);
     const espaceMenuRef = useRef(null);
@@ -144,6 +146,13 @@ export default function Layout({ children }) {
                 {/* Zone centrale de la page */}
                 <main className="flex-1 p-6 md:p-8 flex flex-col justify-between pb-24 md:pb-8">
                     <div className="w-full max-w-7xl mx-auto">
+                        <AideBandeauDecouverte
+                            route={currentMenu.path}
+                            onVoir={() => {
+                                setDemarrerTourAuto(true);
+                                setAideOuverte(true);
+                            }}
+                        />
                         {children}
                     </div>
                     <Footer />
@@ -170,8 +179,12 @@ export default function Layout({ children }) {
 
             <AideModal
                 isOpen={aideOuverte}
-                onClose={() => setAideOuverte(false)}
+                onClose={() => {
+                    setAideOuverte(false);
+                    setDemarrerTourAuto(false);
+                }}
                 route={currentMenu.path}
+                autoStart={demarrerTourAuto}
             />
 
         </div>
