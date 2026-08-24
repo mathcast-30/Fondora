@@ -7,6 +7,7 @@ import ModalHistoriqueInterets from '../components/ModalHistoriqueInterets'
 import ModalTauxLivretJeune from '../components/ModalTauxLivretJeune'
 import ModalConfirmationSuppression from '../components/ModalConfirmationSuppression'
 import ModalClotureCompte from '../components/ModalClotureCompte'
+import ModalReactivationCompte from '../components/ModalReactivationCompte'
 import SparklineCompte from '../components/SparklineCompte'
 import AvatarBanque from '../components/AvatarBanque'
 import AlerteArgentQuiDort from '../components/AlerteArgentQuiDort'
@@ -122,7 +123,7 @@ function LigneCompte({ compte, estLivret, alerte, alerteLEP, formatMontant, onOu
 }
 
 function Comptes() {
-    const { comptes, loading, ajouterCompte, modifierCompte, supprimerDefinitivement, cloturerCompte, reactiverCompte, reordonnerComptes } = useComptes()
+    const { comptes, loading, ajouterCompte, modifierCompte, supprimerDefinitivement, cloturerCompte, reactiverCompte, getTransfertClotureLie, reordonnerComptes } = useComptes()
     const { entites } = useEntites()
     const { entiteFiltre } = useEntiteFiltre()
     const { eligible: eligibleLEP, rfrRenseigne } = useEligibiliteLEP()
@@ -143,6 +144,7 @@ function Comptes() {
     const [compteTauxLivretJeune, setCompteTauxLivretJeune] = useState(null)
     const [compteASupprimer, setCompteASupprimer] = useState(null)
     const [compteACloturer, setCompteACloturer] = useState(null)
+    const [compteAReactiver, setCompteAReactiver] = useState(null)
     const [dragCompteId, setDragCompteId] = useState(null)
 
     const ouvrirEdition = (compte) => {
@@ -309,7 +311,7 @@ function Comptes() {
                                                 </div>
                                                 <div className="flex items-center gap-3">
                                                     <p className="text-[var(--text)]">{formatMontant(compte.soldeReel ?? compte.solde, compte.devise)}</p>
-                                                    <button onClick={() => reactiverCompte(compte.id)} title="Réactiver" className="text-[var(--text-muted)] hover:text-emerald transition">
+                                                    <button onClick={() => setCompteAReactiver(compte)} title="Réactiver" className="text-[var(--text-muted)] hover:text-emerald transition">
                                                         <RotateCcw size={16} />
                                                     </button>
                                                 </div>
@@ -458,6 +460,12 @@ function Comptes() {
                 comptesDisponibles={comptes.filter((c) => c.id !== compteACloturer?.id && (c.statut ?? 'actif') === 'actif' && c.devise === compteACloturer?.devise)}
                 onClose={() => setCompteACloturer(null)}
                 onConfirmer={async (compte, destinationId) => { await cloturerCompte(compte, destinationId); setCompteACloturer(null) }}
+            />
+            <ModalReactivationCompte
+                compte={compteAReactiver}
+                getTransfertClotureLie={getTransfertClotureLie}
+                onClose={() => setCompteAReactiver(null)}
+                onConfirmer={async (id, annulerTransfert) => { await reactiverCompte(id, annulerTransfert); setCompteAReactiver(null) }}
             />
         </Layout>
     )

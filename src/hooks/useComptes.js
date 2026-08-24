@@ -98,7 +98,7 @@ export function useComptes() {
 
         if (Math.abs(solde) > 0.01) {
             const sens = solde > 0 ? 'depense' : 'revenu'
-            const { error: errSortie } = await supabase.from('transactions').insert({
+            const { data: sortie, error: errSortie } = await supabase.from('transactions').insert({
                 user_id: user.id,
                 compte_id: compte.id,
                 montant: Math.abs(solde),
@@ -106,11 +106,11 @@ export function useComptes() {
                 date: new Date().toISOString().slice(0, 10),
                 description: destinationId ? `Virement de clôture vers un autre compte` : 'Retrait de clôture (hors app)',
                 source: 'cloture_compte',
-            })
+            }).select('id').single()
             if (errSortie) return { error: errSortie }
 
             if (destinationId) {
-                const { error: errEntree } = await supabase.from('transactions').insert({
+                const { data: entree, error: errEntree } = await supabase.from('transactions').insert({
                     user_id: user.id,
                     compte_id: destinationId,
                     montant: Math.abs(solde),
@@ -118,8 +118,12 @@ export function useComptes() {
                     date: new Date().toISOString().slice(0, 10),
                     description: `Virement depuis "${compte.nom}" (clôturé)`,
                     source: 'cloture_compte',
-                })
+                    transaction_liee_id: sortie.id,
+                }).select('id').single()
                 if (errEntree) return { error: errEntree }
+
+                // Lien bidirectionnel, pour retrouver l'entrée depuis la sortie aussi
+                await supabase.from('transactions').update({ transaction_liee_id: entree.id }).eq('id', sortie.id)
             }
         }
 
@@ -132,7 +136,32 @@ export function useComptes() {
         return { error }
     }
 
-    const reactiverCompte = async (id) => {
+    // Vérifie si ce compte a un transfert de clôture lié, pour proposer son annulation
+    // avant de réactiver (sinon le compte réactivé se retrouve avec un solde faussé).
+    const getTransfertClotureLie = async (compteId) => {
+        const { data } = await supabase
+            .from('transactions')
+            .select('id, montant, type, transaction_liee_id, transaction_liee:transaction_liee_id(compte_id, comptes(nom))')
+            .eq('compte_id', compteId)
+            .eq('source', 'cloture_compte')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        return data || null
+    }
+
+    // Réactive le compte. Si annulerTransfert=true et qu'un transfert de clôture existe,
+    // supprime les deux transactions liées (remet l'argent "comme avant").
+    const reactiverCompte = async (id, annulerTransfert = false) => {
+        if (annulerTransfert) {
+            const transfert = await getTransfertClotureLie(id)
+            if (transfert) {
+                const idsASupprimer = [transfert.id, transfert.transaction_liee_id].filter(Boolean)
+                const { error: errSuppr } = await supabase.from('transactions').delete().in('id', idsASupprimer)
+                if (errSuppr) return { error: errSuppr }
+            }
+        }
+
         const { error } = await supabase
             .from('comptes')
             .update({ statut: 'actif', date_cloture: null })
@@ -168,6 +197,6 @@ export function useComptes() {
     return {
         comptes, loading, error,
         ajouterCompte, modifierCompte, supprimerDefinitivement, reordonnerComptes,
-        cloturerCompte, reactiverCompte, chargerComptes
+        cloturerCompte, reactiverCompte, getTransfertClotureLie, chargerComptes
     }
 }
