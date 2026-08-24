@@ -320,7 +320,7 @@ export default function Parametres() {
 
             <div className="parametres-layout">
                 {/* ── Sidebar ── */}
-                <nav className="parametres-nav">
+                <nav data-aide-id="parametres-nav" className="parametres-nav">
                     {SECTIONS.map(s => (
                         <button
                             key={s.id}
@@ -336,7 +336,7 @@ export default function Parametres() {
 
                     {/* ══ DEVISES ══ */}
                     {activeSection === 'devises' && (
-                        <section className="parametres-section">
+                        <section data-aide-id="parametres-section-devises" className="parametres-section">
                             <h2 className="parametres-section-titre">Devises &amp; Taux de change</h2>
                             <div className="parametres-section-contenu">
                                 <SwitchDevise />
@@ -349,7 +349,7 @@ export default function Parametres() {
 
                     {/* ══ PROFIL ══ */}
                     {activeSection === 'profil' && (
-                        <section className="parametres-section">
+                        <section data-aide-id="parametres-section-profil" className="parametres-section">
                             <h2 className="parametres-section-titre">Profil</h2>
                             <div className="parametres-section-contenu">
                                 <div className="parametres-form">
@@ -419,7 +419,7 @@ export default function Parametres() {
 
                     {/* ══ PRÉFÉRENCES ══ */}
                     {activeSection === 'preferences' && (
-                        <section className="parametres-section">
+                        <section data-aide-id="parametres-section-preferences" className="parametres-section">
                             <h2 className="parametres-section-titre">Préférences</h2>
                             <div className="parametres-section-contenu">
                                 <div className="parametres-form">
@@ -451,7 +451,7 @@ export default function Parametres() {
 
                     {/* ══ CATÉGORIES ══ */}
                     {activeSection === 'categories' && (
-                        <section className="parametres-section">
+                        <section data-aide-id="parametres-section-categories" className="parametres-section">
                             <h2 className="parametres-section-titre">Catégories</h2>
                             <div className="parametres-section-contenu">
                                 <p className="parametres-hint" style={{ marginBottom: '12px' }}>
@@ -532,7 +532,7 @@ export default function Parametres() {
                                                                 <button onClick={() => deleteCategorie(cat)} className="parametres-icon-btn parametres-icon-btn--danger">🗑️</button>
                                                             </>
                                                         ) : (
-                                                            <>
+                                                             <>
                                                                 <span className="parametres-hint">par défaut</span>
                                                                 <button onClick={() => deleteCategorie(cat)} className="parametres-icon-btn parametres-icon-btn--danger" title="Masquer cette catégorie">🙈 Masquer</button>
                                                             </>
@@ -549,7 +549,7 @@ export default function Parametres() {
 
                     {/* ══ SMART RULES ══ */}
                     {activeSection === 'smart_rules' && (
-                        <section className="parametres-section">
+                        <section data-aide-id="parametres-section-smart-rules" className="parametres-section">
                             <h2 className="parametres-section-titre">Règles de catégorisation automatique</h2>
                             <div className="parametres-section-contenu">
                                 <p className="parametres-hint" style={{ marginBottom: '16px' }}>
@@ -614,7 +614,7 @@ export default function Parametres() {
 
                     {/* ══ NOTIFICATIONS ══ */}
                     {activeSection === 'notifications' && (
-                        <section className="parametres-section">
+                        <section data-aide-id="parametres-section-notifications" className="parametres-section">
                             <h2 className="parametres-section-titre">Mes alertes</h2>
                             <div className="parametres-section-contenu">
                                 <p className="parametres-hint" style={{ marginBottom: '20px' }}>
@@ -664,7 +664,7 @@ export default function Parametres() {
 
                     {/* ══ PARTAGE ══ */}
                     {activeSection === 'partage' && (
-                        <section className="parametres-section">
+                        <section data-aide-id="parametres-section-partage" className="parametres-section">
                             <h2 className="parametres-section-titre">Partage de patrimoine</h2>
                             <div className="parametres-section-contenu">
                                 <p className="parametres-hint" style={{ marginBottom: 16 }}>
@@ -705,7 +705,7 @@ export default function Parametres() {
 
                     {/* ══ FOYER ══ */}
                     {activeSection === 'foyer' && (
-                        <section className="parametres-section">
+                        <section data-aide-id="parametres-section-foyer" className="parametres-section">
                             <h2 className="parametres-section-titre">Foyer</h2>
                             <div className="parametres-section-contenu">
                                 <p className="parametres-hint" style={{ marginBottom: 16 }}>
@@ -795,7 +795,7 @@ export default function Parametres() {
 
                     {/* ══ ENTITÉS ══ */}
                     {activeSection === 'entites' && (
-                        <section className="parametres-section">
+                        <section data-aide-id="parametres-section-entites" className="parametres-section">
                             <h2 className="parametres-section-titre">Entités</h2>
                             <div className="parametres-section-contenu">
                                 <p className="parametres-hint" style={{ marginBottom: '12px' }}>
@@ -857,7 +857,7 @@ export default function Parametres() {
 
                     {/* ══ COMPTE ══ */}
                     {activeSection === 'compte' && (
-                        <section className="parametres-section">
+                        <section data-aide-id="parametres-section-compte" className="parametres-section">
                             <MFASetup />
                             <h2 className="parametres-section-titre" style={{ marginTop: '2rem' }}>Supprimer mon compte</h2>
                             <div className="parametres-section-contenu">

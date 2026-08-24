@@ -65,13 +65,13 @@ function Patrimoine() {
             </div>
 
             {/* Évolution du patrimoine */}
-            <div className="bg-card rounded-xl p-5 border border-[var(--border)] mb-6">
+            <div data-aide-id="patrimoine-evolution-chart" className="bg-card rounded-xl p-5 border border-[var(--border)] mb-6">
                 <h2 className="text-[var(--text-h)] font-bold text-lg mb-4">Évolution du patrimoine</h2>
                 <NetWorthChart />
             </div>
 
             {(bourseAncienne.length > 0 || immoAncien.length > 0) && (
-                <div className="bg-amber-500/10 border border-amber-500/30 text-amber-200 rounded-xl p-4 mb-6 text-sm">
+                <div data-aide-id="patrimoine-alerte-actualisation" className="bg-amber-500/10 border border-amber-500/30 text-amber-200 rounded-xl p-4 mb-6 text-sm">
                     <strong>Valorisations à actualiser :</strong>{' '}
                     {bourseAncienne.length > 0 && `${bourseAncienne.length} cours boursier(s) de plus de 36 h. `}
                     {immoAncien.length > 0 && `${immoAncien.length} estimation(s) immobilière(s) de plus de 6 mois.`}
@@ -79,14 +79,14 @@ function Patrimoine() {
             )}
 
             {/* Patrimoine total consolidé */}
-            <div className="bg-surface rounded-2xl p-6 mb-6 border border-[var(--border)]">
+            <div data-aide-id="patrimoine-total-consolide" className="bg-surface rounded-2xl p-6 mb-6 border border-[var(--border)]">
                 <p className="text-[var(--text)] text-sm mb-1">Patrimoine brut total consolidé</p>
                 <p className="text-[var(--text-h)] text-3xl font-bold mb-1"><SecureValue value={patrimoineTotal} formatter={formatMontant} /></p>
                 <p className="text-sm mb-4" style={{ color: totalDettes > 0 ? '#FCA5A5' : '#6EE7B7' }}>
                     Patrimoine net : <strong><SecureValue value={patrimoineNet} formatter={formatMontant} /></strong>
                     {totalDettes > 0 && <span className="ml-2 text-xs opacity-75">(dettes : -<SecureValue value={totalDettes} formatter={formatMontant} />)</span>}
                 </p>
-                <div className="grid grid-cols-4 gap-4">
+                <div data-aide-id="patrimoine-repartition-actifs" className="grid grid-cols-4 gap-4">
                     <div>
                         <p className="text-[var(--text)] text-xs mb-1">Comptes bancaires</p>
                         <p className="text-[var(--text-h)] font-semibold"><SecureValue value={totalComptes} formatter={formatMontant} /></p>
@@ -113,7 +113,7 @@ function Patrimoine() {
             </div>
 
             {/* Comparaison INSEE */}
-            <div className="mb-6">
+            <div data-aide-id="patrimoine-comparaison-insee" className="mb-6">
                 <ComparaisonINSEE patrimoineTotal={patrimoineTotal} />
             </div>
         </Layout>

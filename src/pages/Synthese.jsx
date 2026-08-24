@@ -34,7 +34,7 @@ function Synthese() {
             ) : (
                 <>
                     {/* Stats principales */}
-                    <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div data-aide-id="synthese-kpis" className="grid grid-cols-3 gap-4 mb-6">
                         <StatCard
                             label="Patrimoine total"
                             valeur={<SecureValue value={patrimoineTotal} formatter={formatMontant} />}
@@ -54,16 +54,20 @@ function Synthese() {
 
                     {/* Projection + objectif épargne */}
                     <div className="grid grid-cols-2 gap-4 mb-6">
-                        <ProjectionCard projection={projection} />
-                        <ObjectifEpargneCard
-                            objectif={objectif}
-                            soldeActuel={projection.soldeActuel}
-                            onDefinirObjectif={definirObjectif}
-                        />
+                        <div data-aide-id="synthese-projection">
+                            <ProjectionCard projection={projection} />
+                        </div>
+                        <div data-aide-id="synthese-objectif-epargne">
+                            <ObjectifEpargneCard
+                                objectif={objectif}
+                                soldeActuel={projection.soldeActuel}
+                                onDefinirObjectif={definirObjectif}
+                            />
+                        </div>
                     </div>
 
                     {/* Liste rapide des comptes */}
-                    <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
+                    <div data-aide-id="synthese-liste-comptes" className="bg-card rounded-xl p-5 border border-[var(--border)]">
                         <h3 className="text-[var(--text-h)] font-semibold mb-4">Mes comptes</h3>
                         {comptes.length === 0 ? (
                             <p className="text-[var(--text)] text-sm">Aucun compte créé pour l'instant.</p>

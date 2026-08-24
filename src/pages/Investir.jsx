@@ -264,7 +264,7 @@ function Investir() {
             </div>
 
             {/* Onglets */}
-            <div className="flex gap-2 mb-6 bg-white p-1 rounded-lg shadow-sm w-fit">
+            <div data-aide-id="investir-onglets" className="flex gap-2 mb-6 bg-white p-1 rounded-lg shadow-sm w-fit">
                 {[['actions', 'Actions & ETF'], ['crypto', 'Crypto'], ['immobilier', 'Immobilier'], ['assurance-vie', 'Assurance Vie']].map(([val, label]) => (
                     <button key={val} onClick={() => setOngletActif(val)}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition ${ongletActif === val ? 'bg-navy text-white' : 'text-gray-500'}`}>
@@ -279,7 +279,7 @@ function Investir() {
             {ongletActif === 'actions' && (
                 <div className="space-y-6">
                     {/* Header : total portefeuille + variation + boutons "+ Achat" / "+ Vente" */}
-                    <div className="flex items-center justify-between bg-[#0f172a] rounded-3xl p-6 shadow-sm border border-slate-800">
+                    <div data-aide-id="investir-actions-header" className="flex items-center justify-between bg-[#0f172a] rounded-3xl p-6 shadow-sm border border-slate-800">
                         <div>
                             <p className="text-gray-400 text-sm mb-1">Total Portefeuille Actions & ETF</p>
                             <h2 className="text-white text-3xl font-bold"><SecureValue value={valorisationTotale} formatter={formatMontant} /></h2>
@@ -305,11 +305,13 @@ function Investir() {
 
                     {/* Portfolio Evolution Chart */}
                     {!loadingPositions && !loadingCours && positions.length > 0 && (
-                        <EvolutionPatrimoineChart historique={historique} periode={periode} setPeriode={setPeriode} />
+                        <div data-aide-id="investir-actions-chart">
+                            <EvolutionPatrimoineChart historique={historique} periode={periode} setPeriode={setPeriode} />
+                        </div>
                     )}
 
                     {/* Portfolio Metrics */}
-                    <div className="grid grid-cols-4 gap-4">
+                    <div data-aide-id="investir-actions-kpis" className="grid grid-cols-4 gap-4">
                         <div className="bg-white rounded-xl p-5 shadow-sm">
                             <p className="text-gray-400 text-sm mb-1">Valorisation totale</p>
                             <p className="text-navy text-2xl font-bold"><SecureValue value={valorisationTotale} formatter={formatMontant} /></p>
@@ -340,7 +342,7 @@ function Investir() {
                     {/* Positions List & Asset Chart */}
                     <div className="grid grid-cols-5 gap-6">
                         {/* Gauche 60% : liste des positions */}
-                        <div className="col-span-3">
+                        <div data-aide-id="investir-actions-liste-positions" className="col-span-3">
                             {loadingPositions ? (
                                 <div className="bg-white rounded-xl p-8 text-center text-gray-400">
                                     Chargement des positions...
@@ -397,7 +399,7 @@ function Investir() {
                         </div>
 
                         {/* Droite 40% : graphique de l'actif sélectionné */}
-                        <div className="col-span-2">
+                        <div data-aide-id="investir-actions-graph-actif" className="col-span-2">
                             <div className="bg-[#0f172a] rounded-3xl p-6 shadow-sm border border-slate-800 sticky top-6">
                                 {selectedActifId ? (
                                     <GraphiqueActif actifId={selectedCatalogueActifId} />
@@ -433,19 +435,23 @@ function Investir() {
                     </div>
 
                     {/* Analyse sectorielle & géographique Look-Through */}
-                    <RepartitionLookThrough positions={positions} />
+                    <div data-aide-id="investir-actions-look-through">
+                        <RepartitionLookThrough positions={positions} />
+                    </div>
 
                     {/* Dividendes */}
                     {positions.length > 0 && (
-                        <DividendesCard
-                            dividendes={dividendes}
-                            totalDouzeMois={totalDouzeMois}
-                            syntheseDouzeMois={syntheseDouzeMois}
-                            valorisationTotale={valorisationTotale}
-                            positions={positions}
-                            onAjouter={ajouterDividende}
-                            onSupprimer={supprimerDividende}
-                        />
+                        <div data-aide-id="investir-actions-dividendes">
+                            <DividendesCard
+                                dividendes={dividendes}
+                                totalDouzeMois={totalDouzeMois}
+                                syntheseDouzeMois={syntheseDouzeMois}
+                                valorisationTotale={valorisationTotale}
+                                positions={positions}
+                                onAjouter={ajouterDividende}
+                                onSupprimer={supprimerDividende}
+                            />
+                        </div>
                     )}
                 </div>
             )}
@@ -456,14 +462,16 @@ function Investir() {
             {ongletActif === 'crypto' && (
                 <div className="space-y-6">
                     {/* Crypto Portfolio Chart - PLACED AT THE TOP */}
-                    <CryptoPortfolioChart
-                        data={historiqueCrypto}
-                        periode={periodeCrypto}
-                        setPeriode={setPeriodeCrypto}
-                    />
+                    <div data-aide-id="investir-crypto-chart">
+                        <CryptoPortfolioChart
+                            data={historiqueCrypto}
+                            periode={periodeCrypto}
+                            setPeriode={setPeriodeCrypto}
+                        />
+                    </div>
 
                     {/* Crypto Metrics */}
-                    <div className="grid grid-cols-3 gap-4">
+                    <div data-aide-id="investir-crypto-kpis" className="grid grid-cols-3 gap-4">
                         <div className="bg-white rounded-xl p-4 shadow-sm">
                             <p className="text-gray-400 text-xs mb-1">Valorisation</p>
                             <p className="text-navy font-bold text-lg"><SecureValue value={valorisationCrypto} formatter={formatMontant} /></p>

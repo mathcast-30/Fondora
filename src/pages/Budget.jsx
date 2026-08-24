@@ -244,7 +244,7 @@ function BudgetContent() {
                     <h1 className="text-[var(--text-h)] text-3xl font-bold mb-1">Budget</h1>
                     <p className="text-[var(--text)]">Suivi de tes dépenses et revenus.</p>
                 </div>
-                <div className="flex gap-2">
+                <div data-aide-id="budget-actions-principales" className="flex gap-2">
                     <button onClick={() => setModalBudgetOuvert(true)} className="bg-card border border-[var(--border)] text-[var(--text-h)] font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition hover:bg-[var(--bg-card-hover)]">
                         <Settings2 size={18} /> Définir budgets
                     </button>
@@ -262,14 +262,14 @@ function BudgetContent() {
             </div>
 
             {/* Sélecteur de mois */}
-            <div className="flex items-center gap-3 mb-6">
+            <div data-aide-id="budget-selecteur-mois" className="flex items-center gap-3 mb-6">
                 <button onClick={() => changerMois(-1)} className="p-2 bg-surface rounded-lg border border-[var(--border)] text-[var(--text-h)]"><ChevronLeft size={18} /></button>
                 <span className="font-semibold text-[var(--text-h)]">{MOIS_NOMS[mois - 1]} {annee}</span>
                 <button onClick={() => changerMois(1)} className="p-2 bg-surface rounded-lg border border-[var(--border)] text-[var(--text-h)]"><ChevronRight size={18} /></button>
             </div>
 
             {/* Résumé Revenus / Dépenses / Solde */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div data-aide-id="budget-resume-mensuel" className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-card rounded-xl p-4 border border-[var(--border)]">
                     <p className="text-[var(--text)] text-sm mb-1">Revenus</p>
                     <p className="text-emerald font-bold text-xl">+<SecureValue value={totalRevenus} formatter={formatMontant} /></p>
@@ -287,7 +287,7 @@ function BudgetContent() {
             </div>
 
             {/* BENTO GRID — Tous les widgets dans un seul flux masonry continu */}
-            <section className="mb-6">
+            <section data-aide-id="budget-bento-grid" className="mb-6">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-lg font-bold text-[var(--text-h)]">Vue d'ensemble</h2>
                     <BudgetGraphiqueSelector graphiquesVisibles={graphiquesVisibles} setGraphiquesVisibles={sauvegarderWidgets} />
@@ -346,7 +346,7 @@ function BudgetContent() {
 
             {/* Impact comptes */}
             {variationsComptes.length > 0 && (
-                <div className="bg-blue-500/10 text-blue-300 p-4 rounded-xl mb-6 text-sm border border-blue-500/20">
+                <div data-aide-id="budget-impact-comptes" className="bg-blue-500/10 text-blue-300 p-4 rounded-xl mb-6 text-sm border border-blue-500/20">
                     <strong>Impact sur vos comptes ce mois-ci :</strong>
                     <ul className="mt-2 space-y-1">
                         {variationsComptes.map((c, idx) => (
@@ -363,7 +363,7 @@ function BudgetContent() {
 
             {/* Budgets par catégorie */}
             {graphiquesVisibles.includes('budgets') && budgets.length > 0 && (
-                <div className="bg-card rounded-xl p-5 border border-[var(--border)] mb-6">
+                <div data-aide-id="budget-suivi-enveloppes" className="bg-card rounded-xl p-5 border border-[var(--border)] mb-6">
                     <h3 className="text-[var(--text-h)] font-semibold mb-4">Suivi des budgets</h3>
                     <p className="text-xs text-[var(--text-muted)] -mt-2 mb-4">Les enveloppes sont reprises automatiquement chaque mois. Une modification s’applique à partir de ce mois.</p>
                     {budgets.map((b) => {
@@ -400,7 +400,7 @@ function BudgetContent() {
             ) : transactionsAffichees.length === 0 ? (
                 <div className="bg-card rounded-xl p-8 text-center text-[var(--text)] border border-[var(--border)]">Aucune transaction ce mois-ci.</div>
             ) : (
-                <div className="bg-card rounded-xl border border-[var(--border)] divide-y divide-[var(--border)]">
+                <div data-aide-id="budget-liste-transactions" className="bg-card rounded-xl border border-[var(--border)] divide-y divide-[var(--border)]">
                     {transactionsAffichees.map((t) => (
                         <div key={t.id} className="flex items-center justify-between px-5 py-3">
                             <div className="flex items-center gap-3">

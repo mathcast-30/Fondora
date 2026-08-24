@@ -175,6 +175,7 @@ function PassifsPage() {
                         <Download size={18} /> CSV
                     </button>
                     <button
+                        data-aide-id="passifs-btn-ajouter"
                         onClick={() => ouvrirModal()}
                         style={{
                             background: '#10b981',
@@ -196,13 +197,16 @@ function PassifsPage() {
             </div>
 
             {/* KPIs */}
-            <KPIEndettement kpis={kpis} revenusRecurrents={revenusRecurrents} />
+            <div data-aide-id="passifs-kpis">
+                <KPIEndettement kpis={kpis} revenusRecurrents={revenusRecurrents} />
+            </div>
 
             {/* Filtres par type (Sous-onglets) et Tri */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
 
                 {/* CONTENEUR DES SOUS-ONGLETS - Style forcé aux couleurs Fondora */}
                 <div
+                    data-aide-id="passifs-filtres-type"
                     style={{
                         backgroundColor: '#111a2c',
                         borderColor: 'rgba(148, 163, 184, 0.12)',
@@ -250,7 +254,7 @@ function PassifsPage() {
 
 
 
-                <div className="flex items-center gap-2">
+                <div data-aide-id="passifs-tri" className="flex items-center gap-2">
                     <span className="text-xs text-[#64748b] font-medium font-inter">Trier par :</span>
                     <select
                         value={triActif}
@@ -281,7 +285,7 @@ function PassifsPage() {
             ) : dettesFiltrees.length === 0 ? (
                 <EmptyState />
             ) : (
-                <div>
+                <div data-aide-id="passifs-liste-dettes">
                     {dettesFiltrees.map((dette) => (
                         <DetteCard
                             key={dette.id}

@@ -242,13 +242,13 @@ function Comptes() {
                     <h1 className="text-[var(--text-h)] text-3xl font-bold mb-1">Comptes</h1>
                     <p className="text-[var(--text)]">Tes comptes classés par usage.</p>
                 </div>
-                <button onClick={() => setModalOuvert(true)} className="bg-emerald hover:bg-emerald-light text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition">
+                <button data-aide-id="comptes-btn-ajouter" onClick={() => setModalOuvert(true)} className="bg-emerald hover:bg-emerald-light text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition">
                     <Plus size={18} /> Ajouter un compte
                 </button>
             </div>
 
             <div className="flex items-center gap-3 mb-4 flex-wrap">
-                <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <div data-aide-id="comptes-recherche" className="relative flex-1 min-w-[200px] max-w-sm">
                     <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
                     <input
                         value={recherche} onChange={(e) => setRecherche(e.target.value)}
@@ -257,15 +257,24 @@ function Comptes() {
                     />
                 </div>
                 <button
+                    data-aide-id="comptes-toggle-clotures"
                     onClick={() => setAfficherClotures(!afficherClotures)}
                     className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border transition ${afficherClotures ? 'bg-emerald text-white border-emerald' : 'border-[var(--border)] text-[var(--text-muted)]'}`}
                 >
                     <Archive size={13} /> {afficherClotures ? 'Comptes clôturés' : 'Voir les comptes clôturés'}
                 </button>
-                {!afficherClotures && <WidgetRendementEpargne comptes={comptesVisibles} />}
+                {!afficherClotures && (
+                    <div data-aide-id="comptes-widget-rendement">
+                        <WidgetRendementEpargne comptes={comptesVisibles} />
+                    </div>
+                )}
             </div>
 
-            {!afficherClotures && <AlerteArgentQuiDort comptes={comptesVisibles} />}
+            {!afficherClotures && (
+                <div data-aide-id="comptes-alerte-dormant">
+                    <AlerteArgentQuiDort comptes={comptesVisibles} />
+                </div>
+            )}
 
             {loading ? (
                 <p className="text-[var(--text)]">Chargement...</p>
@@ -274,7 +283,7 @@ function Comptes() {
                     {afficherClotures ? "Aucun compte clôturé." : recherche ? "Aucun compte ne correspond à ta recherche." : 'Aucun compte pour l\'instant. Clique sur "Ajouter un compte" pour commencer.'}
                 </div>
             ) : (
-                <div className="space-y-6">
+                <div data-aide-id="comptes-groupes-categories" className="space-y-6">
                     {groupes.filter((g) => g.comptes.length > 0).map((cat) => {
                         const totalCategorie = cat.comptes.reduce((s, c) => s + Number(c.soldeReel ?? c.solde), 0)
                         const Icone = cat.icone

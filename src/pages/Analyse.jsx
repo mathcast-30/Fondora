@@ -43,7 +43,7 @@ function Analyse() {
             </div>
 
             {/* Barre de navigation secondaire */}
-            <div className="flex gap-2 mb-6 bg-surface p-1 rounded-lg border border-[var(--border)] w-fit overflow-x-auto max-w-full">
+            <div data-aide-id="analyse-onglets" className="flex gap-2 mb-6 bg-surface p-1 rounded-lg border border-[var(--border)] w-fit overflow-x-auto max-w-full">
                 <button
                     onClick={() => setOngletActif('epargne')}
                     className={`px-4 py-2 whitespace-nowrap rounded-md text-sm font-medium transition flex items-center gap-2 ${ongletActif === 'epargne' ? 'bg-card text-[var(--text-h)] border border-[var(--border)]' : 'text-[var(--text)] hover:text-[var(--text-h)]'}`}
@@ -67,7 +67,7 @@ function Analyse() {
             {ongletActif === 'epargne' && (
                 <div className="space-y-6">
                     <div className="flex justify-end">
-                        <div className="flex gap-2 bg-surface p-1 rounded-lg border border-[var(--border)]">
+                        <div data-aide-id="analyse-selecteur-periode" className="flex gap-2 bg-surface p-1 rounded-lg border border-[var(--border)]">
                             {PERIODES.map((p) => (
                                 <button
                                     key={p.valeur}
@@ -85,7 +85,7 @@ function Analyse() {
                     ) : (
                         <>
                             {/* Stats comparatives */}
-                            <div className="grid grid-cols-4 gap-4">
+                            <div data-aide-id="analyse-stats-comparatives" className="grid grid-cols-4 gap-4">
                                 <StatCard
                                     label="Mois actuel"
                                     valeur={<SecureValue value={moisActuel?.solde || 0} formatter={formatMontant} />}
@@ -115,7 +115,7 @@ function Analyse() {
                             </div>
 
                             {/* Comparaison à la moyenne */}
-                            <div className={`rounded-xl p-4 border ${ecartParRapportMoyenne >= 0 ? 'bg-emerald/10 border-emerald/20' : 'bg-[var(--negative)]/10 border-[var(--negative)]/20'}`}>
+                            <div data-aide-id="analyse-banniere-moyenne" className={`rounded-xl p-4 border ${ecartParRapportMoyenne >= 0 ? 'bg-emerald/10 border-emerald/20' : 'bg-[var(--negative)]/10 border-[var(--negative)]/20'}`}>
                                 <p className={`text-sm font-medium ${ecartParRapportMoyenne >= 0 ? 'text-emerald' : 'text-[var(--negative)]'}`}>
                                     {ecartParRapportMoyenne >= 0
                                         ? <span>📈 Ce mois-ci tu es <SecureValue value={Math.abs(ecartParRapportMoyenne)} formatter={formatMontant} /> au-dessus de ta moyenne habituelle, continue comme ça !</span>
@@ -124,13 +124,13 @@ function Analyse() {
                             </div>
 
                             {/* Graphique à barres comparatif */}
-                            <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
+                            <div data-aide-id="analyse-graph-comparatif" className="bg-card rounded-xl p-5 border border-[var(--border)]">
                                 <h3 className="text-[var(--text-h)] font-semibold mb-2">Revenus vs Dépenses par mois</h3>
                                 <BarChartComparatif data={data} />
                             </div>
 
                             {/* Courbe d'évolution du solde */}
-                            <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
+                            <div data-aide-id="analyse-graph-evolution-solde" className="bg-card rounded-xl p-5 border border-[var(--border)]">
                                 <h3 className="text-[var(--text-h)] font-semibold mb-2">Évolution du solde mensuel</h3>
                                 <LineChartSolde data={data} />
                             </div>
@@ -140,11 +140,13 @@ function Analyse() {
             )}
 
             {ongletActif === 'frais' && (
-                <AnalyseFraisTab />
+                <div data-aide-id="analyse-onglet-frais">
+                    <AnalyseFraisTab />
+                </div>
             )}
 
             {ongletActif === 'fiscal' && (
-                <div className="bg-card rounded-xl border border-[var(--border)] overflow-hidden pb-4">
+                <div data-aide-id="analyse-onglet-fiscal" className="bg-card rounded-xl border border-[var(--border)] overflow-hidden pb-4">
                     <AnalyseurFiscal />
                 </div>
             )}
