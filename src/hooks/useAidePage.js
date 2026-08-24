@@ -19,7 +19,7 @@ export function useAidePage(route) {
         setLoading(true)
         const { data, error } = await supabase
             .from('aide_pages')
-            .select('titre, vue_ensemble, glossaire')
+            .select('titre, vue_ensemble, glossaire, mode_emploi')
             .eq('route', route)
             .maybeSingle()
 

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
-import { X, HelpCircle, Loader2, BookOpen } from 'lucide-react'
+import { X, HelpCircle, Loader2, BookOpen, Compass, PlayCircle, ChevronRight } from 'lucide-react'
 import { useAidePage } from '../hooks/useAidePage'
+import AideTour from './AideTour'
 
 function slugify(str) {
     return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-')
@@ -9,8 +10,15 @@ function slugify(str) {
 export default function AideModal({ isOpen, onClose, route }) {
     const { aide, loading } = useAidePage(isOpen ? route : null)
     const [activeTerm, setActiveTerm] = useState(null)
+    const [ongletActif, setOngletActif] = useState('concepts') // 'concepts' | 'mode_emploi'
+    const [tourEnCours, setTourEnCours] = useState(false)
+    const [indexDepart, setIndexDepart] = useState(0)
 
     const termes = useMemo(() => (Array.isArray(aide?.glossaire) ? aide.glossaire : []), [aide])
+    const etapes = useMemo(() => {
+        const raw = Array.isArray(aide?.mode_emploi) ? aide.mode_emploi : []
+        return [...raw].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0))
+    }, [aide])
 
     if (!isOpen) return null
 
@@ -18,6 +26,23 @@ export default function AideModal({ isOpen, onClose, route }) {
         const el = document.getElementById(`aide-terme-${slugify(terme)}`)
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
         setActiveTerm(terme)
+    }
+
+    const demarrerVisite = (depuisIndex = 0) => {
+        setIndexDepart(depuisIndex)
+        setTourEnCours(true)
+    }
+
+    // Pendant la visite guidée, on masque la carte de la modal pour laisser voir la page
+    // en dessous ; seul l'overlay de surbrillance (AideTour) reste affiché.
+    if (tourEnCours && etapes.length > 0) {
+        return (
+            <AideTour
+                steps={etapes}
+                startIndex={indexDepart}
+                onClose={() => setTourEnCours(false)}
+            />
+        )
     }
 
     return (
@@ -49,6 +74,32 @@ export default function AideModal({ isOpen, onClose, route }) {
                     </button>
                 </div>
 
+                {/* Onglets */}
+                {!loading && aide && (
+                    <div className="px-6 pt-4 shrink-0 flex gap-2 border-b border-[var(--border)]">
+                        <button
+                            onClick={() => setOngletActif('concepts')}
+                            className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-t-lg -mb-px border-b-2 transition-colors ${
+                                ongletActif === 'concepts'
+                                    ? 'border-[var(--accent)] text-[var(--text-h)]'
+                                    : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text)]'
+                            }`}
+                        >
+                            <BookOpen size={13} /> Concepts financiers
+                        </button>
+                        <button
+                            onClick={() => setOngletActif('mode_emploi')}
+                            className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-t-lg -mb-px border-b-2 transition-colors ${
+                                ongletActif === 'mode_emploi'
+                                    ? 'border-[var(--accent)] text-[var(--text-h)]'
+                                    : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text)]'
+                            }`}
+                        >
+                            <Compass size={13} /> Mode d'emploi
+                        </button>
+                    </div>
+                )}
+
                 {loading && (
                     <div className="flex items-center justify-center py-16 text-[var(--text-muted)]">
                         <Loader2 size={22} className="animate-spin" />
@@ -61,16 +112,15 @@ export default function AideModal({ isOpen, onClose, route }) {
                     </p>
                 )}
 
-                {!loading && aide && (
+                {/* Onglet Concepts financiers */}
+                {!loading && aide && ongletActif === 'concepts' && (
                     <div className="overflow-y-auto px-6 py-5 space-y-6">
-                        {/* Vue d'ensemble */}
                         <div className="border-l-2 border-[var(--accent)] pl-4 py-0.5">
                             <p className="text-[var(--text-h)] text-[15px] leading-relaxed">
                                 {aide.vue_ensemble}
                             </p>
                         </div>
 
-                        {/* Navigation rapide des termes */}
                         {termes.length > 1 && (
                             <div className="flex flex-wrap gap-1.5">
                                 {termes.map((item) => (
@@ -88,7 +138,6 @@ export default function AideModal({ isOpen, onClose, route }) {
                             </div>
                         )}
 
-                        {/* Glossaire */}
                         {termes.length > 0 && (
                             <div>
                                 <div className="flex items-center gap-2 mb-3">
@@ -133,6 +182,55 @@ export default function AideModal({ isOpen, onClose, route }) {
                                     ))}
                                 </div>
                             </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Onglet Mode d'emploi */}
+                {!loading && aide && ongletActif === 'mode_emploi' && (
+                    <div className="overflow-y-auto px-6 py-5 space-y-5">
+                        {etapes.length === 0 ? (
+                            <p className="text-sm text-[var(--text-muted)] text-center py-10">
+                                Le mode d'emploi de cette page arrive bientôt.
+                            </p>
+                        ) : (
+                            <>
+                                <div className="flex items-center justify-between border-l-2 border-[var(--accent)] pl-4 py-0.5">
+                                    <p className="text-[var(--text-h)] text-[15px] leading-relaxed">
+                                        Une visite guidée pour repérer chaque élément de cette page, étape par étape.
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={() => demarrerVisite(0)}
+                                    className="w-full inline-flex items-center justify-center gap-2 text-sm font-bold bg-[var(--accent)] text-white py-3 rounded-xl hover:brightness-110 transition-all"
+                                >
+                                    <PlayCircle size={16} /> Démarrer la visite guidée
+                                </button>
+
+                                <div className="space-y-2">
+                                    {etapes.map((etape, i) => (
+                                        <button
+                                            key={`${etape.titre}-${i}`}
+                                            onClick={() => demarrerVisite(i)}
+                                            className="w-full flex items-center gap-3 text-left rounded-xl border border-[var(--border)] p-3.5 hover:border-[var(--border-strong)] hover:bg-white/[0.02] transition-colors"
+                                        >
+                                            <span className="w-6 h-6 rounded-full bg-[var(--accent-bg)] border border-[var(--accent-border)] text-[var(--accent-light)] text-[11px] font-bold flex items-center justify-center shrink-0">
+                                                {i + 1}
+                                            </span>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[13px] font-semibold text-[var(--text-h)] truncate">
+                                                    {etape.titre}
+                                                </p>
+                                                <p className="text-[12px] text-[var(--text-muted)] truncate">
+                                                    {etape.description}
+                                                </p>
+                                            </div>
+                                            <ChevronRight size={14} className="text-[var(--text-muted)] shrink-0" />
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
                         )}
                     </div>
                 )}
