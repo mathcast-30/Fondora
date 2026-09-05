@@ -141,18 +141,19 @@ function addTransactionsSheet(wb, transactions, comptes) {
   transactions.forEach((t, i) => {
     const compte = comptes?.find(c => c.id === t.compte_id)
     const montant = t.type === 'revenu' ? Number(t.montant) : -Number(t.montant)
+    const estVirementNeutre = t.source === 'virement' && !t.categorie_id
     const row = ws.addRow({
       date: new Date(t.date).toLocaleDateString('fr-FR'),
       desc: t.description || t.categories?.nom || '',
-      cat: t.categories?.nom || 'Non catégorisé',
+      cat: t.categories?.nom || (t.source === 'virement' ? 'Virement interne' : 'Non catégorisé'),
       compte: compte?.nom || '',
-      type: t.type === 'revenu' ? 'Revenu' : 'Dépense',
+      type: t.source === 'virement' ? 'Virement' : (t.type === 'revenu' ? 'Revenu' : 'Dépense'),
       montant,
     })
     styleRow(row, i % 2 === 0)
     const mCell = row.getCell('montant')
     mCell.numFmt = '#,##0.00 "€"'
-    mCell.font = { size: 10, bold: true, color: { argb: montant >= 0 ? C.emerald : C.red } }
+    mCell.font = { size: 10, bold: true, color: { argb: estVirementNeutre ? C.slate : (montant >= 0 ? C.emerald : C.red) } }
   })
 }
 

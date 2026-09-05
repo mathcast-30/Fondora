@@ -20,7 +20,14 @@ export function useTransactionsPeriode(nombreMois = 6) {
             .gte('date', debutStr)
             .order('date', { ascending: true })
 
-        if (!error) setTransactions(data)
+        // Les virements neutres entre comptes de l'utilisateur (sans catégorie) ne sont
+        // pas de vrais revenus/dépenses — on les exclut ici, à la source, pour que toutes
+        // les pages qui consomment ce hook (Analyse, EvolutionTempsChart) restent cohérentes
+        // avec les totaux de la page Budget. Un virement catégorisé (Épargne/Investissement)
+        // reste inclus, car c'est une vraie sortie du budget disponible.
+        if (!error) {
+            setTransactions((data || []).filter(t => !(t.source === 'virement' && !t.categorie_id)))
+        }
         setLoading(false)
     }, [nombreMois])
 
