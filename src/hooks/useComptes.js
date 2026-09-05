@@ -142,6 +142,88 @@ export function useComptes() {
         return { error }
     }
 
+    // Catégorie de dépense à appliquer sur la sortie d'un virement, selon le type du
+    // compte de DESTINATION : Épargne/Livrets → "Épargne", enveloppes d'investissement
+    // → "Investissement". Un virement entre deux comptes "liquides" (courant, chèques,
+    // espèces...) reste neutre (pas de catégorie) : il sera exclu des totaux
+    // revenus/dépenses de la page Budget, car ce n'est qu'un mouvement de trésorerie.
+    const CATEGORIE_VIREMENT_PAR_TYPE_COMPTE = {
+        'épargne': 'Épargne', 'livret a': 'Épargne', 'ldds': 'Épargne',
+        'lep': 'Épargne', 'livret jeune': 'Épargne',
+        'pea': 'Investissement', 'cto': 'Investissement',
+        'crypto': 'Investissement', 'assurance vie': 'Investissement',
+    }
+
+    const resoudreCategorieVirement = async (typeCompteDestination) => {
+        const nomCategorie = CATEGORIE_VIREMENT_PAR_TYPE_COMPTE[(typeCompteDestination || '').toLowerCase()]
+        if (!nomCategorie) return null
+
+        // Réutilise une catégorie existante (globale ou perso) si elle existe déjà
+        const { data: existante } = await supabase
+            .from('categories_visibles')
+            .select('id')
+            .eq('type', 'depense')
+            .ilike('nom', nomCategorie)
+            .maybeSingle()
+        if (existante) return existante.id
+
+        // Sinon on la crée pour cet utilisateur
+        const { data: creee, error } = await supabase
+            .from('categories')
+            .insert({ user_id: user.id, nom: nomCategorie, type: 'depense', couleur: '#10b981' })
+            .select('id')
+            .single()
+        if (error) return null
+        return creee.id
+    }
+
+    // Virement entre deux comptes de l'utilisateur : crée 2 transactions liées (une
+    // sortie sur le compte source, une entrée sur le compte destination), exactement
+    // sur le même modèle que le transfert de clôture de compte. Le trigger PostgreSQL
+    // trg_solde_compte met à jour les deux soldes automatiquement — aucun autre calcul
+    // n'est nécessaire ici.
+    const ajouterVirement = async ({ compteSourceId, compteDestId, montant, date, description }) => {
+        if (!compteSourceId || !compteDestId) return { error: new Error('Compte source et compte destination requis.') }
+        if (compteSourceId === compteDestId) return { error: new Error('Le compte source et le compte destination doivent être différents.') }
+
+        const compteSource = comptes.find(c => c.id === compteSourceId)
+        const compteDest = comptes.find(c => c.id === compteDestId)
+        const montantAbs = Math.abs(Number(montant))
+        const dateVirement = date || new Date().toISOString().slice(0, 10)
+        const categorieId = await resoudreCategorieVirement(compteDest?.type)
+
+        const { data: sortie, error: errSortie } = await supabase.from('transactions').insert({
+            user_id: user.id,
+            compte_id: compteSourceId,
+            categorie_id: categorieId,
+            montant: montantAbs,
+            type: 'depense',
+            date: dateVirement,
+            description: description || `Virement vers "${compteDest?.nom || 'un autre compte'}"`,
+            source: 'virement',
+        }).select('id').single()
+        if (errSortie) return { error: errSortie }
+
+        const { data: entree, error: errEntree } = await supabase.from('transactions').insert({
+            user_id: user.id,
+            compte_id: compteDestId,
+            categorie_id: null,
+            montant: montantAbs,
+            type: 'revenu',
+            date: dateVirement,
+            description: description || `Virement depuis "${compteSource?.nom || 'un autre compte'}"`,
+            source: 'virement',
+            transaction_liee_id: sortie.id,
+        }).select('id').single()
+        if (errEntree) return { error: errEntree }
+
+        // Lien bidirectionnel, pour retrouver l'entrée depuis la sortie aussi
+        await supabase.from('transactions').update({ transaction_liee_id: entree.id }).eq('id', sortie.id)
+
+        await chargerComptes()
+        return { error: null }
+    }
+
     // Vérifie si ce compte a un transfert de clôture lié, pour proposer son annulation
     // avant de réactiver (sinon le compte réactivé se retrouve avec un solde faussé).
     const getTransfertClotureLie = async (compteId) => {
@@ -203,6 +285,6 @@ export function useComptes() {
     return {
         comptes, loading, error,
         ajouterCompte, modifierCompte, supprimerDefinitivement, reordonnerComptes,
-        cloturerCompte, reactiverCompte, getTransfertClotureLie, chargerComptes
+        cloturerCompte, reactiverCompte, getTransfertClotureLie, ajouterVirement, chargerComptes
     }
 }

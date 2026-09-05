@@ -224,6 +224,15 @@ export function useTransactions(mois, annee) {
         return { error }
     }
 
+    // Supprime un virement entre comptes : les 2 transactions liées (sortie + entrée)
+    // partent ensemble, pour ne jamais laisser une moitié de virement orpheline.
+    const supprimerVirement = async (id, idLie) => {
+        const ids = [id, idLie].filter(Boolean)
+        const { error } = await supabase.from('transactions').delete().in('id', ids)
+        if (error) { toastError(error.message) } else { await charger() }
+        return { error }
+    }
+
     const recategoriserTransactions = async (transactionIds, nouvelleCategorieId) => {
         if (!transactionIds || transactionIds.length === 0) return { error: null }
         const { error } = await supabase
@@ -234,5 +243,5 @@ export function useTransactions(mois, annee) {
         return { error }
     }
 
-    return { transactions, loading, ajouterTransaction, supprimerTransaction, recategoriserTransactions, charger }
+    return { transactions, loading, ajouterTransaction, supprimerTransaction, supprimerVirement, recategoriserTransactions, charger }
 }

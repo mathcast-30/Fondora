@@ -12,7 +12,7 @@ import { useComptes } from '../hooks/useComptes'
 import { useBudgets } from '../hooks/useBudgets'
 import { useAbonnements } from '../hooks/useAbonnements'
 import { useDettes } from '../hooks/useDettes'
-import { Plus, Trash2, ChevronLeft, ChevronRight, Settings2, Upload, Download } from 'lucide-react'
+import { Plus, Trash2, ChevronLeft, ChevronRight, Settings2, Upload, Download, ArrowLeftRight } from 'lucide-react'
 import BudgetGraphiqueSelector from '../components/budget/BudgetGraphiqueSelector'
 import BudgetVsReelChart from '../components/budget/BudgetVsReelChart'
 import EvolutionTempsChart from '../components/budget/EvolutionTempsChart'
@@ -40,9 +40,9 @@ function BudgetContent() {
     const [annee, setAnnee] = useState(aujourdHui.getFullYear())
     const { objectif: objectifEpargne } = useObjectifEpargne(mois, annee)
 
-    const { transactions, loading, ajouterTransaction, supprimerTransaction, recategoriserTransactions, charger } = useTransactions(mois, annee)
+    const { transactions, loading, ajouterTransaction, supprimerTransaction, supprimerVirement, recategoriserTransactions, charger } = useTransactions(mois, annee)
     const { categories } = useCategories()
-    const { comptes } = useComptes()
+    const { comptes, ajouterVirement, chargerComptes } = useComptes()
     const { budgets, definirBudget, supprimerBudget } = useBudgets(mois, annee)
     const {
         abonnements, loading: loadingAb,
@@ -51,6 +51,7 @@ function BudgetContent() {
     const { dettes } = useDettes()
 
     const [modalOuvert, setModalOuvert] = useState(false)
+    const [modalVirementOuvert, setModalVirementOuvert] = useState(false)
     const [modalBudgetOuvert, setModalBudgetOuvert] = useState(false)
     const [modalImportOuvert, setModalImportOuvert] = useState(false)
     const [compteSelectionne, setCompteSelectionne] = useState('')
@@ -90,6 +91,11 @@ function BudgetContent() {
     })
     const [budgetForm, setBudgetForm] = useState({})
 
+    const [formVirement, setFormVirement] = useState({
+        compteSourceId: '', compteDestId: '', montant: '', date: aujourdhuiLocale(), description: '',
+    })
+    const [virementEnCours, setVirementEnCours] = useState(false)
+
     const [graphiquesVisibles, setGraphiquesVisibles] = useState(() => {
         const saved = localStorage.getItem('fondora_budget_graphiques');
         if (saved) {
@@ -119,8 +125,18 @@ function BudgetContent() {
         setMois(m); setAnnee(a)
     }
 
-    const totalRevenus = transactions.filter(t => t.type === 'revenu').reduce((s, t) => s + Number(t.montant), 0)
-    const totalDepenses = transactions.filter(t => t.type === 'depense').reduce((s, t) => s + Number(t.montant), 0)
+    // Les virements neutres (entre deux comptes "liquides", sans catégorie) ne sont
+    // pas de vrais revenus/dépenses : ce sont juste des mouvements de trésorerie entre
+    // comptes de l'utilisateur. On les exclut de toutes les statistiques du Budget,
+    // mais un virement catégorisé (ex: vers un compte Épargne/Investissement) reste
+    // compté normalement, car c'est une vraie sortie du budget disponible.
+    const transactionsPourStats = useMemo(
+        () => transactions.filter(t => !(t.source === 'virement' && !t.categorie_id)),
+        [transactions]
+    )
+
+    const totalRevenus = transactionsPourStats.filter(t => t.type === 'revenu').reduce((s, t) => s + Number(t.montant), 0)
+    const totalDepenses = transactionsPourStats.filter(t => t.type === 'depense').reduce((s, t) => s + Number(t.montant), 0)
     const solde = totalRevenus - totalDepenses
 
     const depensesParCategorie = categories
@@ -129,7 +145,7 @@ function BudgetContent() {
             id: c.id,
             nom: c.nom,
             couleur: c.couleur,
-            montant: transactions
+            montant: transactionsPourStats
                 .filter(t => t.type === 'depense' && t.categorie_id === c.id)
                 .reduce((s, t) => s + Number(t.montant), 0),
         }))
@@ -142,9 +158,9 @@ function BudgetContent() {
         [comptes]
     )
 
-    const depensesRecurrentes = useMemo(() => transactions
+    const depensesRecurrentes = useMemo(() => transactionsPourStats
         .filter(t => t.type === 'depense' && t.recurrente && t.recurrence_active !== false)
-        .map(t => ({ montant: t.montant, jour_prelevement: t.jour_recurrence || new Date(t.date).getDate() })), [transactions])
+        .map(t => ({ montant: t.montant, jour_prelevement: t.jour_recurrence || new Date(t.date).getDate() })), [transactionsPourStats])
 
     // Ajout : normaliser les abonnements au même format que depensesRecurrentes
     const abonnementsFormates = useMemo(() => abonnements
@@ -179,6 +195,26 @@ function BudgetContent() {
             const compteDefaut = comptes.length === 1 ? comptes[0].id : ''
             setForm({ description: '', montant: '', type: 'depense', compte_id: compteDefaut, categorie_id: '', date: aujourdhuiLocale(), recurrente: false, jour_recurrence: 1 })
             setModalOuvert(false)
+        }
+    }
+
+    const handleSubmitVirement = async (e) => {
+        e.preventDefault()
+        setVirementEnCours(true)
+        const { error } = await ajouterVirement({
+            compteSourceId: formVirement.compteSourceId,
+            compteDestId: formVirement.compteDestId,
+            montant: parseFloat(formVirement.montant),
+            date: formVirement.date,
+            description: formVirement.description || undefined,
+        })
+        setVirementEnCours(false)
+        if (!error) {
+            setFormVirement({ compteSourceId: '', compteDestId: '', montant: '', date: aujourdhuiLocale(), description: '' })
+            setModalVirementOuvert(false)
+            await charger()
+        } else {
+            window.alert(error.message)
         }
     }
 
@@ -219,6 +255,12 @@ function BudgetContent() {
 
 
     const handleSupprimerTransaction = async (transaction) => {
+        if (transaction.source === 'virement') {
+            if (!window.confirm('Supprimer ce virement ? Les deux mouvements associés (sortie et entrée) seront supprimés.')) return
+            await supprimerVirement(transaction.id, transaction.transaction_liee_id)
+            await chargerComptes()
+            return
+        }
         const supprimerSerie = transaction.recurrente && window.confirm('OK : supprimer toute la série récurrente. Annuler : supprimer uniquement cette occurrence.')
         if (!transaction.recurrente && !window.confirm('Supprimer cette transaction ?')) return
         await supprimerTransaction(transaction.id, supprimerSerie)
@@ -235,6 +277,27 @@ function BudgetContent() {
     const transactionsAffichees = categorieFiltree
         ? transactions.filter(t => t.categories?.nom === categorieFiltree)
         : transactions
+
+    // Fusionne les 2 lignes d'un virement (sortie + entrée) en une seule ligne
+    // d'affichage "Compte A → Compte B", pour ne pas polluer la liste avec 2 entrées
+    // pour un seul mouvement d'argent entre comptes de l'utilisateur.
+    const transactionsFusionnees = useMemo(() => {
+        const dejaTraites = new Set()
+        const resultat = []
+        for (const t of transactionsAffichees) {
+            if (dejaTraites.has(t.id)) continue
+            if (t.source === 'virement' && t.type === 'depense') {
+                const entree = transactions.find(x => x.id === t.transaction_liee_id)
+                dejaTraites.add(t.id)
+                if (entree) dejaTraites.add(entree.id)
+                resultat.push({ ...t, __virement: true, compteDestNom: entree?.comptes?.nom || null })
+            } else {
+                resultat.push(t)
+                dejaTraites.add(t.id)
+            }
+        }
+        return resultat
+    }, [transactionsAffichees, transactions])
 
     return (
         <Layout>
@@ -254,6 +317,9 @@ function BudgetContent() {
 
                     <button onClick={() => setModalImportOuvert(true)} className="bg-card border border-[var(--border)] text-[var(--text-h)] font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition hover:bg-[var(--bg-card-hover)]">
                         <Upload size={18} /> Importer un CSV
+                    </button>
+                    <button onClick={() => setModalVirementOuvert(true)} className="bg-card border border-[var(--border)] text-[var(--text-h)] font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition hover:bg-[var(--bg-card-hover)]">
+                        <ArrowLeftRight size={18} /> Virement
                     </button>
                     <button onClick={() => setModalOuvert(true)} className="bg-emerald hover:bg-emerald-light text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition">
                         <Plus size={18} /> Ajouter
@@ -312,10 +378,10 @@ function BudgetContent() {
                             dettes={dettes}
                         />
                     )}
-                    {graphiquesVisibles.includes('budget_vs_reel') && <BudgetVsReelChart transactions={transactions} budgets={budgets} categories={categories} />}
+                    {graphiquesVisibles.includes('budget_vs_reel') && <BudgetVsReelChart transactions={transactionsPourStats} budgets={budgets} categories={categories} />}
                     {graphiquesVisibles.includes('evolution_temps') && <EvolutionTempsChart />}
                     {graphiquesVisibles.includes('objectif_epargne') && <JaugeEpargneChart epargneRealisee={Math.max(0, solde)} objectifMensuel={objectifEpargneMois} />}
-                    {graphiquesVisibles.includes('top5_depenses') && <Top5DepensesChart transactions={transactions} categories={categories} />}
+                    {graphiquesVisibles.includes('top5_depenses') && <Top5DepensesChart transactions={transactionsPourStats} categories={categories} />}
                     {graphiquesVisibles.includes('flux_financier') && (
                         <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
                             <h3 className="text-[var(--text-h)] font-semibold mb-2">Flux financier</h3>
@@ -367,7 +433,7 @@ function BudgetContent() {
                     <h3 className="text-[var(--text-h)] font-semibold mb-4">Suivi des budgets</h3>
                     <p className="text-xs text-[var(--text-muted)] -mt-2 mb-4">Les enveloppes sont reprises automatiquement chaque mois. Une modification s’applique à partir de ce mois.</p>
                     {budgets.map((b) => {
-                        const depense = transactions
+                        const depense = transactionsPourStats
                             .filter(t => t.categorie_id === b.categorie_id && t.type === 'depense')
                             .reduce((s, t) => s + Number(t.montant), 0)
                         return (
@@ -397,29 +463,40 @@ function BudgetContent() {
             )}
             {loading ? (
                 <p className="text-[var(--text)]">Chargement...</p>
-            ) : transactionsAffichees.length === 0 ? (
+            ) : transactionsFusionnees.length === 0 ? (
                 <div className="bg-card rounded-xl p-8 text-center text-[var(--text)] border border-[var(--border)]">Aucune transaction ce mois-ci.</div>
             ) : (
                 <div data-aide-id="budget-liste-transactions" className="bg-card rounded-xl border border-[var(--border)] divide-y divide-[var(--border)]">
-                    {transactionsAffichees.map((t) => (
+                    {transactionsFusionnees.map((t) => (
                         <div key={t.id} className="flex items-center justify-between px-5 py-3">
                             <div className="flex items-center gap-3">
-                                <div className="w-2.5 h-10 rounded-full" style={{ backgroundColor: t.categories?.couleur || '#ccc' }} />
+                                <div className="w-2.5 h-10 rounded-full" style={{ backgroundColor: t.__virement ? '#3b82f6' : (t.categories?.couleur || '#ccc') }} />
                                 <div>
-                                    <p className="font-medium text-[var(--text-h)]">{t.description || t.categories?.nom || 'Sans description'}</p>
+                                    <p className="font-medium text-[var(--text-h)]">
+                                        {t.__virement
+                                            ? `Virement : ${t.comptes?.nom || '?'} → ${t.compteDestNom || '?'}`
+                                            : (t.description || t.categories?.nom || 'Sans description')}
+                                    </p>
                                     <p className="text-xs text-[var(--text)] mt-1 flex items-center flex-wrap gap-2">
-                                        <span>{t.categories?.nom}</span>
+                                        <span>{t.__virement ? (t.categories?.nom || 'Virement interne') : t.categories?.nom}</span>
                                         <span>•</span>
                                         <span>{new Date(t.date).toLocaleDateString('fr-FR')}</span>
                                         {t.recurrente && <span className="bg-surface text-[var(--text)] px-1.5 py-0.5 rounded border border-[var(--border)]">🔁 Récurrente</span>}
                                         {t.source === 'auto_dette' && <span className="bg-blue-500/10 text-blue-300 px-1.5 py-0.5 rounded font-medium">🤖 Auto (Dette)</span>}
+                                        {t.__virement && <span className="bg-blue-500/10 text-blue-300 px-1.5 py-0.5 rounded font-medium">🔁 Virement</span>}
                                     </p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-4">
-                                <p className={`font-semibold ${t.type === 'revenu' ? 'text-emerald' : 'text-[var(--negative)]'}`}>
-                                    {t.type === 'revenu' ? '+' : '-'}<SecureValue value={t.montant} formatter={formatMontant} />
-                                </p>
+                                {t.__virement ? (
+                                    <p className={`font-semibold ${t.categorie_id ? 'text-[var(--negative)]' : 'text-blue-400'}`}>
+                                        {t.categorie_id ? '-' : '⇄ '}<SecureValue value={t.montant} formatter={formatMontant} />
+                                    </p>
+                                ) : (
+                                    <p className={`font-semibold ${t.type === 'revenu' ? 'text-emerald' : 'text-[var(--negative)]'}`}>
+                                        {t.type === 'revenu' ? '+' : '-'}<SecureValue value={t.montant} formatter={formatMontant} />
+                                    </p>
+                                )}
                                 <button onClick={() => handleSupprimerTransaction(t)} aria-label="Supprimer la transaction" className="text-[var(--text-muted)] hover:text-[var(--negative)] transition">
                                     <Trash2 size={16} />
                                 </button>
@@ -487,6 +564,57 @@ function BudgetContent() {
 
                     <button type="submit" className="w-full bg-emerald hover:bg-emerald-light text-white font-semibold py-2 rounded-lg transition">
                         Ajouter
+                    </button>
+                </form>
+            </Modal>
+
+            {/* Modal virement entre comptes */}
+            <Modal isOpen={modalVirementOuvert} onClose={() => setModalVirementOuvert(false)} title="Nouveau virement entre comptes">
+                <form onSubmit={handleSubmitVirement} className="space-y-4">
+                    <div>
+                        <label className="text-sm font-semibold text-[var(--text-h)] block mb-1">Compte source <span className="text-[var(--negative)]">*</span></label>
+                        <select
+                            value={formVirement.compteSourceId}
+                            onChange={(e) => setFormVirement({ ...formVirement, compteSourceId: e.target.value })}
+                            required
+                            className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2">
+                            <option value="" disabled>Depuis…</option>
+                            {comptes.filter(c => (c.statut ?? 'actif') === 'actif').map((c) => (
+                                <option key={c.id} value={c.id}>{c.nom}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="text-sm font-semibold text-[var(--text-h)] block mb-1">Compte destination <span className="text-[var(--negative)]">*</span></label>
+                        <select
+                            value={formVirement.compteDestId}
+                            onChange={(e) => setFormVirement({ ...formVirement, compteDestId: e.target.value })}
+                            required
+                            className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2">
+                            <option value="" disabled>Vers…</option>
+                            {comptes.filter(c => (c.statut ?? 'actif') === 'actif' && c.id !== formVirement.compteSourceId).map((c) => (
+                                <option key={c.id} value={c.id}>{c.nom} {c.type ? `(${c.type})` : ''}</option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-[var(--text-muted)] mt-1">
+                            Vers un compte Épargne/Livret ou PEA/CTO/Crypto/Assurance vie → catégorisé automatiquement en "Épargne" ou "Investissement". Vers un compte courant/espèces → virement neutre, exclu des totaux.
+                        </p>
+                    </div>
+
+                    <input type="number" step="0.01" min="0" required placeholder="Montant" value={formVirement.montant}
+                        onChange={(e) => setFormVirement({ ...formVirement, montant: e.target.value })}
+                        className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2" />
+
+                    <input type="date" value={formVirement.date} onChange={(e) => setFormVirement({ ...formVirement, date: e.target.value })}
+                        className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2" />
+
+                    <input type="text" placeholder="Description (optionnel)" value={formVirement.description}
+                        onChange={(e) => setFormVirement({ ...formVirement, description: e.target.value })}
+                        className="w-full border border-[var(--border)] bg-surface text-[var(--text-h)] rounded-lg px-3 py-2 placeholder-[var(--text-muted)]" />
+
+                    <button type="submit" disabled={virementEnCours} className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-semibold py-2 rounded-lg transition">
+                        {virementEnCours ? 'Virement en cours…' : 'Effectuer le virement'}
                     </button>
                 </form>
             </Modal>
