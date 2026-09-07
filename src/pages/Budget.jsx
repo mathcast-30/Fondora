@@ -139,6 +139,18 @@ function BudgetContent() {
     const totalDepenses = transactionsPourStats.filter(t => t.type === 'depense').reduce((s, t) => s + Number(t.montant), 0)
     const solde = totalRevenus - totalDepenses
 
+    // Argent réellement mis de côté ce mois-ci : les virements (ou dépenses manuelles)
+    // catégorisés "Épargne" / "Investissement" comptent comme de l'épargne réalisée,
+    // pas comme une dépense qui grignote l'objectif. Sans ça, plus tu investis dans ton
+    // PEA, plus la jauge d'objectif d'épargne baissait — l'inverse de ce qu'on veut.
+    const NOMS_CATEGORIES_EPARGNE = ['Épargne', 'Investissement']
+    const montantEpargneInvesti = useMemo(() =>
+        transactionsPourStats
+            .filter(t => t.type === 'depense' && NOMS_CATEGORIES_EPARGNE.includes(t.categories?.nom))
+            .reduce((s, t) => s + Number(t.montant), 0),
+        [transactionsPourStats]
+    )
+
     const depensesParCategorie = categories
         .filter(c => c.type === 'depense')
         .map(c => ({
@@ -380,7 +392,7 @@ function BudgetContent() {
                     )}
                     {graphiquesVisibles.includes('budget_vs_reel') && <BudgetVsReelChart transactions={transactionsPourStats} budgets={budgets} categories={categories} />}
                     {graphiquesVisibles.includes('evolution_temps') && <EvolutionTempsChart />}
-                    {graphiquesVisibles.includes('objectif_epargne') && <JaugeEpargneChart epargneRealisee={Math.max(0, solde)} objectifMensuel={objectifEpargneMois} />}
+                    {graphiquesVisibles.includes('objectif_epargne') && <JaugeEpargneChart epargneRealisee={Math.max(0, solde) + montantEpargneInvesti} objectifMensuel={objectifEpargneMois} />}
                     {graphiquesVisibles.includes('top5_depenses') && <Top5DepensesChart transactions={transactionsPourStats} categories={categories} />}
                     {graphiquesVisibles.includes('flux_financier') && (
                         <div className="bg-card rounded-xl p-5 border border-[var(--border)]">
