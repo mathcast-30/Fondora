@@ -13,6 +13,7 @@ import FormBienImmobilier from '../components/FormBienImmobilier'
 import CryptoPortfolioChart from '../components/CryptoPortfolioChart'
 import DiversificationScore from '../components/DiversificationScore'
 import RepartitionLookThrough from '../components/investir/RepartitionLookThrough'
+import DiversificationDetaillee from '../components/investir/DiversificationDetaillee'
 import CryptoTransactionForm from '../components/CryptoTransactionForm'
 import { PnLLatentDisplay } from '../components/PnLLatentToggle'
 import FormulaireAchatVente from '../components/bourse/FormulaireAchatVente'
@@ -46,6 +47,8 @@ function Investir() {
     const [selectedActifId, setSelectedActifId] = useState(null)
     const [selectedCatalogueActifId, setSelectedCatalogueActifId] = useState(null)
     const [typeOrdre, setTypeOrdre] = useState('ACHAT')
+    const [compteFiltreDiversif, setCompteFiltreDiversif] = useState('TOUS')
+    const [segmentSelectionne, setSegmentSelectionne] = useState(null)
     // ============================================
     // ACTIONS & ETF STATE
     // ============================================
@@ -434,10 +437,54 @@ function Investir() {
                         )}
                     </div>
 
-                    {/* Analyse sectorielle & géographique Look-Through */}
-                    <div data-aide-id="investir-actions-look-through">
-                        <RepartitionLookThrough positions={positions} />
-                    </div>
+                    {/* Analyse sectorielle & géographique Look-Through (donut rapide) */}
+                    {positions.length > 0 && (
+                        <div data-aide-id="investir-actions-look-through">
+                            <RepartitionLookThrough
+                                positions={positions}
+                                onSegmentClick={(dimension, libelle) => {
+                                    if (dimension === null) {
+                                        setSegmentSelectionne(null)
+                                    } else {
+                                        setSegmentSelectionne(prev =>
+                                            prev?.dimension === dimension && prev?.libelle === libelle
+                                                ? null
+                                                : { dimension, libelle }
+                                        )
+                                    }
+                                }}
+                                segmentSelectionne={segmentSelectionne}
+                            />
+                        </div>
+                    )}
+
+                    {/* Analyse approfondie de diversification */}
+                    {positions.length > 0 && (
+                        <div data-aide-id="investir-actions-diversification">
+                            <DiversificationDetaillee
+                                positions={
+                                    compteFiltreDiversif === 'TOUS'
+                                        ? positions
+                                        : positions.filter(p => p.type_compte === compteFiltreDiversif)
+                                }
+                                transactions={transactions}
+                                compteFiltre={compteFiltreDiversif}
+                                onCompteChange={setCompteFiltreDiversif}
+                                segmentSelectionne={segmentSelectionne}
+                                onSegmentClick={(dimension, libelle) => {
+                                    if (dimension === null || libelle === null) {
+                                        setSegmentSelectionne(null)
+                                    } else {
+                                        setSegmentSelectionne(prev =>
+                                            prev?.dimension === dimension && prev?.libelle === libelle
+                                                ? null
+                                                : { dimension, libelle }
+                                        )
+                                    }
+                                }}
+                            />
+                        </div>
+                    )}
 
                     {/* Dividendes */}
                     {positions.length > 0 && (
