@@ -73,32 +73,4 @@ function AppRoutes() {
     </MFAGuard>
   )
 }
-
-function App() {
-  return (
-    <IncognitoProvider>
-      <FoyerProvider>
-        <EntiteProvider>
-          <CurrencyProvider>
-            <BrowserRouter>
-              <Routes>
-                {/* Pages légales accessibles sans authentification ni MFA */}
-                <Route path="/mentions-legales" element={<MentionsLegales />} />
-                <Route path="/cgu" element={<Cgu />} />
-                <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
-                <Route path="/partage/:token" element={<PartagePublic />} />
-                <Route path="/foyer/rejoindre/:token" element={<RejoindreFoyer />} />
-
-                {/* Application principale */}
-                <Route path="/*" element={<AppRoutes />} />
-              </Routes>
-              <Analytics />
-            </BrowserRouter>
-          </CurrencyProvider>
-        </EntiteProvider>
-      </FoyerProvider>
-    </IncognitoProvider>
-  )
-}
-
-export default App
+
