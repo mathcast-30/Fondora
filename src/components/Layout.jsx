@@ -9,6 +9,7 @@ import { useEntiteFiltre } from '../context/EntiteContext';
 import { useFoyerActif } from '../context/FoyerContext';
 import { LogOut, HelpCircle } from 'lucide-react';
 import AideModal from './AideModal';
+import NotificationBell from './notifications/NotificationBell';
 import AideBandeauDecouverte from './AideBandeauDecouverte';
 
 export default function Layout({ children }) {
@@ -103,6 +104,7 @@ export default function Layout({ children }) {
                     </div>
 
                     <div className="flex items-center gap-4">
+                      <NotificationBell />
                         <button
                             onClick={toggleIncognito}
                             className={`p-2 rounded-full transition-all duration-300 border ${incognito
