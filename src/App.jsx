@@ -33,6 +33,7 @@ import PartagePublic from './pages/PartagePublic'
 // Composants globaux RGPD
 import CookieBanner from './components/CookieBanner'
 import ReconsentementModal from './components/ReconsentementModal'
+import NotificationToastContainer from './components/notifications/NotificationToastContainer'
 
 // ✅ Composant d'aiguillage dynamique pour la racine "/"
 function Home() {
@@ -70,6 +71,7 @@ function AppRoutes() {
       </Routes>
       <CookieBanner />
       <ReconsentementModal />
+      <NotificationToastContainer />
     </MFAGuard>
   )
 }
