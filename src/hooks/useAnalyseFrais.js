@@ -1,11 +1,6 @@
-// src/hooks/useAnalyseFrais.js
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
-import {
-    calculerValeurActuelleContrat,
-    calculerTerMoyenPondere,
-    calculerFraisAV,
-} from '../lib/financialCalculations'
+import { analyserFraisGlobaux, calculerTrajectoireFrais } from '../utils/analyserFrais'
 
 export function useAnalyseFrais() {
     const [donnees, setDonnees] = useState({
@@ -101,100 +96,22 @@ export function useAnalyseFrais() {
     // ── KPIs ─────────────────────────────────────────────────────────────────
 
     const kpis = useMemo(() => {
-        let totalFraisEnveloppeAnnuels = 0
-        let totalFraisProduitsAnnuels = 0
-        let capitalInvestiFrais = 0
-        let auMoinsUneApproximation = false
-
-        // Construire une map compte_id → frais enveloppe
-        const fraisEnveloppeParCompte = new Map(
-            donnees.comptes.map(c => [c.id, Number(c.frais_gestion_enveloppe) || 0])
-        )
-
-        // ── Positions boursières ──────────────────────────────────────────────
-        const positionsEnrichies = donnees.positions.map(p => {
-            const prixMarche = prixBourse.get(p.symbole)
-            const valorisationApproximative = prixMarche == null || prixMarche <= 0
-            const prixEffectif = valorisationApproximative
-                ? Number(p.prix_achat_moyen)
-                : prixMarche
-            const valeurPosition = Number(p.quantite) * prixEffectif
-
-            if (valorisationApproximative) auMoinsUneApproximation = true
-
-            const fraisEnveloppe = fraisEnveloppeParCompte.get(p.compte_id) || 0
-            // frais_ter_produit n'est pas dans positions_financieres → toujours 0
-            const fraisProduit = 0
-
-            totalFraisEnveloppeAnnuels += valeurPosition * (fraisEnveloppe / 100)
-            totalFraisProduitsAnnuels += valeurPosition * (fraisProduit / 100)
-            capitalInvestiFrais += valeurPosition
-
-            return { ...p, valeurPosition, valorisationApproximative }
+        return analyserFraisGlobaux({
+            comptes: donnees.comptes,
+            positions: donnees.positions,
+            prixBourse,
+            avDetail,
+            prixUC,
         })
-
-        // ── Assurances vie ────────────────────────────────────────────────────
-        for (const { contrat, positionsUC, valeurFondsEuros } of avDetail) {
-            const { total: valeurAV } = calculerValeurActuelleContrat(
-                valeurFondsEuros, positionsUC, prixUC
-            )
-            const terMoyen = calculerTerMoyenPondere(positionsUC, prixUC)
-            const { fraisAnnuelsEuros } = calculerFraisAV(
-                contrat.frais_gestion_enveloppe, terMoyen, valeurAV
-            )
-
-            // Décomposer : frais enveloppe vs TER
-            const fraisEnvelAV = valeurAV * (Number(contrat.frais_gestion_enveloppe) || 0) / 100
-            const fraisTerAV = fraisAnnuelsEuros - fraisEnvelAV
-
-            totalFraisEnveloppeAnnuels += fraisEnvelAV
-            totalFraisProduitsAnnuels += Math.max(0, fraisTerAV)
-            capitalInvestiFrais += valeurAV
-        }
-
-        const totalFraisAnnuels = totalFraisEnveloppeAnnuels + totalFraisProduitsAnnuels
-        const tauxFraisMoyen = capitalInvestiFrais > 0 ? (totalFraisAnnuels / capitalInvestiFrais) : 0
-
-        return {
-            totalFraisEnveloppeAnnuels,
-            totalFraisProduitsAnnuels,
-            totalFraisAnnuels,
-            tauxFraisMoyen,
-            capitalInvesti: capitalInvestiFrais,
-            // Flag pour badge UI "⚠️ Cours indisponible, PRU utilisé"
-            valorisationsApproximatives: auMoinsUneApproximation,
-            // Crypto explicitement exclu
-            cryptoExclue: true,
-            positionsEnrichies,
-        }
     }, [donnees, prixBourse, prixUC, avDetail])
 
     // ── Simulateur manque à gagner (intérêts composés) ───────────────────────
 
     const simulateur = useMemo(() => {
-        const capitalInitial = kpis.capitalInvesti
-        const rendementBrut = 0.07 // 7 % historique bourse
-        const tauxFraisGlobal = kpis.tauxFraisMoyen
-        const rendementNet = rendementBrut - tauxFraisGlobal
-        const horizon = 30
-        const trajectoire = []
-
-        let capitalBrut = capitalInitial || 10000
-        let capitalNet = capitalInitial || 10000
-
-        for (let annee = 1; annee <= horizon; annee++) {
-            capitalBrut = capitalBrut * (1 + rendementBrut)
-            capitalNet = capitalNet * (1 + rendementNet)
-
-            trajectoire.push({
-                annee,
-                capitalBrut: Math.round(capitalBrut),
-                capitalNet: Math.round(capitalNet),
-                siphonne: Math.round(capitalBrut - capitalNet),
-            })
-        }
-
-        return trajectoire
+        return calculerTrajectoireFrais({
+            capitalInvesti: kpis.capitalInvesti,
+            tauxFraisMoyen: kpis.tauxFraisMoyen,
+        })
     }, [kpis])
 
     return {
