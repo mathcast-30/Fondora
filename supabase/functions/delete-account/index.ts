@@ -11,71 +11,60 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-    // Vérifier l'utilisateur connecté
-    const authHeader = req.headers.get('Authorization')!
-    const { data: { user }, error: userError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    )
+    if (!supabaseUrl || !serviceRoleKey) {
+      return new Response(JSON.stringify({ error: 'Configuration Supabase manquante' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey)
+
+    // Vérifier l'utilisateur connecté via l'en-tête Authorization
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Non autorisé' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/i, '')
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
+
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Non autorisé' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
     const userId = user.id
 
-    // Purge cascade de toutes les données (RGPD Art. 17)
-    const tables = [
-      'alertes_utilisateur',
-      'smart_rules',
-      'demandes_suppression',
-      'notifications_log',
-      'consentements',
-      'snapshot_patrimoine',
-      'assurances_vie_positions',
-      'assurances_vie_valorisations',
-      'assurances_vie_versements',
-      'assurances_vie',
-      'positions_crypto',
-      'transactions_investissement',
-      'positions_financieres',
-      'actifs_tangibles',
-      'dettes',
-      'biens_immobiliers',
-      'budgets',
-      'transactions',
-      'categories',
-      'comptes',
-      'profiles',
-    ]
-
-    for (const table of tables) {
-      const { error } = await supabase
-        .from(table)
-        .delete()
-        .eq('user_id', userId)
-      if (error) console.error(`Erreur table ${table}:`, error.message)
-    }
-
-    // Supprimer le compte auth
+    // Suppression de l'utilisateur dans Supabase Auth.
+    // Les clés étrangères configurées en ON DELETE CASCADE sur auth.users.id
+    // assurent la suppression automatique de toutes les données associées.
     const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(userId)
     if (deleteAuthError) {
       console.error('Erreur suppression auth:', deleteAuthError.message)
+      return new Response(JSON.stringify({ error: deleteAuthError.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     return new Response(JSON.stringify({ success: true }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
 
-  } catch (err) {
+  } catch (err: any) {
     console.error(err)
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    return new Response(JSON.stringify({ error: err.message || 'Erreur interne' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 })

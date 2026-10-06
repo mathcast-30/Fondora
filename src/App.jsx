@@ -16,7 +16,6 @@ import ProtectedRoute from './components/ProtectedRoute'
 import VerifyMFA from './pages/auth/VerifyMFA'
 import MFAGuard from './components/auth/MFAGuard'
 import { CurrencyProvider } from './context/CurrencyContext'
-import SupprimerCompteConfirmer from './pages/SupprimerCompteConfirmer'
 import { IncognitoProvider } from './context/IncognitoContext'
 import { EntiteProvider } from './context/EntiteContext'
 import { FoyerProvider } from './context/FoyerContext'
@@ -64,7 +63,6 @@ function AppRoutes() {
         <Route path="/parametres" element={<ProtectedRoute><Parametres /></ProtectedRoute>} />
         <Route path="/passifs" element={<ProtectedRoute><PassifsPage /></ProtectedRoute>} />
         <Route path="/export-donnees" element={<ProtectedRoute><ExportDonnees /></ProtectedRoute>} />
-        <Route path="/supprimer-compte/confirmer" element={<SupprimerCompteConfirmer />} />
 
         {/* Redirection globale de sécurité */}
         <Route path="*" element={<Navigate to="/" replace />} />

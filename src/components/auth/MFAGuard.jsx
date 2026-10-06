@@ -9,7 +9,7 @@ export default function MFAGuard({ children }) {
 
   useEffect(() => {
     const checkMFA = async () => {
-      const exempted = ['/login', '/signup', '/auth/verify-mfa', '/supprimer-compte/confirmer'];
+      const exempted = ['/login', '/signup', '/auth/verify-mfa'];
       if (
         exempted.includes(location.pathname) ||
         location.pathname.startsWith('/auth/') ||
