@@ -1,11 +1,25 @@
+import os
+import sys
 import yfinance as yf
 from supabase import create_client
 import time
 
 
-# ⚠️ Remplace par tes vraies valeurs
-SUPABASE_URL = "https://ptcdwzozambankspjwes.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0Y2R3em96YW1iYW5rc3Bqd2VzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjY3NjU1OCwiZXhwIjoyMDk4MjUyNTU4fQ.QhDuQOH5yej3neZe1YtSEAVbMMWST_RgvqzG9Nua8kE"
+# ─────────────────────────────────────────
+# CONFIGURATION (variables d'environnement)
+# ─────────────────────────────────────────
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
+
+if not SUPABASE_URL:
+    print("❌ Erreur : la variable d'environnement SUPABASE_URL est absente.", file=sys.stderr)
+    sys.exit(1)
+
+if not SUPABASE_KEY:
+    print("❌ Erreur : la variable d'environnement SUPABASE_SERVICE_KEY est absente.", file=sys.stderr)
+    print("   Exportez-la avant d'exécuter ce script :", file=sys.stderr)
+    print("   export SUPABASE_SERVICE_KEY='eyJ...'", file=sys.stderr)
+    sys.exit(1)
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -87,12 +101,12 @@ def inserer_actif(ticker, type_actif, devise):
     try:
         info = yf.Ticker(ticker).info
         nom = info.get("longName") or info.get("shortName") or ticker
-        
+
         logo_url = None
         if info.get("website"):
             clean_domain = info["website"].replace("https://", "").replace("http://", "").replace("www.", "").split("/")[0]
             logo_url = f"https://logo.clearbit.com/{clean_domain}"
-        
+
         data = {
             "ticker": ticker,
             "nom": nom,
@@ -100,12 +114,12 @@ def inserer_actif(ticker, type_actif, devise):
             "devise": devise,
             "logo_url": logo_url
         }
-        
+
         supabase.table("catalogue_actifs").upsert(data, on_conflict="ticker").execute()
         print(f"✅ {ticker} — {nom} ({devise})")
     except Exception as e:
         print(f"❌ {ticker} — Erreur : {e}")
-    
+
     time.sleep(0.4)  # Anti-ban léger Yahoo
 
 # ─────────────────────────────────────────
@@ -131,8 +145,8 @@ for ticker in set(tickers["ACTION_EUR"]):
         devise = "SEK"
     else:
         devise = "EUR"  # Par défaut (.PA, .DE, .AS, .MC, .MI, .BR, .HE)
-        
-    inserer_actif(ticker, "ACTION", "devise")
+
+    inserer_actif(ticker, "ACTION", devise)
 
 # 3. ETF EUR
 print("\n─── ETF EUR ───")
