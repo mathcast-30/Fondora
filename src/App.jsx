@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { Analytics } from '@vercel/analytics/react'
 import LandingPage from './pages/LandingPage'
 import Login from './pages/Login'
@@ -75,4 +75,31 @@ function AppRoutes() {
     </MFAGuard>
   )
 }
+
+function App() {
+  return (
+    <IncognitoProvider>
+      <FoyerProvider>
+        <EntiteProvider>
+          <CurrencyProvider>
+            <Routes>
+              {/* Pages légales accessibles sans authentification ni MFA */}
+              <Route path="/mentions-legales" element={<MentionsLegales />} />
+              <Route path="/cgu" element={<Cgu />} />
+              <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+              <Route path="/partage/:token" element={<PartagePublic />} />
+              <Route path="/foyer/rejoindre/:token" element={<RejoindreFoyer />} />
+
+              {/* Application principale */}
+              <Route path="/*" element={<AppRoutes />} />
+            </Routes>
+            <Analytics />
+          </CurrencyProvider>
+        </EntiteProvider>
+      </FoyerProvider>
+    </IncognitoProvider>
+  )
+}
+
+export default App
 
