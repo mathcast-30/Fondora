@@ -71,7 +71,17 @@ async function fetchFinnhubQuote(ticker: string): Promise<{ prix: number; variat
 
 // ── Point d'entrée ─────────────────────────────────────────────────────────
 
-serve(async () => {
+const CRON_SECRET = Deno.env.get('CRON_SECRET')
+
+serve(async (req) => {
+  if (!CRON_SECRET) {
+    return new Response(JSON.stringify({ error: 'CRON_SECRET non configuré côté serveur' }), { status: 500 })
+  }
+  const provided = req.headers.get('x-cron-secret')
+  if (provided !== CRON_SECRET) {
+    return new Response(JSON.stringify({ error: 'Non autorisé' }), { status: 401 })
+  }
+
   const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
   const now = new Date().toISOString()
   let totalMisAJour = 0
@@ -82,9 +92,28 @@ serve(async () => {
     .select('ticker, devise')
 
   if (actifs && actifs.length > 0) {
+    // Récupération des dates de dernière mise à jour dans asset_prices_cache
+    const { data: cacheDates } = await supabase
+      .from('asset_prices_cache')
+      .select('symbole, updated_at')
+
+    const dateMap = new Map<string, string>()
+    if (cacheDates) {
+      for (const item of cacheDates) {
+        if (item.symbole) dateMap.set(item.symbole.toUpperCase(), item.updated_at || '1970-01-01')
+      }
+    }
+
+    // Tri par date de mise à jour croissante (plus ancien / absent en premier)
+    const actifsTries = [...actifs].sort((a, b) => {
+      const dateA = dateMap.get(a.ticker.toUpperCase()) || '1970-01-01'
+      const dateB = dateMap.get(b.ticker.toUpperCase()) || '1970-01-01'
+      return dateA.localeCompare(dateB)
+    })
+
     // Séparation US / non-US pour appliquer la bonne source et le bon rythme.
-    const us = actifs.filter(a => estTickerUS(a.ticker))
-    const nonUs = actifs.filter(a => !estTickerUS(a.ticker))
+    const us = actifsTries.filter(a => estTickerUS(a.ticker))
+    const nonUs = actifsTries.filter(a => !estTickerUS(a.ticker))
 
     // Finnhub : séquentiel, 25 par run, délai 1.1s (limite gratuite 60 req/min).
     for (let i = 0; i < Math.min(us.length, 25); i++) {
